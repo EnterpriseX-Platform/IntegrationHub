@@ -1,0 +1,312 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { useLocation, Link, useParams, useNavigate } from 'react-router-dom';
+import { 
+  ChevronRight, 
+  Bell, 
+  Home, 
+  PanelLeft,
+  User, 
+  Settings, 
+  LogOut,
+  HelpCircle,
+  ChevronDown,
+  Shield
+} from 'lucide-react';
+
+import { useCurrentUser } from '../../lib/currentUser';
+import { API_URL, BASE_PATH } from '../../config/api';
+
+interface BreadcrumbItem {
+  label: string;
+  path?: string;
+}
+
+// Project name cache to avoid repeated API calls
+const projectNameCache: Record<string, string> = {};
+
+const useProjectName = (projectId: string | undefined) => {
+  const [projectName, setProjectName] = useState<string>('Project');
+
+  useEffect(() => {
+    if (!projectId) return;
+
+    // Check cache first
+    if (projectNameCache[projectId]) {
+      setProjectName(projectNameCache[projectId]);
+      return;
+    }
+
+    // Fetch project name
+    fetch(`${API_URL}/projects/${projectId}`)
+      .then(res => res.json())
+      .then(result => {
+        if (result.success && result.data) {
+          const name = result.data.name;
+          projectNameCache[projectId] = name;
+          setProjectName(name);
+        }
+      })
+      .catch(() => {
+        setProjectName('Project');
+      });
+  }, [projectId]);
+
+  return projectName;
+};
+
+const getBreadcrumbs = (pathname: string, projectName: string): BreadcrumbItem[] => {
+  const crumbs: BreadcrumbItem[] = [];
+
+  // Extract project ID from URL if present
+  const projectMatch = pathname.match(/\/projects\/([^\/]+)/);
+  const projectId = projectMatch ? projectMatch[1] : null;
+
+  if (pathname === '/dashboard') {
+    crumbs.push({ label: 'Dashboard' });
+  } else if (pathname === '/projects') {
+    crumbs.push({ label: 'Projects' });
+  } else if (pathname.startsWith('/projects/')) {
+    crumbs.push({ label: 'Projects', path: '/projects' });
+    
+    // Check for sub-routes
+    if (pathname.includes('/flows/')) {
+      // Inside flow designer
+      crumbs.push({ label: projectName, path: `/projects/${projectId}` });
+      crumbs.push({ label: 'Flow Designer' });
+    } else if (pathname.includes('/baskets')) {
+      crumbs.push({ label: projectName, path: `/projects/${projectId}` });
+      crumbs.push({ label: 'Baskets' });
+    } else if (pathname.includes('/connections')) {
+      crumbs.push({ label: projectName, path: `/projects/${projectId}` });
+      crumbs.push({ label: 'Connections' });
+    } else if (pathname.includes('/executions')) {
+      crumbs.push({ label: projectName, path: `/projects/${projectId}` });
+      crumbs.push({ label: 'Executions' });
+    } else if (pathname.includes('/flows')) {
+      crumbs.push({ label: projectName, path: `/projects/${projectId}` });
+      crumbs.push({ label: 'Flows' });
+    } else {
+      // Just the project page
+      crumbs.push({ label: projectName });
+    }
+  } else if (pathname.startsWith('/flows/')) {
+    crumbs.push({ label: 'Projects', path: '/projects' });
+    crumbs.push({ label: 'Flow Designer' });
+  } else if (pathname.startsWith('/apispecs/')) {
+    crumbs.push({ label: 'Projects', path: '/projects' });
+    crumbs.push({ label: 'API Specification' });
+  } else if (pathname === '/executions') {
+    crumbs.push({ label: 'Executions' });
+  } else if (pathname === '/connections') {
+    crumbs.push({ label: 'Connections' });
+  } else if (pathname === '/baskets') {
+    crumbs.push({ label: 'Baskets' });
+  } else if (pathname === '/profile') {
+    crumbs.push({ label: 'Profile' });
+  } else if (pathname === '/settings') {
+    crumbs.push({ label: 'Settings' });
+  } else if (pathname === '/schedulers') {
+    crumbs.push({ label: 'Schedulers' });
+  } else if (pathname.startsWith('/data-admin')) {
+    crumbs.push({ label: 'Data Admin' });
+  } else if (pathname === '/apispecs') {
+    crumbs.push({ label: 'API Specs' });
+  }
+
+  return crumbs;
+};
+
+interface HeaderProps {
+  notificationCount?: number;
+  isSidebarCollapsed?: boolean;
+  onToggleSidebar?: () => void;
+}
+
+export const Header: React.FC<HeaderProps> = ({ 
+  notificationCount = 0,
+  isSidebarCollapsed = false,
+  onToggleSidebar
+}) => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const params = useParams();
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Get project ID from URL params
+  const projectId = params.id || params.projectId;
+  const projectName = useProjectName(projectId);
+  
+  const breadcrumbs = getBreadcrumbs(location.pathname, projectName);
+
+  // Get user info from localStorage
+  const user = useCurrentUser();
+  const userName = user?.name || 'Administrator';
+  const userEmail = user?.email || 'admin@integration.local';
+  const userInitial = userName.charAt(0).toUpperCase();
+  const userRole = user?.role || 'user';
+  const isAdmin = userRole === 'admin';
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsProfileOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = `${BASE_PATH}/login`;
+  };
+
+  return (
+    <header className="h-14 shrink-0 bg-gray-50 flex items-center justify-between gap-2 px-2 sm:px-4">
+      {/* Left side: Collapse Button + Breadcrumb Navigation */}
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+        {/* Collapse Button */}
+        <button
+          onClick={onToggleSidebar}
+          title={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          className="shrink-0 w-9 h-9 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+        >
+          <PanelLeft className={`w-[18px] h-[18px] transition-transform duration-300 ${isSidebarCollapsed ? 'rotate-180' : ''}`} />
+        </button>
+
+        {/* Breadcrumb — on phones only Home and the current page */}
+        <div className="flex items-center gap-1.5 sm:gap-2 text-sm min-w-0 overflow-hidden">
+          <Link
+            to="/dashboard"
+            className="shrink-0 text-gray-500 hover:text-gray-700 flex items-center gap-1 transition-colors"
+          >
+            <Home className="w-4 h-4" />
+            <span className="hidden sm:inline">Home</span>
+          </Link>
+          {breadcrumbs.map((crumb, index) => (
+            <span key={index} className={`${index < breadcrumbs.length - 1 ? 'hidden sm:flex' : 'flex'} items-center gap-1.5 sm:gap-2 min-w-0`}>
+              <ChevronRight className="w-4 h-4 shrink-0 text-gray-400" />
+              {crumb.path ? (
+                <Link
+                  to={crumb.path}
+                  className="text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  <span className="truncate max-w-[100px] sm:max-w-[150px]">{crumb.label}</span>
+                </Link>
+              ) : (
+                <span className="text-gray-900 font-medium truncate max-w-[160px] sm:max-w-[200px]">
+                  {crumb.label}
+                </span>
+              )}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Right side actions */}
+      <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+        {/* Notification Bell */}
+        <button className="relative w-9 h-9 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+          <Bell className="w-[18px] h-[18px]" />
+          {notificationCount > 0 && (
+            <span className="absolute top-1 right-1 min-w-4 h-4 px-1 bg-red-500 text-white text-[10px] ring-2 ring-white rounded-full flex items-center justify-center font-medium">
+              {notificationCount > 9 ? '9+' : notificationCount}
+            </span>
+          )}
+        </button>
+
+        {/* User Profile Dropdown */}
+        <div className="relative" ref={dropdownRef}>
+          <button
+            onClick={() => setIsProfileOpen(!isProfileOpen)}
+            className="flex items-center gap-2 h-9 pl-1 pr-1 md:pr-2 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-semibold">
+              {userInitial}
+            </div>
+            <div className="hidden md:block text-left max-w-[180px]">
+              <p className="text-[13px] font-medium text-gray-900 leading-tight truncate">{userName}</p>
+              <p className="text-[11px] text-gray-500 leading-tight truncate">{userEmail}</p>
+            </div>
+            <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform hidden md:block ${isProfileOpen ? 'rotate-180' : ''}`} />
+          </button>
+
+          {/* Dropdown Menu */}
+          {isProfileOpen && (
+            <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+              {/* User Info Header */}
+              <div className="px-4 py-3 border-b border-gray-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-medium">
+                    {userInitial}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">{userName}</p>
+                    <p className="text-xs text-gray-500 truncate">{userEmail}</p>
+                    {isAdmin && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 mt-1">
+                        <Shield className="w-3 h-3 mr-1" />
+                        Admin
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Menu Items */}
+              <button
+                onClick={() => {
+                  setIsProfileOpen(false);
+                  navigate('/profile');
+                }}
+                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                <User className="w-4 h-4 text-gray-400" />
+                Profile
+              </button>
+              
+              {/* Settings - Admin only */}
+              {isAdmin && (
+                <button
+                  onClick={() => {
+                    setIsProfileOpen(false);
+                    navigate('/settings');
+                  }}
+                  className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <Settings className="w-4 h-4 text-gray-400" />
+                  Settings
+                </button>
+              )}
+              
+              <button
+                onClick={() => {
+                  setIsProfileOpen(false);
+                }}
+                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                <HelpCircle className="w-4 h-4 text-gray-400" />
+                Help & Support
+              </button>
+              
+              <div className="border-t border-gray-100 mt-1 pt-1">
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Sign out
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </header>
+  );
+};
+
+export { getBreadcrumbs };

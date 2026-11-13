@@ -1,0 +1,38 @@
+{
+  "name": "integration-platform",
+  "version": "1.4.32",
+  "description": "Integration Platform - Full-stack application for managing integration flows, API specs, and connections",
+  "private": true,
+  "scripts": {
+    "install:all": "cd client && npm install && cd ../server && npm install",
+    "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
+    "client:dev": "cd client && npm run dev",
+    "server:dev": "cd server && npm run dev",
+    "build": "npm run build:client && npm run build:server",
+    "build:all": "npm run build:client && npm run build:server",
+    "build:client": "cd client && npm run build",
+    "build:server": "cd server && npm run build",
+    "start": "cd server && npm start",
+    "start:prod": "cd server && NODE_ENV=production npm start",
+    "db:status": "./scripts/db-status.sh",
+    "db:backup": "./scripts/backup-db.sh",
+    "db:restore": "./scripts/restore-db.sh",
+    "db:truncate": "./scripts/safe-truncate.sh",
+    "db:schema": "./scripts/update-schema.sh",
+    "db:create-admin": "./scripts/create-admin.sh",
+    "install:hooks": "./scripts/install-hooks.sh"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "keywords": [
+    "integration",
+    "flow-designer",
+    "api",
+    "react",
+    "typescript",
+    "nodejs"
+  ],
+  "author": "",
+  "license": "MIT"
+}

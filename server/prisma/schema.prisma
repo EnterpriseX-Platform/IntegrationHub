@@ -1,0 +1,834 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Project {
+  id            String       @id @default(cuid())
+  name          String
+  code          String?      @unique
+  description   String?
+  status        String       @default("Active")
+  color         String       @default("blue")
+  image         String?
+  projectGroup  String?      @map("projectGroup")
+  agency        String?
+  agencyLevel   String?      @map("agencyLevel")
+  position      Int          @default(0) @map("position")
+  groupPosition    Int       @default(0) @map("groupPosition")     // For ordering project groups
+  agencyPosition   Int       @default(0) @map("agencyPosition")    // For ordering agencies within a group
+  tags          String       @default("[]")
+  createdAt     DateTime     @default(now()) @map("createdAt")
+  updatedAt     DateTime     @updatedAt @map("updatedAt")
+  apiKeys       ApiKey[]
+  apiSpecs      ApiSpec[]
+  baskets       Basket[]
+  sharedBaskets BasketShare[] // Baskets shared from other projects
+  connections   Connection[]
+  executions    Execution[]
+  flows         Flow[]
+  schedulers    Scheduler[]
+  projectTags   ProjectTag[]  // Project-scoped tag catalog (usable by flows/baskets/etc)
+  members       ProjectMember[] // Who can see/edit this project (admins see every project)
+
+  @@index([position])
+  @@map("projects")
+}
+
+// Catalog of named tag groups scoped to a project. Used by Tasks page and
+// reusable by any other module that wants to attach tags to its entities.
+// The actual tag-to-entity link lives on the entity itself (e.g. flow.tags
+// JSON column); ProjectTag just keeps the list of available/declared tags
+// per project so empty groups can render before any entity is attached.
+model ProjectTag {
+  id        String   @id @default(cuid())
+  projectId String   @map("projectId")
+  name      String
+  color     String?
+  sortOrder Int      @default(0) @map("sortOrder")
+  createdAt DateTime @default(now()) @map("createdAt")
+  updatedAt DateTime @updatedAt @map("updatedAt")
+
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, name])
+  @@index([projectId])
+  @@map("project_tags")
+}
+
+model Connection {
+  id           String          @id @default(cuid())
+  name         String
+  type         String
+  config       String          @default("{}")
+  status       String          @default("Disconnected")
+  displayOrder Int             @default(0) @map("displayOrder")
+  projectId    String?         @map("projectId") // null = app-level connection
+  isShared     Boolean         @default(false) @map("isShared")
+  sharedWith   String[]        @default([]) @map("sharedWith") // Project IDs
+  createdAt    DateTime        @default(now()) @map("createdAt")
+  updatedAt    DateTime        @updatedAt @map("updatedAt")
+  project      Project?        @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  tags         ConnectionTag[]
+
+  @@map("connections")
+}
+
+// Tags for connections
+model Tag {
+  id          String          @id @default(cuid())
+  name        String          @unique
+  color       String          @default("#3B82F6")
+  description String?
+  createdAt   DateTime        @default(now()) @map("createdAt")
+  connections ConnectionTag[]
+
+  @@map("tags")
+}
+
+// Many-to-many relation between Connection and Tag
+model ConnectionTag {
+  id           String     @id @default(cuid())
+  connectionId String     @map("connectionId")
+  tagId        String     @map("tagId")
+  createdAt    DateTime   @default(now()) @map("createdAt")
+  connection   Connection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  tag          Tag        @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([connectionId, tagId])
+  @@map("connection_tags")
+}
+
+model Flow {
+  id           String        @id @default(cuid())
+  name         String
+  description  String?
+  type         String
+  status       String        @default("Draft")
+  projectId    String        @map("projectId")
+  nodes        String        @default("[]")
+  connections  String        @default("[]")
+  config       String        @default("{}")
+  process      String?
+  displayOrder Int           @default(0) @map("displayOrder")
+  tags         String        @default("[]")
+  version      String        @default("1.0.0")
+  createdAt    DateTime      @default(now()) @map("createdAt")
+  updatedAt    DateTime      @updatedAt @map("updatedAt")
+  executions   Execution[]
+  project      Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  schedulers   Scheduler[]
+  transferJobs TransferJob[]
+
+  @@map("flows")
+}
+
+model Execution {
+  id             String    @id @default(cuid())
+  // flowId/projectId are nullable so non-flow sources (e.g. data-repository
+  // imports) can also create execution rows. For flow-driven runs both remain
+  // populated as before.
+  flowId         String?   @map("flowId")
+  projectId      String?   @map("projectId")
+  // 'flow' (traditional flow executor) | 'repo-import' (data-repo import)
+  sourceType     String    @default("flow") @map("sourceType")
+  // ID of the source entity for non-flow sources (e.g. repoTable.id for
+  // repo-imports). For sourceType='flow' this mirrors flowId.
+  sourceId       String?   @map("sourceId")
+  status         String    @default("Pending")
+  startedAt      DateTime  @default(now()) @map("startedAt")
+  endedAt        DateTime? @map("endedAt")
+  
+  // Metrics fields for monitoring
+  durationMs     Int?      @map("durationMs")
+  httpStatusCode Int?      @map("httpStatusCode")
+  errorType      String?   @map("errorType")
+  responseSize   Int?      @map("responseSize")
+  
+  logs           String    @default("[]")
+  result         String    @default("{}")
+  error          String?
+  input          String?
+  output         String?
+  
+  // Trigger type: 'schedule' | 'manual' | 'force' | 'webhook' | 'api' | 'import'
+  triggerType    String    @default("manual") @map("triggerType")
+
+  // Caller info: API key name + operation, user login name, or 'Scheduler'
+  callerName     String?   @map("callerName")
+
+  flow           Flow?     @relation(fields: [flowId], references: [id], onDelete: Cascade)
+  project        Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([startedAt])
+  @@index([status])
+  @@index([flowId, startedAt])
+  @@index([sourceType, sourceId])
+  @@map("executions")
+}
+
+model Scheduler {
+  id            String    @id @default(cuid())
+  flowId        String    @map("flowId")
+  projectId     String    @map("projectId")
+  name          String?
+  type          String    @default("cron")
+  schedule      String
+  timezone      String    @default("Asia/Bangkok")
+  status        String    @default("Active")
+  displayOrder  Int       @default(0) @map("displayOrder")
+  parameters    String    @default("[]") @map("parameters")
+  maxConcurrent Int       @default(1) @map("maxConcurrent")
+  lastRun       DateTime? @map("lastRun")
+  nextRun       DateTime? @map("nextRun")
+  errorMessage  String?   @map("errorMessage")
+  createdAt     DateTime  @default(now()) @map("createdAt")
+  updatedAt     DateTime  @updatedAt @map("updatedAt")
+  flow          Flow      @relation(fields: [flowId], references: [id], onDelete: Cascade)
+  project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("schedulers")
+}
+
+model ApiSpec {
+  id          String   @id @default(cuid())
+  projectId   String   @map("projectId")
+  name        String
+  version     String   @default("1.0.0")
+  description String?
+  basePath    String   @map("basePath")
+  operations  String   @default("[]")
+  components  String   @default("{}")
+  createdAt   DateTime @default(now()) @map("createdAt")
+  updatedAt   DateTime @updatedAt @map("updatedAt")
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("api_specs")
+}
+
+model ApiKey {
+  id           String           @id @default(cuid())
+  projectId    String           @map("projectId")
+  name         String
+  key          String           @unique
+  type         String           @default("client")
+  authMethod   String           @default("bearer") @map("authMethod")
+  secretKey    String?          @map("secretKey")
+  ipWhitelist  String[]         @default([]) @map("ipWhitelist")
+  ipBlacklist  String[]         @default([]) @map("ipBlacklist")
+  validateIp   Boolean          @default(false) @map("validateIp")
+  rateLimit    Int?             @map("rateLimit")
+  scopes       String[]         @default(["read"])
+  allowedPaths String[]         @default([]) @map("allowedPaths")
+  isActive     Boolean          @default(true) @map("isActive")
+  lastUsedAt   DateTime?        @map("lastUsedAt")
+  expiresAt    DateTime?        @map("expiresAt")
+  createdAt    DateTime         @default(now()) @map("createdAt")
+  // Encryption key fields (Secrets Vault)
+  keyCategory  String           @default("api-key") @map("keyCategory")  // 'api-key' | 'encryption-key'
+  algorithm    String?          @map("algorithm")    // 'pgp' | 'rsa' | 'aes-256-gcm' | 'aes-256-cbc'
+  publicKey    String?          @map("publicKey")    // PEM/armored public key (shareable)
+  keyFormat    String?          @map("keyFormat")    // 'pem' | 'armored' | 'base64'
+  description  String?          @map("description")
+  auditLogs    ApiKeyAuditLog[]
+  project      Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("api_keys")
+}
+
+model ApiKeyAuditLog {
+  id           String   @id @default(cuid())
+  apiKeyId     String   @map("apiKeyId")
+  action       String
+  ipAddress    String   @map("ipAddress")
+  userAgent    String?  @map("userAgent")
+  path         String?
+  success      Boolean
+  errorMessage String?  @map("errorMessage")
+  createdAt    DateTime @default(now()) @map("createdAt")
+  apiKey       ApiKey   @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
+
+  @@map("api_key_audit_logs")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  role      String   @default("user")
+  status    String   @default("active")
+  password  String?
+  createdAt DateTime @default(now()) @map("createdAt")
+  updatedAt DateTime @default(now()) @updatedAt @map("updatedAt")
+  projectMemberships ProjectMember[]
+  repoTableMemberships RepoTableMember[]
+  groupMemberships   UserGroupMember[]
+  folderMemberships  BasketFolderMember[]
+
+  @@map("users")
+}
+
+// Per-project access for non-admin users, granted to one user or to a user group:
+// viewer (read), editor (change/run), owner (also manage members)
+model ProjectMember {
+  id        String     @id @default(cuid())
+  projectId String     @map("projectId")
+  userId    String?    @map("userId")
+  groupId   String?    @map("groupId")
+  role      String     @default("viewer")
+  createdAt DateTime   @default(now()) @map("createdAt")
+  project   Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group     UserGroup? @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@unique([projectId, groupId])
+  @@index([userId])
+  @@index([groupId])
+  @@map("project_members")
+}
+
+// Named set of users; access given to the group applies to every member
+model UserGroup {
+  id          String            @id @default(cuid())
+  name        String            @unique
+  description String?
+  createdAt   DateTime          @default(now()) @map("createdAt")
+  updatedAt   DateTime          @updatedAt @map("updatedAt")
+  members     UserGroupMember[]
+  projectGrants ProjectMember[]
+  tableGrants   RepoTableMember[]
+  folderGrants  BasketFolderMember[]
+
+  @@map("user_groups")
+}
+
+model UserGroupMember {
+  id        String    @id @default(cuid())
+  groupId   String    @map("groupId")
+  userId    String    @map("userId")
+  createdAt DateTime  @default(now()) @map("createdAt")
+  group     UserGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@index([userId])
+  @@map("user_group_members")
+}
+
+model Basket {
+  id                String              @id @default(cuid())
+  projectId         String              @map("projectId")
+  name              String
+  description       String?
+  path              String
+  type              String              @default("batch") // 'batch' | 'shares' | 'sftp'
+  maxFiles          Int?                @map("maxFiles")
+  maxFileSize       Int?                @map("maxFileSize")
+  allowedTypes      String[]            @default([]) @map("allowedTypes")
+  namingPattern     String?             @map("namingPattern")
+  sessionPattern    String              @default("Batch-{YYYYMMDD}-{NNN}") @map("sessionPattern")
+  autoArchive       Boolean             @default(false) @map("autoArchive")
+  autoPublish       String              @default("manual") @map("autoPublish")
+  autoPublishConfig String              @default("{}") @map("autoPublishConfig")
+  displayOrder      Int                 @default(0) @map("displayOrder")
+  // JSON-string array of tag names — used by the Baskets page tag grouping
+  // (same pattern as Flow.tags). Defaults to an empty array.
+  tags              String              @default("[]")
+  settings          String              @default("{}")
+
+  // SFTP Basket specific fields
+  sftpMode          String?             @map("sftpMode") // 'local' | 'external'
+  sftpConnectionId  String?             @map("sftpConnectionId") // Connection ID if using external mode
+  createdAt         DateTime            @default(now()) @map("createdAt")
+  updatedAt         DateTime            @updatedAt @map("updatedAt")
+  basketFiles       BasketFile[]
+  logs              BasketLog[]
+  project           Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sessions          ProcessingSession[]
+  transferJobs      TransferJob[]
+  folders           BasketFolder[]      // For Shares Baskets
+  sharedWith        BasketShare[]       // Shares to other projects
+
+  @@map("baskets")
+}
+
+// Folders for Shares Baskets
+model BasketFolder {
+  id          String       @id @default(cuid())
+  basketId    String       @map("basketId")
+  name        String
+  path        String
+  parentId    String?      @map("parentId")
+  createdAt   DateTime     @default(now()) @map("createdAt")
+  updatedAt   DateTime     @updatedAt @map("updatedAt")
+  basket      Basket       @relation(fields: [basketId], references: [id], onDelete: Cascade)
+  parent      BasketFolder? @relation("FolderHierarchy", fields: [parentId], references: [id])
+  children    BasketFolder[] @relation("FolderHierarchy")
+  files       BasketFile[]
+
+  @@map("basket_folders")
+  members     BasketFolderMember[] // File Explorer: who can see this top-level folder
+}
+
+// Shares Baskets to other projects
+model BasketShare {
+  id          String   @id @default(cuid())
+  basketId    String   @map("basketId")
+  projectId   String   @map("projectId") // Target project
+  permission  String   @default("read") // 'read' | 'write'
+  createdAt   DateTime @default(now()) @map("createdAt")
+  createdBy   String   @map("createdBy")
+  basket      Basket   @relation(fields: [basketId], references: [id], onDelete: Cascade)
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([basketId, projectId])
+  @@map("basket_shares")
+}
+
+model ProcessingSession {
+  id          String       @id @default(cuid())
+  basketId    String       @map("basketId")
+  batchName   String       @map("batchName")
+  status      String       @default("active")
+  publishMode String       @default("manual") @map("publishMode")
+  fileCount   Int          @default(0) @map("fileCount")
+  totalSize   Int          @default(0) @map("totalSize")
+  archivePath String?      @map("archivePath")
+  archiveSize Int?         @map("archiveSize")
+  lockedBy    String?      @map("lockedBy")
+  lockedAt    DateTime?    @map("lockedAt")
+  processedBy String?      @map("processedBy")
+  processedAt DateTime?    @map("processedAt")
+  startedAt   DateTime     @default(now()) @map("startedAt")
+  publishedAt DateTime?    @map("publishedAt")
+  completedAt DateTime?    @map("completedAt")
+  archivedAt  DateTime?    @map("archivedAt")
+  basketFiles BasketFile[]
+  basket      Basket       @relation(fields: [basketId], references: [id], onDelete: Cascade)
+  logs        SessionLog[]
+
+  @@index([status, lockedBy])
+  @@map("processing_sessions")
+}
+
+model BasketFile {
+  id           String             @id @default(cuid())
+  basketId     String             @map("basketId")
+  sessionId    String?            @map("sessionId")
+  folderId     String?            @map("folderId") // For Shares Baskets
+  fileName     String             @map("fileName")
+  originalName String             @map("originalName")
+  size         Int
+  mimeType     String             @map("mimeType")
+  path         String
+  status            String             @default("pending")
+  metadata          String             @default("{}")
+  remoteModifiedAt  DateTime?          @map("remoteModifiedAt") // SFTP/remote file modification date
+  createdAt         DateTime           @default(now()) @map("createdAt")
+  updatedAt         DateTime           @updatedAt @map("updatedAt")
+  processedAt       DateTime?          @map("processedAt")
+  logs         BasketFileLog[]
+  basket       Basket             @relation(fields: [basketId], references: [id], onDelete: Cascade)
+  session      ProcessingSession? @relation(fields: [sessionId], references: [id])
+  folder       BasketFolder?      @relation(fields: [folderId], references: [id])
+
+  @@map("basket_files")
+}
+
+model SessionLog {
+  id        String            @id @default(cuid())
+  sessionId String            @map("sessionId")
+  type      String
+  message   String
+  fileCount Int?              @map("fileCount")
+  metadata  String            @default("{}")
+  createdAt DateTime          @default(now()) @map("createdAt")
+  session   ProcessingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("session_logs")
+}
+
+model BasketFileLog {
+  id          String     @id @default(cuid())
+  fileId      String     @map("fileId")
+  flowId      String?    @map("flowId")
+  executionId String?    @map("executionId")
+  action      String
+  status      String     @default("success")
+  message     String?
+  metadata    String     @default("{}")
+  createdAt   DateTime   @default(now()) @map("createdAt")
+  file        BasketFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@map("basket_file_logs")
+}
+
+model BasketLog {
+  id        String   @id @default(cuid())
+  basketId  String   @map("basketId")
+  type      String
+  message   String
+  fileCount Int?     @map("fileCount")
+  fileSize  Int?     @map("fileSize")
+  metadata  String   @default("{}")
+  createdAt DateTime @default(now()) @map("createdAt")
+  basket    Basket   @relation(fields: [basketId], references: [id], onDelete: Cascade)
+
+  @@map("basket_logs")
+}
+
+model TransferJob {
+  id             String        @id @default(cuid())
+  flowId         String        @map("flowId")
+  sourceBasketId String        @map("sourceBasketId")
+  targetType     String        @map("targetType")
+  targetConfig   String        @map("targetConfig")
+  filePattern    String        @map("filePattern")
+  schedule       String?
+  status         String        @default("pending")
+  createdAt      DateTime      @default(now()) @map("createdAt")
+  updatedAt      DateTime      @updatedAt @map("updatedAt")
+  flow           Flow          @relation(fields: [flowId], references: [id], onDelete: Cascade)
+  basket         Basket        @relation(fields: [sourceBasketId], references: [id], onDelete: Cascade)
+  logs           TransferLog[]
+
+  @@map("transfer_jobs")
+}
+
+model TransferLog {
+  id        String      @id @default(cuid())
+  jobId     String      @map("jobId")
+  status    String
+  message   String
+  details   String      @default("{}")
+  createdAt DateTime    @default(now()) @map("createdAt")
+  job       TransferJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@map("transfer_logs")
+}
+
+model FileUpload {
+  id           String   @id @default(cuid())
+  fileName     String   @map("fileName")
+  originalName String   @map("originalName")
+  size         Int
+  mimeType     String   @map("mimeType")
+  path         String
+  status       String   @default("pending")
+  metadata     String   @default("{}")
+  createdAt    DateTime @default(now()) @map("createdAt")
+
+  @@map("file_uploads")
+}
+
+model Customer {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String
+  age       Int?
+  createdAt DateTime @default(now()) @map("createdAt")
+
+  @@map("customers")
+}
+
+// System Configuration for Admin Setup
+model SystemConfig {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  category    String   @default("general") // 'general', 'security', 'api', 'database'
+  isSecret    Boolean  @default(false) @map("isSecret")
+  updatedAt   DateTime @updatedAt @map("updatedAt")
+  updatedBy   String?  @map("updatedBy")
+
+  @@map("system_configs")
+}
+
+// Login Sessions
+model Session {
+  id        String   @id @default(cuid())
+  userId    String   @map("userId")
+  token     String   @unique
+  ipAddress String?  @map("ipAddress")
+  userAgent String?  @map("userAgent")
+  expiresAt DateTime @map("expiresAt")
+  createdAt DateTime @default(now()) @map("createdAt")
+
+  @@map("sessions")
+}
+
+// ─── Analytics Workbench ─────────────────────────────────────────────────────
+
+// Separate connections for Workbench (isolated from project connections)
+model WbConnection {
+  id          String      @id @default(cuid())
+  name        String
+  type        String      // postgresql | mysql | oracle
+  config      String      @default("{}") // {host,port,database,username,password,ssl}
+  status      String      @default("Disconnected")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+  datasets    WbDataset[]
+
+  @@map("wb_connections")
+}
+
+// API keys for external access to Workbench (isolated from project API keys)
+model WbApiKey {
+  id          String    @id @default(cuid())
+  name        String
+  key         String    @unique
+  permissions String    @default("read") // read | write | admin
+  isActive    Boolean   @default(true) @map("is_active")
+  expiresAt   DateTime? @map("expires_at")
+  lastUsedAt  DateTime? @map("last_used_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@map("wb_api_keys")
+}
+
+// Registered table/view from a connection — always queried live (no data copy)
+model WbDataset {
+  id           String       @id @default(cuid())
+  connectionId String       @map("connection_id")
+  name         String
+  tableName    String       @map("table_name")  // exact table/view name in source DB
+  description  String?
+  schema       String       @default("[]") @map("schema") // JSON [{name,type,nullable}]
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  connection   WbConnection  @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  folders      WbFolder[]
+  savedQueries WbSavedQuery[]
+
+  @@map("wb_datasets")
+}
+
+// Virtual folder — applies WHERE partitionField = partitionValue automatically behind the scenes
+model WbFolder {
+  id             String     @id @default(cuid())
+  datasetId      String     @map("dataset_id")
+  parentId       String?    @map("parent_id")
+  name           String
+  partitionField String     @map("partition_field") // column name, e.g. "year"
+  partitionValue String     @map("partition_value") // value, e.g. "2567"
+  path           String     // materialized path e.g. "2567/ministry"
+  createdAt      DateTime   @default(now()) @map("created_at")
+
+  dataset        WbDataset  @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+  parent         WbFolder?  @relation("WbFolderTree", fields: [parentId], references: [id])
+  children       WbFolder[] @relation("WbFolderTree")
+
+  @@index([datasetId])
+  @@map("wb_folders")
+}
+
+// User-saved SQL queries
+model WbSavedQuery {
+  id          String     @id @default(cuid())
+  datasetId   String?    @map("dataset_id")
+  name        String
+  sql         String
+  description String?
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  dataset     WbDataset? @relation(fields: [datasetId], references: [id], onDelete: SetNull)
+
+  @@map("wb_saved_queries")
+}
+
+// ─── Data Repository ──────────────────────────────────────────────────────────
+
+// Separate connections for Repository
+model RepoConnection {
+  id          String      @id @default(cuid())
+  name        String
+  type        String      // postgresql | mysql | oracle
+  config      String      @default("{}")
+  status      String      @default("Disconnected")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+  tables      RepoTable[]
+
+  @@map("repo_connections")
+}
+
+// API keys for external access to Repository
+model RepoApiKey {
+  id          String    @id @default(cuid())
+  name        String
+  key         String    @unique
+  permissions String    @default("read") // read | write | admin
+  isActive    Boolean   @default(true) @map("is_active")
+  expiresAt   DateTime? @map("expires_at")
+  lastUsedAt  DateTime? @map("last_used_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@map("repo_api_keys")
+}
+
+// Table reference — points to an existing table in a database connection
+model RepoTable {
+  id           String          @id @default(cuid())
+  connectionId String?         @map("connection_id") // source database connection
+  folderId     String?         @map("folder_id")     // optional: parent folder
+  name         String
+  description  String?
+  schema       String          @default("[]") // JSON [{name,type,nullable}]
+  rowCount     Int             @default(0) @map("row_count")
+  sortOrder    Int             @default(0) @map("sort_order")
+  lastSyncAt   DateTime?       @map("last_sync_at")
+  syncStatus   String          @default("idle") @map("sync_status") // idle | syncing | error
+  syncError    String?         @map("sync_error")
+  // JSON blob with last-used import mapping (so the import modal can pre-fill).
+  // Shape: { mapping: {...}, mode, mergeKeys, savedAt }
+  // Previously written via raw SQL; declaring it here so `prisma db push`
+  // doesn't drop the column on container restart.
+  lastImportConfig String?     @map("last_import_config")
+  // Filter registry for the Data tab. Comma-separated, one entry per column:
+  //   COLUMN:label:labelSource:optionsFrom:default
+  // labelSource / optionsFrom are a sibling column or SCHEMA.TABLE.CODE.NAME;
+  // optionsFrom may carry "@PARENT_COL=parentField" to narrow the list by the
+  // value picked in another filter on the same screen.
+  filterColumns String?     @map("filter_columns")
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
+
+  connection   RepoConnection? @relation(fields: [connectionId], references: [id], onDelete: SetNull)
+  folder       RepoFolder?     @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  members      RepoTableMember[]
+
+  @@map("repo_tables")
+}
+
+// Per-table access in the Data Repository for non-admin users: viewer (read/export), editor (also import/edit rows)
+model RepoTableMember {
+  id        String     @id @default(cuid())
+  tableId   String     @map("table_id")
+  userId    String?    @map("user_id")
+  groupId   String?    @map("group_id")
+  role      String     @default("viewer")
+  createdAt DateTime   @default(now()) @map("created_at")
+  table     RepoTable  @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  user      User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group     UserGroup? @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([tableId, userId])
+  @@unique([tableId, groupId])
+  @@index([userId])
+  @@index([groupId])
+  @@map("repo_table_members")
+}
+
+// A SQL statement someone saved from the SQL editor, listed down its left side
+model RepoSqlQuery {
+  id           String   @id @default(cuid())
+  name         String
+  sql          String
+  connectionId String?  @map("connection_id")
+  createdBy    String?  @map("created_by")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("repo_sql_queries")
+}
+
+// Folder for organizing tables in the repository
+model RepoFolder {
+  id             String      @id @default(cuid())
+  parentId       String?     @map("parent_id")
+  name           String
+  sortOrder      Int         @default(0) @map("sort_order")
+  createdAt      DateTime    @default(now()) @map("created_at")
+
+  parent         RepoFolder? @relation("RepoFolderTree", fields: [parentId], references: [id])
+  children       RepoFolder[] @relation("RepoFolderTree")
+  tables         RepoTable[]
+
+  @@map("repo_folders")
+}
+
+// ─── Data Views (Analytics Workbench — saved views) ──────────────────────────
+
+// Simple folder for grouping saved DataViews
+model DataViewFolder {
+  id          String      @id @default(cuid())
+  name        String
+  parentId    String?     @map("parent_id")
+  position    Int         @default(0)
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  parent      DataViewFolder?  @relation("DataViewFolderTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children    DataViewFolder[] @relation("DataViewFolderTree")
+  views       DataView[]
+
+  @@map("data_view_folders")
+}
+
+// Saved view config: fields, filters, pivot — queried live from WbDataset
+model DataView {
+  id           String          @id @default(cuid())
+  name         String
+  description  String?
+  folderId     String?         @map("folder_id")
+  datasetId    String          @map("dataset_id")    // WbDataset id (live query source)
+  wbFolderId   String?         @map("wb_folder_id")  // optional: scope to a WbFolder partition
+  viewType     String          @default("flat")      // "flat" | "pivot"
+  fields       String          @default("[]")        // JSON: [{name, alias, visible, order}]
+  filters      String          @default("[]")        // JSON: [{field, op, value, logic}]
+  pivot        String          @default("{}")        // JSON: {filters:[], columns:[], rows:[], values:[{field,fn}]}
+  sortBy       String          @default("[]")        // JSON: [{field, dir}]
+  position     Int             @default(0)
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
+
+  folder       DataViewFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+
+  @@index([datasetId])
+  @@index([folderId])
+  @@map("data_views")
+}
+
+// Share link to a File Explorer folder or file: /share/<id>. Opening it still needs a login.
+model ShareLink {
+  id        String    @id @default(cuid())
+  basketId  String    @map("basketId")
+  folderId  String?   @map("folderId")
+  fileId    String?   @map("fileId")
+  createdBy String?   @map("createdBy")
+  createdAt DateTime  @default(now()) @map("createdAt")
+  revokedAt DateTime? @map("revokedAt")
+
+  @@index([folderId])
+  @@index([fileId])
+  @@map("share_links")
+}
+
+// File Explorer access for non-admin users: a top-level folder granted to a
+// user or a group covers everything inside it. viewer reads, editor changes.
+model BasketFolderMember {
+  id        String       @id @default(cuid())
+  folderId  String       @map("folderId")
+  userId    String?      @map("userId")
+  groupId   String?      @map("groupId")
+  role      String       @default("viewer")
+  createdAt DateTime     @default(now()) @map("createdAt")
+  folder    BasketFolder @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  user      User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group     UserGroup?   @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([folderId, userId])
+  @@unique([folderId, groupId])
+  @@index([userId])
+  @@index([groupId])
+  @@map("basket_folder_members")
+}

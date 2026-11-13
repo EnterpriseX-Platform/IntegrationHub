@@ -1,0 +1,91 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Testing
+coverage/
+.nyc_output/
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+
+# Uploads/Data (keep structure, ignore content)
+data/uploads/*
+data/exports/*
+!data/uploads/.gitkeep
+!data/exports/.gitkeep
+
+# Prisma generated
+server/prisma/migrations/*/migration_lock.toml
+
+# Misc
+.cache/
+.temp/
+.tmp/
+
+# Data folders - keep structure only
+data/
+!data/.gitkeep
+server/baskets/
+!server/baskets/.gitkeep
+sftp-server/incoming/*
+!sftp-server/incoming/.gitkeep
+sftp-server/outgoing/*
+!sftp-server/outgoing/.gitkeep
+sftp-server/mis/
+!sftp-server/mis/.gitkeep
+
+# SFTP Server data (large files)
+sftp-server/
+!sftp-server/.gitkeep
+
+# Docker volumes
+docker-volumes/
+*.pid
+
+# Backup files
+*.backup
+*.bak
+*.dump
+*.sql.gz
+.env.backup
+.backups/
+backups/
+backup*.sql
+
+# Schema snapshots (committed manually)
+!schema/snapshot/*.sql
+.claude/worktrees/
