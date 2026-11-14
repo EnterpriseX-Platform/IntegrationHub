@@ -1067,13 +1067,20 @@ router.post('/connections/:id/test', async (req: Request, res: Response) => {
     try { cfg = JSON.parse(conn.config); } catch {}
     const type = conn.type;
     let ok = false;
+    let tables: number | null = null;
     if (type.includes('postgresql') || type === 'postgres') {
       const pool = new PgPool({ host: cfg.host, port: parseInt(cfg.port || '5432'), database: cfg.database, user: cfg.username || cfg.user, password: cfg.password, ssl: cfg.ssl ? { rejectUnauthorized: false } : false });
       const client = await pool.connect();
-      try { await client.query('SELECT 1'); ok = true; } finally { client.release(); await pool.end(); }
+      try {
+        await client.query('SELECT 1'); ok = true;
+        const r = await client.query(`SELECT count(*)::int AS n FROM information_schema.tables WHERE table_schema NOT IN ('pg_catalog', 'information_schema') AND table_type = 'BASE TABLE'`);
+        tables = Number(r.rows[0]?.n ?? 0);
+      } finally { client.release(); await pool.end(); }
     } else if (type === 'mysql') {
       await withMysqlConn(cfg, async (c) => {
         await c.execute('SELECT 1'); ok = true;
+        const [rows]: any = await c.execute(`SELECT COUNT(*) AS n FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_TYPE = 'BASE TABLE'`);
+        tables = Number(rows?.[0]?.n ?? 0);
       });
     } else if (type === 'oracle') {
       await withOracleConn(cfg, async (c) => {
@@ -1081,7 +1088,7 @@ router.post('/connections/:id/test', async (req: Request, res: Response) => {
       });
     }
     await prisma.repoConnection.update({ where: { id: req.params.id }, data: { status: ok ? 'Connected' : 'Error' } });
-    res.json({ success: true, data: { connected: ok } });
+    res.json({ success: true, data: { connected: ok, count: tables } });
   } catch (err: any) {
     await prisma.repoConnection.update({ where: { id: req.params.id }, data: { status: 'Error' } }).catch(() => {});
     res.status(500).json({ success: false, error: err.message });

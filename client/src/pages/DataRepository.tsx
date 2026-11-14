@@ -360,7 +360,8 @@ function ConnectionsSection() {
       const json = await res.json();
       if (json.success) {
         const d = json.data;
-        setTestResults(prev => ({ ...prev, [c.id]: { ok: true, msg: `${d?.count ?? d?.tables?.length ?? 0} tables found` } }));
+        setTestResults(prev => ({ ...prev, [c.id]: { ok: true, msg: d?.count != null ? `Connected · ${d.count} tables` : 'Connected' } }));
+        load(); // status badge Disconnected -> Connected
       } else {
         setTestResults(prev => ({ ...prev, [c.id]: { ok: false, msg: json.error || 'Test failed' } }));
       }
@@ -1247,13 +1248,13 @@ function ColumnFilterMenu({ column, options, loading, truncated, filter, default
             {defaultValue ? (
               <div className="flex items-center gap-1.5 text-[12px] text-teal-700">
                 <Star size={10} className="text-teal-500 shrink-0" fill="currentColor" />
-                <span className="truncate">เปิดจอมากรอง <span className="font-mono">{defaultValue}</span> ให้เลย</span>
+                <span className="truncate">Opens filtered to <span className="font-mono">{defaultValue}</span></span>
                 <button
                   onClick={() => onSetDefault(null)}
                   disabled={savingDefault}
                   className="ml-auto px-1.5 py-0.5 rounded text-gray-500 hover:bg-gray-200/70 disabled:opacity-40 shrink-0"
                 >
-                  ยกเลิกค่าตั้งต้น
+                  Clear default
                 </button>
               </div>
             ) : (
@@ -1261,11 +1262,11 @@ function ColumnFilterMenu({ column, options, loading, truncated, filter, default
                 onClick={() => tickedOne && onSetDefault(tickedOne)}
                 disabled={!tickedOne || savingDefault}
                 className="w-full flex items-center gap-1.5 text-[12px] px-1.5 py-1 rounded text-gray-600 hover:bg-gray-200/70 disabled:opacity-40 disabled:hover:bg-transparent"
-                title={tickedOne ? `เปิดจอนี้ครั้งต่อไปให้กรอง ${column} = ${tickedOne} ไว้ก่อน` : 'ติ๊กค่าเดียวก่อน แล้วจึงตั้งเป็นค่าตั้งต้นได้'}
+                title={tickedOne ? `Next time this view opens, filter ${column} = ${tickedOne}` : 'Tick exactly one value to set it as the default'}
               >
                 {savingDefault ? <Loader2 size={10} className="animate-spin" /> : <Star size={10} />}
                 <span className="truncate">
-                  {tickedOne ? `ตั้ง ${tickedOne} เป็นค่าตั้งต้นของจอนี้` : 'ตั้งเป็นค่าตั้งต้น (ติ๊กค่าเดียว)'}
+                  {tickedOne ? `Set ${tickedOne} as this view’s default` : 'Set as default (tick one value)'}
                 </span>
               </button>
             )}
@@ -1689,7 +1690,7 @@ function TableDataSection({ table, onRegistryChange, reloadKey }: {
             {/* Counting 300k rows takes seconds; saying "0 rows" until the count
                 lands reads as an empty table. */}
             {loading && totalCount === 0
-              ? 'กำลังนับแถว…'
+              ? 'Counting rows…'
               : `${totalCount.toLocaleString()} rows ${activeCount > 0 ? 'matched' : 'total'}`}
           </span>
           {activeColFilters.map(([col, f]) => {
@@ -1707,7 +1708,7 @@ function TableDataSection({ table, onRegistryChange, reloadKey }: {
                 <Filter size={9} className={isDefault ? 'text-teal-400' : 'text-sky-400'} />
                 <span className={isDefault ? 'text-teal-500' : 'text-sky-500'}>{sp?.label || col}:</span>
                 <span className="truncate">{chipLabel(col, f)}</span>
-                {isDefault && <span className="text-[12px] text-teal-500 shrink-0">ค่าตั้งต้น</span>}
+                {isDefault && <span className="text-[12px] text-teal-500 shrink-0">default</span>}
                 <button
                   onClick={() => applyColFilter(col, EMPTY_COL_FILTER)}
                   className={`p-0.5 hover:text-red-500 ${isDefault ? 'text-teal-400' : 'text-sky-400'}`}
@@ -1925,7 +1926,7 @@ function TableDataSection({ table, onRegistryChange, reloadKey }: {
                   <td colSpan={columns.length + 1} className="text-center py-16 text-gray-400 text-sm">
                     {loading ? (
                       <span className="inline-flex items-center gap-2">
-                        <Loader2 size={14} className="animate-spin text-teal-500" /> กำลังโหลดข้อมูล…
+                        <Loader2 size={14} className="animate-spin text-teal-500" /> Loading data…
                       </span>
                     ) : 'No rows found'}
                   </td>
@@ -2404,7 +2405,7 @@ function LeftTreePanel({
               <button
                 onClick={() => onCreateSql ? setNewMenuOpen(o => !o) : onCreateTable()}
                 className="p-1 rounded-md text-teal-600 hover:bg-teal-50"
-                title="เพิ่มใหม่"
+                title="Add new"
               >
                 <Plus size={13} />
               </button>
@@ -2414,13 +2415,13 @@ function LeftTreePanel({
                     onClick={() => { setNewMenuOpen(false); onCreateTable(); }}
                     className="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                   >
-                    <Table2 size={12} className="text-teal-500" /> ตารางใหม่
+                    <Table2 size={12} className="text-teal-500" /> New table
                   </button>
                   <button
                     onClick={() => { setNewMenuOpen(false); onCreateSql(); }}
                     className="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                   >
-                    <Terminal size={12} className="text-teal-500" /> คำสั่ง SQL ใหม่
+                    <Terminal size={12} className="text-teal-500" /> New SQL query
                   </button>
                 </div>
               )}
@@ -2460,7 +2461,7 @@ function LeftTreePanel({
         >
           {tablesOpen ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
           <Table2 size={11} className="text-teal-500" />
-          <span className="flex-1 text-left">ตาราง</span>
+          <span className="flex-1 text-left">Tables</span>
           <span className="text-gray-400 font-normal">{tables.length}</span>
         </button>
         {!tablesOpen ? null : loading ? (
@@ -2497,13 +2498,13 @@ function LeftTreePanel({
             >
               {savedOpen ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
               <Terminal size={11} className="text-teal-500" />
-              <span className="flex-1 text-left">คำสั่ง SQL</span>
+              <span className="flex-1 text-left">SQL queries</span>
               <span className="text-gray-400 font-normal">{savedQueries.length}</span>
             </button>
             {savedOpen && (
               savedQueries.length === 0 ? (
                 <div className="px-3 py-3 text-[12px] text-gray-400">
-                  ยังไม่มี — เขียนใน SQL Editor แล้วกด Save
+                  None yet — write one in the SQL editor and press Save
                 </div>
               ) : (
                 savedQueries.map(q => (
@@ -2517,6 +2518,7 @@ function LeftTreePanel({
                     {renamingSaved === q.id ? (
                       <input
                         autoFocus
+                        onFocus={e => e.currentTarget.select()}
                         value={renameSavedDraft}
                         onChange={e => setRenameSavedDraft(e.target.value)}
                         onClick={e => e.stopPropagation()}
@@ -2533,7 +2535,7 @@ function LeftTreePanel({
                         <button
                           onClick={e => { e.stopPropagation(); setRenamingSaved(q.id); setRenameSavedDraft(q.name); }}
                           className="opacity-0 group-hover:opacity-100 p-0.5 text-gray-400 hover:text-teal-600"
-                          title="เปลี่ยนชื่อ"
+                          title="Rename"
                         >
                           <Pencil size={10} />
                         </button>
@@ -2545,7 +2547,7 @@ function LeftTreePanel({
                             else setConfirmDeleteSaved(q.id);
                           }}
                           className={`p-0.5 ${confirmDeleteSaved === q.id ? 'text-red-600 opacity-100' : 'opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500'}`}
-                          title={confirmDeleteSaved === q.id ? 'กดอีกครั้งเพื่อลบ' : 'ลบ'}
+                          title={confirmDeleteSaved === q.id ? 'Click again to delete' : 'Delete'}
                         >
                           <Trash2 size={10} />
                         </button>
@@ -2703,7 +2705,7 @@ function SqlEditorPanel({ connections, saved, onSavedChanged, openRequest, onOpe
   async function saveActive(name?: string) {
     const sql = activeTab.sql.trim();
     if (!sql) {
-      updateTab(activeTab.id, { messages: ['ยังไม่มีคำสั่ง SQL ให้บันทึก'], resultTab: 'messages' });
+      updateTab(activeTab.id, { messages: ['There is no SQL to save yet'], resultTab: 'messages' });
       return;
     }
     if (!activeTab.savedId && name === undefined) {
@@ -2719,7 +2721,7 @@ function SqlEditorPanel({ connections, saved, onSavedChanged, openRequest, onOpe
       const json = await res.json();
       if (!json.success) throw new Error(json.error || 'Save failed');
       const q: SavedQuery = json.data.query;
-      updateTab(activeTab.id, { savedId: q.id, name: q.name, messages: [`บันทึกเป็น "${q.name}" แล้ว`] });
+      updateTab(activeTab.id, { savedId: q.id, name: q.name, messages: [`Saved as "${q.name}"`] });
       setSavingName(null);
       onSavedChanged();
     } catch (e: unknown) {
@@ -2753,7 +2755,7 @@ function SqlEditorPanel({ connections, saved, onSavedChanged, openRequest, onOpe
     onOpenHandled();
   }, [openRequest, openSaved, onOpenHandled]);
 
-  // "คำสั่ง SQL ใหม่" from the tables panel opens an empty tab.
+  // "New SQL query" from the tables panel opens an empty tab.
   const firstNewTabRequest = useRef(newTabRequest);
   useEffect(() => {
     if (newTabRequest === firstNewTabRequest.current) return;
@@ -2791,11 +2793,11 @@ function SqlEditorPanel({ connections, saved, onSavedChanged, openRequest, onOpe
     const tabId = activeTab.id;
     // Saying nothing here reads as "the editor is broken" — say what is missing.
     if (!connId) {
-      updateTab(tabId, { messages: ['เลือก Connection ก่อน แล้วจึงกด Run'], resultTab: 'messages', result: null });
+      updateTab(tabId, { messages: ['Choose a connection first, then press Run'], resultTab: 'messages', result: null });
       return;
     }
     if (!sql) {
-      updateTab(tabId, { messages: ['พิมพ์คำสั่ง SQL ก่อน'], resultTab: 'messages', result: null });
+      updateTab(tabId, { messages: ['Type a SQL statement first'], resultTab: 'messages', result: null });
       return;
     }
     updateTab(tabId, { running: true, result: null, messages: [] });
@@ -2983,7 +2985,7 @@ function SqlEditorPanel({ connections, saved, onSavedChanged, openRequest, onOpe
               ? 'bg-teal-600 text-white hover:bg-teal-700'
               : 'bg-teal-600/40 text-white hover:bg-teal-600/60'
           } disabled:opacity-50`}
-          title={!connId ? 'เลือก Connection ก่อน' : !activeTab.sql.trim() ? 'พิมพ์คำสั่ง SQL ก่อน' : 'Run (Ctrl+Enter)'}
+          title={!connId ? 'Choose a connection first' : !activeTab.sql.trim() ? 'Type a SQL statement first' : 'Run (Ctrl+Enter)'}
         >
           {activeTab.running ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
           Run
@@ -3028,13 +3030,14 @@ function SqlEditorPanel({ connections, saved, onSavedChanged, openRequest, onOpe
           <div className="flex items-center gap-1">
             <input
               autoFocus
+              onFocus={e => e.currentTarget.select()} // typing replaces the suggested "Query N"
               value={savingName}
               onChange={e => setSavingName(e.target.value)}
               onKeyDown={e => {
                 if (e.key === 'Enter') saveActive(savingName);
                 if (e.key === 'Escape') setSavingName(null);
               }}
-              placeholder="ตั้งชื่อแล้วกด Enter"
+              placeholder="Name it and press Enter"
               className="w-40 h-8 px-2 text-xs border border-teal-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-400"
             />
             <button
@@ -3042,16 +3045,16 @@ function SqlEditorPanel({ connections, saved, onSavedChanged, openRequest, onOpe
               disabled={savingBusy || !savingName.trim()}
               className="h-8 px-2.5 rounded-lg text-[13px] bg-teal-600 text-white disabled:opacity-40"
             >
-              {savingBusy ? <Loader2 size={14} className="animate-spin" /> : 'บันทึก'}
+              {savingBusy ? <Loader2 size={14} className="animate-spin" /> : 'Save'}
             </button>
-            <button onClick={() => setSavingName(null)} className="h-8 px-2.5 rounded-lg text-[13px] border border-gray-200 text-gray-600">ยกเลิก</button>
+            <button onClick={() => setSavingName(null)} className="h-8 px-2.5 rounded-lg text-[13px] border border-gray-200 text-gray-600">Cancel</button>
           </div>
         ) : (
           <button
             onClick={() => saveActive()}
             disabled={savingBusy}
-            className="flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50 transition-colors"
-            title={activeTab.savedId ? 'บันทึกทับคำสั่งที่เก็บไว้' : 'บันทึกเก็บไว้ในแถบซ้าย'}
+            className="flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-xs font-medium whitespace-nowrap shrink-0 text-gray-600 hover:bg-gray-100 disabled:opacity-50 transition-colors"
+            title={activeTab.savedId ? 'Overwrite the saved query' : 'Save it to the left panel'}
           >
             {savingBusy ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
             {activeTab.savedId ? 'Save' : 'Save as'}
@@ -3118,7 +3121,7 @@ function SqlEditorPanel({ connections, saved, onSavedChanged, openRequest, onOpe
         {showSchema && (
           <div className="w-56 flex-shrink-0 bg-white border-r border-gray-200 flex flex-col overflow-hidden">
             {!connId ? (
-              <div className="px-3 py-6 text-center text-[12px] text-gray-400">เลือก Connection ก่อน</div>
+              <div className="px-3 py-6 text-center text-[12px] text-gray-400">Choose a connection first</div>
             ) : (
               <>
             <div className="px-2 py-2 border-b border-gray-100">
@@ -3924,10 +3927,10 @@ function ClearByKeyModal(props: ClearByKeyModalProps) {
           <div>
             <h2 className="text-base font-semibold flex items-center gap-2 text-gray-900">
               <Eraser size={18} className="text-orange-600" />
-              ลบข้อมูลจาก <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm">{tableName}</code>
+              Delete rows from <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm">{tableName}</code>
             </h2>
             <p className="text-xs text-gray-500 mt-0.5">
-              ตอนนี้มี {rowCount.toLocaleString()} row · เงื่อนไขทุกข้อจะถูก <strong>AND</strong> กัน
+              Currently {rowCount.toLocaleString()} rows · all conditions are combined with <strong>AND</strong>
             </p>
           </div>
           <button onClick={onCancel} className="p-1.5 hover:bg-gray-100 rounded"><X size={18} /></button>
@@ -3953,13 +3956,13 @@ function ClearByKeyModal(props: ClearByKeyModalProps) {
             onClick={addCondition}
             className="w-full py-2 text-sm border-2 border-dashed border-gray-300 hover:border-orange-400 hover:bg-orange-50/40 text-gray-500 hover:text-orange-700 rounded-md transition-colors flex items-center justify-center gap-1.5"
           >
-            <Plus size={14} /> เพิ่มเงื่อนไข (AND)
+            <Plus size={14} /> Add condition (AND)
           </button>
 
           {/* SQL preview */}
           {canSubmit && (
             <div className="bg-red-50 border border-red-200 rounded-md px-3 py-2.5">
-              <div className="text-[12px] text-red-700 font-medium mb-1">⚠ จะลบทุก row ที่ตรงเงื่อนไขทั้งหมด:</div>
+              <div className="text-[12px] text-red-700 font-medium mb-1">⚠ Every row matching all of these will be deleted:</div>
               <code className="block text-xs text-red-800 font-mono leading-5">
                 DELETE WHERE
                 {validConditions.map((c, i) => (
@@ -3970,7 +3973,7 @@ function ClearByKeyModal(props: ClearByKeyModalProps) {
                   </span>
                 ))}
               </code>
-              <div className="text-[12px] text-red-700/70 mt-1.5"><strong>ลบจริง — ไม่สามารถกู้คืนได้</strong></div>
+              <div className="text-[12px] text-red-700/70 mt-1.5"><strong>Permanent — this cannot be undone</strong></div>
             </div>
           )}
         </div>
@@ -3978,18 +3981,18 @@ function ClearByKeyModal(props: ClearByKeyModalProps) {
         {/* Footer */}
         <div className="px-6 py-3 bg-gray-50 border-t flex items-center justify-between gap-2">
           <span className="text-xs text-gray-500">
-            {validConditions.length}/{conditions.length} เงื่อนไขพร้อมใช้งาน
+            {validConditions.length}/{conditions.length} conditions ready
           </span>
           <div className="flex gap-2">
             <button onClick={onCancel} className="inline-flex items-center justify-center px-3 h-9 text-[14px] border rounded-lg hover:bg-white whitespace-nowrap">
-              ยกเลิก
+              Cancel
             </button>
             <button
               onClick={() => onConfirmConditions(validConditions)}
               disabled={!canSubmit}
               className="px-3.5 h-9 text-[14px] bg-red-600 hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg inline-flex items-center gap-2 font-medium shadow-sm whitespace-nowrap"
             >
-              <Eraser size={14} /> ลบ row ที่ตรงเงื่อนไข
+              <Eraser size={14} /> Delete matching rows
             </button>
           </div>
         </div>
@@ -4051,7 +4054,7 @@ function ConditionCard({
             {index + 1}
           </span>
           <span className="text-xs font-medium text-gray-700">
-            เงื่อนไขที่ {index + 1}
+            Condition {index + 1}
             {index > 0 && <span className="text-orange-600 font-bold ml-2">AND</span>}
           </span>
         </div>
@@ -4060,7 +4063,7 @@ function ConditionCard({
             type="button"
             onClick={onRemove}
             className="text-gray-400 hover:text-red-600 hover:bg-red-50 rounded p-1"
-            title="ลบเงื่อนไขนี้"
+            title="Remove this condition"
           >
             <X size={14} />
           </button>
@@ -4077,7 +4080,7 @@ function ConditionCard({
             onChange={e => onChange({ column: e.target.value, valuesText: '' })}
             className="w-full px-2 py-1.5 text-sm border rounded bg-white focus:border-orange-400 focus:ring-1 focus:ring-orange-200"
           >
-            <option value="">— เลือก —</option>
+            <option value="">— Select —</option>
             {dbColumns.map(c => (
               <option key={c.name} value={c.name}>{c.name}</option>
             ))}
@@ -4092,13 +4095,13 @@ function ConditionCard({
         {/* Values */}
         <div className="col-span-8">
           <label className="block text-[12px] font-medium text-gray-600 mb-1">
-            ค่า (IN — 1 ค่าต่อบรรทัด)
-            {currentValues.length > 0 && <span className="text-orange-600 ml-1.5">· {currentValues.length} ค่า</span>}
+            Values (IN — one per line)
+            {currentValues.length > 0 && <span className="text-orange-600 ml-1.5">· {currentValues.length} values</span>}
           </label>
           <textarea
             value={condition.valuesText}
             onChange={e => onChange({ valuesText: e.target.value })}
-            placeholder={condition.column ? `พิมพ์ค่า หรือคลิก chip ด้านล่าง\nเช่น:\nSRC_A\nBBL` : 'เลือก column ก่อน'}
+            placeholder={condition.column ? `Type values, or click a chip below\ne.g.\nSRC_A\nBBL` : 'Choose a column first'}
             disabled={!condition.column}
             rows={3}
             className="w-full px-2 py-1.5 text-xs font-mono border rounded focus:border-orange-400 focus:ring-1 focus:ring-orange-200 disabled:bg-gray-50 disabled:text-gray-400 resize-none"
@@ -4109,16 +4112,16 @@ function ConditionCard({
             <div className="mt-1.5">
               {distinctLoading && distinctValues.length === 0 && (
                 <div className="text-[12px] text-gray-400 italic flex items-center gap-1">
-                  <Loader2 size={10} className="animate-spin" /> กำลังโหลดค่าที่มีอยู่…
+                  <Loader2 size={10} className="animate-spin" /> Loading existing values…
                 </div>
               )}
               {!distinctLoading && distinctValues.length === 0 && (
-                <div className="text-[12px] text-gray-400 italic">ไม่พบค่าใน column นี้ — พิมพ์ค่าเอง</div>
+                <div className="text-[12px] text-gray-400 italic">No values found in this column — type them in</div>
               )}
               {distinctValues.length > 0 && (
                 <>
                   <div className="text-[12px] text-gray-500 mb-1 flex items-center justify-between">
-                    <span>คลิกเพื่อเพิ่ม:</span>
+                    <span>Click to add:</span>
                     <span className="text-gray-400">
                       {distinctTruncated ? `200/${distinctTotal.toLocaleString()}` : `${distinctValues.length}`}
                     </span>
@@ -4137,9 +4140,9 @@ function ConditionCard({
                               ? 'bg-red-100 border-red-300 text-red-700 cursor-default'
                               : 'bg-white border-gray-300 text-gray-700 hover:border-orange-400 hover:bg-orange-50'
                           }`}
-                          title={alreadyIn ? `เพิ่มแล้ว: ${v}` : `เพิ่ม: ${v}`}
+                          title={alreadyIn ? `Added: ${v}` : `Add: ${v}`}
                         >
-                          {alreadyIn && '✓ '}{v === '' ? '(ว่าง)' : v}
+                          {alreadyIn && '✓ '}{v === '' ? '(empty)' : v}
                         </button>
                       );
                     })}
@@ -4270,10 +4273,10 @@ function FilterRegistryEditor({ table, columns, onSaved }: {
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 mt-2 items-end">
                 {field(
                   sp.defaultValue && /\{\{/.test(sp.defaultValue) ? `Default → ${resolveDefaultValue(sp.defaultValue)}` : 'Default',
-                  'ค่าที่เลือกไว้ตั้งแต่เปิดจอ — ใส่ค่าคงที่ หรือ {{fy}} = ปีงบปัจจุบัน (2569), {{fy2}} = 2 หลักท้าย (69), บวกลบได้เช่น {{fy2-1}}',
+                  'Value selected when the view opens — a constant, or {{fy}} = current fiscal year (2569), {{fy2}} = its last 2 digits (69); offsets work, e.g. {{fy2-1}}',
                   sp.defaultValue || '',
                   v => update(i, { defaultValue: v }),
-                  { placeholder: '2569 หรือ {{fy2}}' }
+                  { placeholder: '2569 or {{fy2}}' }
                 )}
                 <div className="lg:col-span-4 text-[12px] text-gray-400 truncate font-mono pb-1" title={serializeFilterSpecs([sp])}>
                   {serializeFilterSpecs([sp])}
@@ -4782,7 +4785,7 @@ export default function DataRepository() {
       const json = await res.json();
       if (json.success) {
         const n = json.data?.rowsDeleted ?? 0;
-        setImportResult({ ok: true, msg: `ลบไป ${n.toLocaleString()} row จาก ${table.name}` });
+        setImportResult({ ok: true, msg: `Deleted ${n.toLocaleString()} rows from ${table.name}` });
         loadAll();
         setDataVersion(v => v + 1);
       } else {
