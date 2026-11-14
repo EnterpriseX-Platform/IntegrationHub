@@ -391,8 +391,30 @@ const TestPanel = ({ flowId, nodes }: TestPanelProps) => {
       });
       
       const data = await res.json();
-      const duration = Date.now() - startTime;
-      
+      let duration = Date.now() - startTime;
+
+      // Event flows run in the background (202 + status "Running"); wait for the real
+      // outcome instead of reporting "Success" for a run that has only started.
+      let exec = data?.data?.execution;
+      if (data.success && exec?.id) {
+        const deadline = Date.now() + 120_000;
+        while (exec && /^(Running|Pending|Queued)$/i.test(exec.status || '') && Date.now() < deadline) {
+          await new Promise(r => setTimeout(r, 1000));
+          const pr = await fetch(`${API_URL}/executions/${exec.id}/logs`).then(r => r.json()).catch(() => null);
+          if (pr?.success) exec = { ...pr.data.execution, logs: pr.data.logs };
+        }
+        duration = Date.now() - startTime;
+        const ok = /^(Completed|Success|Succeeded)$/i.test(exec?.status || '');
+        setResponse({
+          success: ok,
+          duration,
+          data: exec,
+          error: ok ? undefined : (exec?.error || (/^(Running|Pending|Queued)$/i.test(exec?.status || '') ? 'Still running after 2 minutes — see Executions' : `Execution ${exec?.status || 'failed'}`)),
+          timestamp: new Date().toISOString()
+        });
+        return;
+      }
+
       setResponse({
         success: data.success,
         duration,

@@ -349,6 +349,7 @@ export const ApiFlowDesigner = () => {
             spec={apiSpec as unknown as OpenApiSpec}
             onChange={(spec) => setApiSpec(spec as unknown as APISpec)}
             requireApiKey={requireApiKey}
+            onOpenFlow={(opId) => { if (opId) setSelectedOp(opId); setActiveTab('designer'); }}
           />
         )}
 

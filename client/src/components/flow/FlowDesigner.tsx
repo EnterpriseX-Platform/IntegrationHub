@@ -1058,6 +1058,30 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
     setPan({ x: (cw - gw * fit) / 2, y: Math.max(20, (ch - 60 - gh * fit) / 2) });
   };
 
+  // Opened in a messy state (edges running right-to-left, or cards on top of each
+  // other)? Lay it out once, automatically — the user can still move nodes after.
+  // Waits for the loaded flow to settle (the page may load it more than once).
+  const autoTidied = useRef(false);
+  const latest = useRef({ flow, tidyUp });
+  latest.current = { flow, tidyUp };
+  useEffect(() => {
+    if (autoTidied.current || flow.nodes.length < 2) return;
+    const t = window.setTimeout(() => {
+      if (autoTidied.current || !canvasRef.current) return;
+      const f = latest.current.flow;
+      const byId = new Map(f.nodes.map(n => [n.id, n]));
+      const backward = f.edges.some(e => {
+        const a = byId.get(e.source), b = byId.get(e.target);
+        return a && b && !e.label && b.x < a.x + NODE_WIDTH / 2;
+      });
+      const overlap = f.nodes.some((a, i) => f.nodes.slice(i + 1).some(b =>
+        Math.abs(a.x - b.x) < NODE_WIDTH && Math.abs(a.y - b.y) < NODE_HEIGHT));
+      autoTidied.current = true;
+      if (backward || overlap) latest.current.tidyUp();
+    }, 600);
+    return () => window.clearTimeout(t);
+  }, [flow.nodes.length, flow.edges.length]);
+
   const deleteEdge = (edgeId: string) => {
     onChange({ ...flow, edges: flow.edges.filter(e => e.id !== edgeId) });
   };
@@ -1877,6 +1901,17 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
             })}
           </div>
         </div>
+
+        {/* Empty canvas: say how to start */}
+        {flow.nodes.length === 0 && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="text-center max-w-xs px-6 py-5 rounded-[10px] bg-[var(--canvas-node)] shadow-[inset_0_0_0_1px_var(--canvas-node-line)]">
+              <i className="fas fa-project-diagram text-2xl text-gray-400"></i>
+              <p className="mt-3 text-sm font-semibold text-gray-900">Start your flow</p>
+              <p className="mt-1 text-[13px] text-gray-500">Drag a node from the left panel onto the canvas, or click a Quick add tile. Connect nodes by dragging from a port.</p>
+            </div>
+          </div>
+        )}
 
         {/* Controls: one bar, bottom-left (Robot Factory style) */}
         <div className="absolute bottom-4 left-4 flex items-center h-9 bg-white shadow-[0_2px_6px_rgb(0_0_0/0.15)] text-gray-700">

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronDown } from 'lucide-react';
 import { specToOpenApiYaml } from '../../utils/YAMLGenerator';
 
@@ -44,6 +44,8 @@ interface OpenApiSpecEditorProps {
   spec: OpenApiSpec;
   onChange: (spec: OpenApiSpec) => void;
   requireApiKey?: boolean;
+  /** Open the flow canvas for an operation (the API designer switches to its Flow Designer tab). */
+  onOpenFlow?: (operationId: string | null) => void;
 }
 
 const METHOD_COLORS: Record<string, string> = {
@@ -583,8 +585,9 @@ const CodeEditor = ({
 };
 
 // Main Component
-export const OpenApiSpecEditor = ({ spec, onChange, requireApiKey }: OpenApiSpecEditorProps) => {
+export const OpenApiSpecEditor = ({ spec, onChange, requireApiKey, onOpenFlow }: OpenApiSpecEditorProps) => {
   const { projectId, flowId } = useParams();
+  const navigate = useNavigate(); // keeps the /integration base path (window.location dropped it)
   const [selectedOp, setSelectedOp] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'form' | 'code'>('form');
 
@@ -725,8 +728,21 @@ export const OpenApiSpecEditor = ({ spec, onChange, requireApiKey }: OpenApiSpec
         {!currentOp ? (
           <div className="h-full flex items-center justify-center">
             <div className="text-center text-gray-400">
+              {spec.operations.length === 0 ? (
+                <>
+                  <i className="fas fa-plug text-3xl mb-4"></i>
+                  <p className="text-gray-700 font-medium">No endpoints yet</p>
+                  <p className="text-sm mt-1 mb-4">An endpoint is a path and method (e.g. GET /customers) that this API answers.</p>
+                  <button onClick={addOperation} className="h-9 px-4 bg-blue-600 text-white text-sm inline-flex items-center gap-2 hover:bg-blue-700">
+                    <i className="fas fa-plus"></i> Add endpoint
+                  </button>
+                </>
+              ) : (
+                <>
               <i className="fas fa-arrow-left text-3xl mb-4"></i>
               <p>Select an endpoint to edit</p>
+                </>
+              )}
             </div>
           </div>
         ) : (viewMode as string) === 'code' ? (
@@ -776,7 +792,7 @@ export const OpenApiSpecEditor = ({ spec, onChange, requireApiKey }: OpenApiSpec
                     </button>
                   </div>
                   <button
-                    onClick={() => window.location.href = `/projects/${projectId}/flows/${flowId}/designer`}
+                    onClick={() => onOpenFlow ? onOpenFlow(selectedOp) : navigate(`/projects/${projectId}/flows/${flowId}/designer`)}
                     className="h-9 px-3 bg-blue-500 text-white text-[14px] rounded-lg hover:bg-blue-600 flex items-center gap-1.5"
                   >
                     <i className="fas fa-project-diagram"></i>
