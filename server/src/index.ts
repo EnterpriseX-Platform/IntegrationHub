@@ -36,6 +36,14 @@ import { schedulerService } from './services/scheduler';
 import { ensureDefaultTenant } from './services/tenantBootstrap';
 import { sweepStaleExecutions, EXECUTION_STALE_HOURS } from './lib/execution-progress';
 
+// node-pg: keep DATE and TIMESTAMP (without time zone) as the text the database
+// returned. Parsed into JS Dates they became local midnight and were printed in
+// UTC — every date showed one day early on a UTC+7 server (repository browse,
+// SQL editor, workbench, CSV/XLSX export).
+import { types as pgTypes } from 'pg';
+pgTypes.setTypeParser(1082, (v: string) => v); // date
+pgTypes.setTypeParser(1114, (v: string) => v); // timestamp without time zone
+
 // Load environment variables
 const envPath = process.env.NODE_ENV === 'production' 
   ? path.resolve(__dirname, '../.env')
@@ -44,6 +52,9 @@ dotenv.config({ path: envPath });
 
 // Create Express app
 const app = express();
+// Client IPs (API-key IP whitelists, audit logs): trust X-Forwarded-For only from
+// these proxies. Default: loopback + private networks (the Apache/k8s ingress).
+app.set('trust proxy', process.env.TRUST_PROXY || 'loopback, linklocal, uniquelocal');
 
 // Server Config
 const PORT = parseInt(process.env.PORT || '3001', 10);

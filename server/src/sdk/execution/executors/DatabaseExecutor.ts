@@ -243,8 +243,10 @@ export class DatabaseExecutor extends NodeExecutor {
       if (errorCode === '3D000') {
         throw new Error(`Database does not exist.`);
       }
-      if (errorCode === 'P1001' || (errorMessage.includes('connect') && !errorMessage.includes('ORA-') && !errorMessage.includes('NJS-'))) {
-        throw new Error(`Cannot connect to database server. Please check if database is running.`);
+      // Real connection failures only — a bare includes('connect') also matched
+      // messages like "only supported for Oracle connections" and hid them.
+      if (errorCode === 'P1001' || /ECONNREFUSED|ETIMEDOUT|EHOSTUNREACH|ENOTFOUND|Can't reach database server|connection (refused|terminated|timed out)/i.test(errorMessage)) {
+        throw new Error(`Cannot connect to database server (${errorMessage}). Please check if database is running.`);
       }
       
       throw new Error(`Database query failed: ${errorMessage}`);
@@ -465,7 +467,9 @@ export class DatabaseExecutor extends NodeExecutor {
             resolvedSql = resolvedSql.replace(new RegExp(`:${key}\\b`, 'g'), this.escapeSqlValue(value));
           }
         }
-        const result = await client.$queryRawUnsafe(resolvedSql);
+        // Positional params ($1, $2 …) as an array go to the driver (they were dropped)
+        const positional = Array.isArray(codeParams) ? codeParams : [];
+        const result = await client.$queryRawUnsafe(resolvedSql, ...positional);
         return {
           rows: result,
           rowCount: Array.isArray(result) ? result.length : 1,
@@ -474,6 +478,32 @@ export class DatabaseExecutor extends NodeExecutor {
         };
       }
     });
+  }
+
+  /**
+   * PostgreSQL column types for `table` (column -> udt_name, e.g. int4, numeric, date).
+   * Prisma binds every value as text, so INSERT/UPDATE into a non-text column failed
+   * ("column is of type integer but expression is of type text"); placeholders are
+   * cast to the column's type instead. Non-Postgres engines: empty map, no casts.
+   */
+  private async pgColumnTypes(client: any, table: string): Promise<Map<string, string>> {
+    const out = new Map<string, string>();
+    try {
+      const parts = table.replace(/"/g, '').split('.');
+      const name = parts[parts.length - 1];
+      const schema = parts.length > 1 ? parts[0] : null;
+      const sql = schema
+        ? 'SELECT column_name, udt_name FROM information_schema.columns WHERE table_name = $1 AND table_schema = $2'
+        : 'SELECT column_name, udt_name FROM information_schema.columns WHERE table_name = $1';
+      const rows: any[] = schema ? await client.$queryRawUnsafe(sql, name, schema) : await client.$queryRawUnsafe(sql, name);
+      for (const r of rows) out.set(String(r.column_name), String(r.udt_name));
+    } catch { /* not PostgreSQL */ }
+    return out;
+  }
+
+  private castPlaceholder(n: number, column: string, types: Map<string, string>): string {
+    const t = types.get(column.replace(/"/g, ''));
+    return t && /^[a-z0-9_]+$/i.test(t) ? `$${n}::${t}` : `$${n}`;
   }
 
   private async executeInsert(data: DatabaseNodeData, context: ExecutionContext): Promise<any> {
@@ -502,7 +532,8 @@ export class DatabaseExecutor extends NodeExecutor {
         const placeholders = values.map((_, i) => `:${i + 1}`).join(', ');
         sql = `INSERT INTO ${data.table} (${columns.join(', ')}) VALUES (${placeholders})`;
       } else {
-        const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
+        const types = await this.pgColumnTypes(client, data.table || "");
+        const placeholders = values.map((_, i) => this.castPlaceholder(i + 1, columns[i], types)).join(', ');
         sql = `INSERT INTO "${data.table}" (${columns.join(', ')}) VALUES (${placeholders}) RETURNING *`;
       }
 
@@ -549,12 +580,13 @@ export class DatabaseExecutor extends NodeExecutor {
     return this.executeWithConnection(data.connectionId, async (client, isOracle) => {
       const setClauses: string[] = [];
       const values: any[] = [];
+      const updTypes = isOracle ? new Map<string, string>() : await this.pgColumnTypes(client, data.table || "");
 
       mappings.forEach((mapping, index) => {
         if (isOracle) {
           setClauses.push(`${mapping.column} = :${index + 1}`);
         } else {
-          setClauses.push(`${mapping.column} = $${index + 1}`);
+          setClauses.push(`${mapping.column} = ${this.castPlaceholder(index + 1, mapping.column, updTypes)}`);
         }
         const resolvedValue = this.resolveTemplate(mapping.value, context);
         values.push(resolvedValue === 'NULL' ? null : resolvedValue);

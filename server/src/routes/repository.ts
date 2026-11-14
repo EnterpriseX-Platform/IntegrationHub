@@ -12,6 +12,8 @@ import * as iconv from 'iconv-lite';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { errorMessage } from '../lib/errorMessage';
+import { maskConfig, mergeSecrets } from '../lib/connectionSecrets';
 
 // Tiny cuid-style id generator: 'c' + base36 timestamp + 16 hex random chars.
 // Used for the {{cuid}} template var in import default values. Avoids pulling
@@ -245,8 +247,18 @@ function castValue(v: any, type: string): any {
   if (v === '' || v === undefined) return null;
   if (v === null) return null;
   if (type === 'BOOLEAN') return /^(true|yes|1)$/i.test(String(v));
-  if (type === 'INTEGER' || type === 'BIGINT') return parseInt(String(v), 10) || null;
-  if (type === 'NUMERIC') return parseFloat(String(v)) || null;
+  // Numbers go to the driver as validated strings: `parseInt(x) || null` turned 0
+  // into NULL, and JS numbers can't hold BIGINTs past 2^53. The DB casts exactly.
+  if (type === 'INTEGER' || type === 'BIGINT') {
+    const t = String(v).trim().replace(/,/g, '');
+    if (/^[-+]?\d+$/.test(t)) return t;
+    const f = Number(t);
+    return t !== '' && Number.isFinite(f) ? String(Math.trunc(f)) : null;
+  }
+  if (type === 'NUMERIC') {
+    const t = String(v).trim().replace(/,/g, '');
+    return t !== '' && /^[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/.test(t) ? t : null;
+  }
   return v;
 }
 
@@ -931,8 +943,8 @@ async function parseFile(filePath: string, ext: string, encoding = 'utf8'): Prom
 router.get('/connections', async (_req: Request, res: Response) => {
   try {
     const connections = await prisma.repoConnection.findMany({ orderBy: { createdAt: 'asc' } });
-    res.json({ success: true, data: { connections } });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+    res.json({ success: true, data: { connections: connections.map(c => ({ ...c, config: maskConfig(c.config) })) } });
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 router.post('/connections', async (req: Request, res: Response) => {
@@ -942,13 +954,22 @@ router.post('/connections', async (req: Request, res: Response) => {
     const conn = await prisma.repoConnection.create({
       data: { id: `rpc${crypto.randomBytes(10).toString('hex')}`, name, type, config: JSON.stringify(config || {}) },
     });
-    res.json({ success: true, data: { connection: conn } });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+    res.json({ success: true, data: { connection: { ...conn, config: maskConfig(conn.config) } } });
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 router.put('/connections/:id', async (req: Request, res: Response) => {
   try {
-    const { name, type, config, status } = req.body;
+    const { name, type, status } = req.body;
+    let { config } = req.body;
+    if (config !== undefined) {
+      const existing = await prisma.repoConnection.findUnique({ where: { id: req.params.id } });
+      if (existing) {
+        let old: any = {};
+        try { old = JSON.parse(existing.config || '{}'); } catch { /* ignore */ }
+        config = mergeSecrets(config, old);
+      }
+    }
     const conn = await prisma.repoConnection.update({
       where: { id: req.params.id },
       data: {
@@ -957,15 +978,15 @@ router.put('/connections/:id', async (req: Request, res: Response) => {
         ...(status && { status }),
       },
     });
-    res.json({ success: true, data: { connection: conn } });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+    res.json({ success: true, data: { connection: { ...conn, config: maskConfig(conn.config) } } });
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 router.delete('/connections/:id', async (req: Request, res: Response) => {
   try {
     await prisma.repoConnection.delete({ where: { id: req.params.id } });
     res.json({ success: true });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 // Discover tables from a connection's database
@@ -997,7 +1018,7 @@ router.get('/connections/:id/tables', async (req: Request, res: Response) => {
 
     res.json({ success: true, data: { tables } });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ success: false, error: errorMessage(err) });
   }
 });
 
@@ -1055,7 +1076,7 @@ router.get('/connections/:id/columns', async (req: Request, res: Response) => {
 
     res.json({ success: true, data: { columns } });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ success: false, error: errorMessage(err) });
   }
 });
 
@@ -1091,7 +1112,7 @@ router.post('/connections/:id/test', async (req: Request, res: Response) => {
     res.json({ success: true, data: { connected: ok, count: tables } });
   } catch (err: any) {
     await prisma.repoConnection.update({ where: { id: req.params.id }, data: { status: 'Error' } }).catch(() => {});
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ success: false, error: errorMessage(err) });
   }
 });
 
@@ -1101,7 +1122,7 @@ router.get('/api-keys', async (_req: Request, res: Response) => {
   try {
     const keys = await prisma.repoApiKey.findMany({ orderBy: { createdAt: 'desc' } });
     res.json({ success: true, data: { keys } });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 router.post('/api-keys', async (req: Request, res: Response) => {
@@ -1117,7 +1138,7 @@ router.post('/api-keys', async (req: Request, res: Response) => {
       },
     });
     res.json({ success: true, data: { key } });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 router.put('/api-keys/:id', async (req: Request, res: Response) => {
@@ -1132,14 +1153,14 @@ router.put('/api-keys/:id', async (req: Request, res: Response) => {
       },
     });
     res.json({ success: true, data: { key } });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 router.delete('/api-keys/:id', async (req: Request, res: Response) => {
   try {
     await prisma.repoApiKey.delete({ where: { id: req.params.id } });
     res.json({ success: true });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 // ─── Tables ───────────────────────────────────────────────────────────────────
@@ -1153,7 +1174,7 @@ router.get('/tables', async (req: Request, res: Response) => {
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
     });
     res.json({ success: true, data: { tables } });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 router.get('/tables/:id', async (req: Request, res: Response) => {
@@ -1167,7 +1188,7 @@ router.get('/tables/:id', async (req: Request, res: Response) => {
     });
     if (!table) { res.status(404).json({ success: false, error: 'Table not found' }); return; }
     res.json({ success: true, data: { table } });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 // ─── Table access (admin) ────────────────────────────────────────────────────
@@ -1187,7 +1208,7 @@ router.get('/tables/:id/members', async (req: Request, res: Response) => {
       prisma.userGroup.findMany({ select: { id: true, name: true, _count: { select: { members: true } } }, orderBy: { name: 'asc' } }),
     ]);
     res.json({ success: true, data: { members, users, groups } });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 router.post('/tables/:id/members', async (req: Request, res: Response) => {
@@ -1202,14 +1223,14 @@ router.post('/tables/:id/members', async (req: Request, res: Response) => {
       ? await prisma.repoTableMember.upsert({ where: { tableId_userId: { tableId, userId } }, create: { tableId, userId, role }, update: { role } })
       : await prisma.repoTableMember.upsert({ where: { tableId_groupId: { tableId, groupId } }, create: { tableId, groupId, role }, update: { role } });
     res.json({ success: true, data: member });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 router.delete('/tables/:id/members/:memberId', async (req: Request, res: Response) => {
   try {
     await prisma.repoTableMember.deleteMany({ where: { id: req.params.memberId, tableId: req.params.id } });
     res.json({ success: true });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 // Create new table reference in repository
@@ -1230,7 +1251,7 @@ router.post('/tables', async (req: Request, res: Response) => {
       },
     });
     res.json({ success: true, data: { table } });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 router.put('/tables/:id', async (req: Request, res: Response) => {
@@ -1248,7 +1269,7 @@ router.put('/tables/:id', async (req: Request, res: Response) => {
       },
     });
     res.json({ success: true, data: { table } });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 router.delete('/tables/:id', async (req: Request, res: Response) => {
@@ -1256,7 +1277,7 @@ router.delete('/tables/:id', async (req: Request, res: Response) => {
     // Only remove from repository — never drop the actual database table
     await prisma.repoTable.delete({ where: { id: req.params.id } });
     res.json({ success: true });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 // POST /tables/:id/import — parse file and store into the table's connection DB
@@ -1426,8 +1447,19 @@ router.post('/tables/:id/import', upload.single('file'), ...base64Upload(uploadD
     // already has a schema (rowCount > 0 OR schema array non-empty).
     let existingSchema: ColSchema[] = [];
     try { existingSchema = JSON.parse(table.schema || '[]'); } catch {}
-    const hasExisting = (table.rowCount ?? 0) > 0 || existingSchema.length > 0;
+    let hasExisting = (table.rowCount ?? 0) > 0 || existingSchema.length > 0;
     const requested = String(req.body.mode || req.query.mode || '').toLowerCase();
+    // No mode given and the registry looks empty: check the LIVE table before
+    // defaulting to "recreate" (which DROPs it). A table registered from an existing
+    // database has rowCount 0 / schema [] in the registry but real rows.
+    if (!requested && !hasExisting && table.connectionId) {
+      try {
+        const { engine } = await getConnInfo(table.connectionId);
+        const probeSql = engine === 'oracle' ? `SELECT * FROM ${table.name} WHERE ROWNUM <= 1` : `SELECT * FROM ${table.name} LIMIT 1`;
+        const probe = await fetchFromSource(table.connectionId, probeSql);
+        if (probe.rows.length > 0 || probe.columns.length > 0) hasExisting = true;
+      } catch { /* table missing — recreate is fine */ }
+    }
     // Modes:
     //   append  — INSERT only, never touch existing rows (no key needed)
     //   merge   — DELETE rows where (key cols) match each incoming tuple, then INSERT
@@ -1598,7 +1630,7 @@ router.post('/tables/:id/import', upload.single('file'), ...base64Upload(uploadD
         },
       }).catch(() => {});
     }
-    res.status(500).json({ success: false, error: err.message, executionId });
+    res.status(500).json({ success: false, error: errorMessage(err), executionId });
   } finally {
     if (tmpPath) fs.unlink(tmpPath, () => {});
   }
@@ -1623,7 +1655,7 @@ router.get('/tables/:id/last-import-config', async (req: Request, res: Response)
     try { parsed = JSON.parse(table.lastImportConfig); } catch { parsed = null; }
     res.json({ success: true, data: parsed });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ success: false, error: errorMessage(err) });
   }
 });
 
@@ -1651,7 +1683,7 @@ router.post('/tables/:id/sync', async (req: Request, res: Response) => {
       await prisma.repoTable.update({ where: { id: table.id }, data: { syncStatus: 'error', syncError: err.message } });
       throw err;
     }
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 // POST /tables/:id/query — query with paging + optional folder filter
@@ -1682,7 +1714,7 @@ router.post('/tables/:id/query', async (req: Request, res: Response) => {
         throw queryErr;
       }
     }
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 // ─── SQL Editor: saved statements ────────────────────────────────────────────
@@ -1694,7 +1726,7 @@ router.get('/sql/saved', async (_req: Request, res: Response) => {
   try {
     const queries = await prisma.repoSqlQuery.findMany({ orderBy: [{ updatedAt: 'desc' }] });
     res.json({ success: true, data: { queries } });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 router.post('/sql/saved', async (req: Request, res: Response) => {
@@ -1713,7 +1745,7 @@ router.post('/sql/saved', async (req: Request, res: Response) => {
       },
     });
     res.json({ success: true, data: { query } });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 router.put('/sql/saved/:id', async (req: Request, res: Response) => {
@@ -1728,14 +1760,14 @@ router.put('/sql/saved/:id', async (req: Request, res: Response) => {
       },
     });
     res.json({ success: true, data: { query } });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 router.delete('/sql/saved/:id', async (req: Request, res: Response) => {
   try {
     await prisma.repoSqlQuery.delete({ where: { id: req.params.id } });
     res.json({ success: true });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 // ─── SQL Editor: execute arbitrary SQL ───────────────────────────────────────
@@ -1754,7 +1786,7 @@ router.post('/sql/execute', async (req: Request, res: Response) => {
       },
     });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ success: false, error: errorMessage(err) });
   }
 });
 
@@ -1785,7 +1817,7 @@ router.post('/sql/dml', async (req: Request, res: Response) => {
     }
     res.json({ success: true, data: { rowCount } });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ success: false, error: errorMessage(err) });
   }
 });
 
@@ -1800,7 +1832,7 @@ router.post('/sql/bulk-insert', async (req: Request, res: Response) => {
     const rowCount = await bulkInsert(connectionId, tableName, colSchemas, rows);
     res.json({ success: true, data: { rowCount } });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ success: false, error: errorMessage(err) });
   }
 });
 
@@ -1833,7 +1865,7 @@ router.get('/folders', async (req: Request, res: Response) => {
       return;
     }
     res.json({ success: true, data: { folders } });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 router.post('/folders', async (req: Request, res: Response) => {
@@ -1850,7 +1882,7 @@ router.post('/folders', async (req: Request, res: Response) => {
       },
     });
     res.json({ success: true, data: { folder } });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 router.put('/folders/:id', async (req: Request, res: Response) => {
@@ -1865,7 +1897,7 @@ router.put('/folders/:id', async (req: Request, res: Response) => {
       },
     });
     res.json({ success: true, data: { folder } });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 router.delete('/folders/:id', async (req: Request, res: Response) => {
@@ -1876,7 +1908,7 @@ router.delete('/folders/:id', async (req: Request, res: Response) => {
     await prisma.repoFolder.updateMany({ where: { parentId: req.params.id }, data: { parentId: null } });
     await prisma.repoFolder.delete({ where: { id: req.params.id } });
     res.json({ success: true });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 // ── Reorder (batch update sortOrder / folderId) ─────────────────────────────
@@ -1899,7 +1931,7 @@ router.post('/reorder', async (req: Request, res: Response) => {
       }
     }
     res.json({ success: true });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 // ── Table structure (columns from actual DB) ─────────────────────────────────
@@ -1971,7 +2003,7 @@ router.get('/tables/:id/structure', async (req: Request, res: Response) => {
     if (msg.includes('ORA-00942') || msg.includes('does not exist')) {
       res.json({ success: true, data: { columns: [], tableName: '', engine: '', error: 'Table does not exist in the database' } });
     } else {
-      res.status(500).json({ success: false, error: err.message });
+      res.status(500).json({ success: false, error: errorMessage(err) });
     }
   }
 });
@@ -2160,7 +2192,7 @@ router.get('/tables/:id/export', async (req: Request, res: Response) => {
   } catch (err: any) {
     console.error('[export] error:', err);
     if (!res.headersSent) {
-      res.status(500).json({ success: false, error: err.message });
+      res.status(500).json({ success: false, error: errorMessage(err) });
     } else {
       res.end();
     }
@@ -2271,7 +2303,7 @@ router.get('/tables/:id/schema', async (req: Request, res: Response) => {
     let columns: ColSchema[] = [];
     try { columns = JSON.parse(table.schema || '[]'); } catch {}
     res.json({ success: true, data: { columns } });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 // POST /tables/:id/rows — insert a single row
@@ -2290,7 +2322,7 @@ router.post('/tables/:id/rows', async (req: Request, res: Response) => {
     const newCount = (table.rowCount || 0) + 1;
     await prisma.repoTable.update({ where: { id: table.id }, data: { rowCount: newCount } });
     res.json({ success: true, data: { rowCount: newCount } });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 // PATCH /tables/:id/rows — update a row by _rid
@@ -2309,7 +2341,7 @@ router.patch('/tables/:id/rows', async (req: Request, res: Response) => {
     const tableName = physicalTableName(table.name);
     await updateRepoRow(table.connectionId, tableName, columns, rid, newValues, originalRow || {});
     res.json({ success: true });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 // DELETE /tables/:id/rows — delete a row by _rid
@@ -2325,7 +2357,7 @@ router.delete('/tables/:id/rows', async (req: Request, res: Response) => {
     const newCount = Math.max(0, (table.rowCount || 1) - 1);
     await prisma.repoTable.update({ where: { id: table.id }, data: { rowCount: newCount } });
     res.json({ success: true, data: { rowCount: newCount } });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 // GET /tables/:id/distinct?column=X&limit=200 — return distinct values for one column
@@ -2437,7 +2469,7 @@ router.get('/tables/:id/distinct', async (req: Request, res: Response) => {
       },
     });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ success: false, error: errorMessage(err) });
   }
 });
 
@@ -2494,7 +2526,7 @@ router.get('/tables/:id/suggest', async (req: Request, res: Response) => {
       .map(v => String(v));
     res.json({ success: true, data: { values } });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ success: false, error: errorMessage(err) });
   }
 });
 
@@ -2565,7 +2597,7 @@ router.post('/tables/:id/clear', async (req: Request, res: Response) => {
     res.json({ success: true, data: { rowsDeleted: deleted, rowCount: newCount } });
   } catch (err: any) {
     console.error('clear failed:', err);
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ success: false, error: errorMessage(err) });
   }
 });
 
@@ -2591,7 +2623,7 @@ router.get('/ext/tables', repoApiKeyAuth, async (_req: Request, res: Response) =
       orderBy: { name: 'asc' },
     });
     res.json({ success: true, data: { tables } });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 // POST /data-repository/ext/query — query table via API key
@@ -2607,7 +2639,7 @@ router.post('/ext/query', repoApiKeyAuth, async (req: Request, res: Response) =>
     const conds = normalizeFilters(filters, await allowedFilterColumnsFor(table, filterColumnNames(filters)));
     const result = await queryRepoTable(table.connectionId, tableName, folderId, Math.min(Number(limit), 5000), Number(offset), conds);
     res.json({ success: true, data: result });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 // POST /data-repository/ext/push — append rows via API key (write/admin permission required)
@@ -2625,7 +2657,7 @@ router.post('/ext/push', repoApiKeyAuth, async (req: Request, res: Response) => 
     const newCount = (table.rowCount || 0) + inserted;
     await prisma.repoTable.update({ where: { id: tableId }, data: { rowCount: newCount } });
     res.json({ success: true, data: { inserted, totalRows: newCount } });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 export default router;

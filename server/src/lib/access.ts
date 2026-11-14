@@ -71,6 +71,10 @@ export async function visibleTableIds(req: Request): Promise<string[] | null> {
 
 /** 'admin', the highest role from the user's own and group grants, or null when they have no access. */
 export async function projectRole(req: Request, projectId: string): Promise<'admin' | MemberRole | null> {
+  // The project must exist in the request's tenant (the Prisma tenant extension
+  // hides other tenants' rows). Without this, a tenant-admin counted as 'admin'
+  // on every tenant's projects.
+  if (!projectId || !(await prisma.project.findUnique({ where: { id: projectId }, select: { id: true } }))) return null;
   const u = await currentUser(req);
   if (u.isAdmin) return 'admin';
   const rows = await prisma.projectMember.findMany({ where: { projectId, ...(await grantFilter(req, u.id!)) }, select: { role: true } });
@@ -78,6 +82,7 @@ export async function projectRole(req: Request, projectId: string): Promise<'adm
 }
 
 export async function tableRole(req: Request, tableId: string): Promise<'admin' | MemberRole | null> {
+  if (!tableId || !(await prisma.repoTable.findUnique({ where: { id: tableId }, select: { id: true } }))) return null;
   const u = await currentUser(req);
   if (u.isAdmin) return 'admin';
   const rows = await prisma.repoTableMember.findMany({ where: { tableId, ...(await grantFilter(req, u.id!)) }, select: { role: true } });

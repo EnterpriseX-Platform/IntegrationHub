@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { guardProject, projectScope } from '../lib/access';
+import { guardProject, projectScope, projectRole, roleAllows } from '../lib/access';
 import { prisma } from '../lib/prisma';
 
 const router = Router();
@@ -81,6 +81,10 @@ router.post('/', async (req: Request, res: Response) => {
         error: 'Name, path, method, and projectId are required',
       });
     }
+    // Creating needs editor on a project in the caller's tenant
+    const role = await projectRole(req, projectId);
+    if (!role) return res.status(404).json({ success: false, error: 'Project not found' });
+    if (!roleAllows(role, 'editor')) return res.status(403).json({ success: false, error: 'You need editor access to this project' });
 
     const apiSpec = await prisma.apiSpec.create({
       data: {

@@ -9,6 +9,7 @@ import { normalizePrivateKey } from '../lib/ppk-converter';
 import { maskConfig, mergeSecrets } from '../lib/connectionSecrets';
 import { guardProjects, projectRole, roleAllows, adminOnly } from '../lib/access';
 import nodemailer from 'nodemailer';
+import { errorMessage } from '../lib/errorMessage';
 
 const router = Router();
 
@@ -63,7 +64,7 @@ async function testDatabaseConnection(config: any): Promise<{ success: boolean; 
       success: false,
       latency: Date.now() - startTime,
       message: 'Database connection failed',
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: errorMessage(error, 'Unknown error'),
     };
   }
 }
@@ -106,7 +107,7 @@ async function testOracleConnection(config: any, startTime: number): Promise<{ s
       message: `Oracle connection successful (${config.host}:${config.port || 1521})`,
     };
   } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+    const errorMsg = errorMessage(error, 'Unknown error');
     
     // Show actual Oracle error message to user
     // Common Oracle errors:
@@ -157,7 +158,7 @@ async function testPostgresConnection(config: any, startTime: number): Promise<{
       success: false,
       latency: Date.now() - startTime,
       message: 'PostgreSQL connection failed',
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: errorMessage(error, 'Unknown error'),
     };
   } finally {
     try {
@@ -198,7 +199,7 @@ async function testSFTPConnection(config: any): Promise<{ success: boolean; late
     conn.on('error', (err: any) => {
       clearTimeout(timeout);
       console.error(`[SFTP Test] Connection failed to ${config.host}:${config.port || 22} as ${config.username}`);
-      console.error(`[SFTP Test] Error: ${err.message}`);
+      console.error(`[SFTP Test] Error: ${errorMessage(err)}`);
       console.error(`[SFTP Test] Level: ${err.level || 'unknown'}`);
       console.error(`[SFTP Test] Auth type: ${config.authType}`);
       if (config.authType === 'private-key') {
@@ -208,7 +209,7 @@ async function testSFTPConnection(config: any): Promise<{ success: boolean; late
         success: false,
         latency: Date.now() - startTime,
         message: 'SFTP connection failed',
-        error: err.message,
+        error: errorMessage(err),
       });
     });
 
@@ -233,7 +234,7 @@ async function testSFTPConnection(config: any): Promise<{ success: boolean; late
         success: false,
         latency: Date.now() - startTime,
         message: 'SFTP connection failed',
-        error: err instanceof Error ? err.message : 'Unknown error',
+        error: errorMessage(err, 'Unknown error'),
       });
     }
   });
@@ -305,7 +306,7 @@ async function testHTTPConnection(config: any): Promise<{ success: boolean; late
       success: false,
       latency: Date.now() - startTime,
       message: 'HTTP connection failed',
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: errorMessage(error, 'Unknown error'),
     };
   }
 }
@@ -381,7 +382,7 @@ async function testGoogleDriveConnection(config: any): Promise<{ success: boolea
       success: false,
       latency: Date.now() - startTime,
       message: 'Google Drive connection test failed',
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: errorMessage(error, 'Unknown error'),
     };
   }
 }
@@ -434,13 +435,18 @@ router.get('/:id/test', async (req: Request, res: Response) => {
       testResult = await testHTTPConnection(config);
     } else if (connection.type === 'google-drive') {
       testResult = await testGoogleDriveConnection(config);
+    } else if (['postgresql', 'postgres', 'mysql', 'oracle', 'sqlite', 'mssql'].includes(connection.type)) {
+      // DB engines saved under their own type (API/MCP clients, older records)
+      testResult = await testDatabaseConnection({ ...config, type: config.type || connection.type });
     } else {
-      // Fallback for other types
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // No real test exists for this type. Never report success for a check
+      // that didn't happen (this used to return "simulated" success and mark
+      // the connection Connected).
       testResult = {
-        success: true,
-        latency: 500,
-        message: 'Connection test simulated',
+        success: false,
+        latency: 0,
+        message: `Connection test is not available for type "${connection.type}"`,
+        error: 'not-supported',
       };
     }
 
@@ -448,7 +454,7 @@ router.get('/:id/test', async (req: Request, res: Response) => {
     const updatedConnection = await prisma.connection.update({
       where: { id },
       data: {
-        status: testResult.success ? 'Connected' : 'Error',
+        status: testResult.error === 'not-supported' ? connection.status : (testResult.success ? 'Connected' : 'Error'),
       },
     });
 

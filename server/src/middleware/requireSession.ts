@@ -29,10 +29,16 @@ export async function requireSession(req: Request, res: Response, next: NextFunc
     (req as any).userId = session.userId;
 
     // Tenant: the session's active tenant; a super-admin may override per request with X-Tenant-Id
-    const user = await prisma.user.findUnique({ where: { id: session.userId }, select: { role: true } });
+    const user = await prisma.user.findUnique({ where: { id: session.userId }, select: { role: true, status: true } });
+    // A disabled or deleted account loses its open sessions immediately
+    if (!user || user.status !== 'active') {
+      await prisma.session.deleteMany({ where: { userId: session.userId } }).catch(() => {});
+      return reject(req, res, 'Account is disabled');
+    }
     const header = req.get('x-tenant-id');
-    const wanted = header && user?.role === 'admin' ? header : session.tenantId;
-    const t = await resolveTenant(session.userId, user?.role, wanted);
+    const wanted = header && user.role === 'admin' ? header : session.tenantId;
+    const t = await resolveTenant(session.userId, user.role, wanted);
+    if (!t) { res.status(403).json({ success: false, error: 'Your organisation is suspended' }); return; }
     (req as any).tenantId = t.tenantId;
     (req as any).tenantRole = t.role;
     runWithTenant({ tenantId: t.tenantId, isDefault: t.isDefault }, () => next());

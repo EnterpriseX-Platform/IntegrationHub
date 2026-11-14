@@ -39,12 +39,16 @@ export async function tenantsForUser(userId: string, role?: string | null) {
  * the user may enter it, else the session's tenant, else the user's first
  * tenant, else "default".
  */
-export async function resolveTenant(userId: string, role: string | null | undefined, wanted?: string | null) {
+export async function resolveTenant(userId: string, role: string | null | undefined, wanted?: string | null): Promise<{ tenantId: string; role: string; isDefault: boolean } | null> {
   const list = await tenantsForUser(userId, role);
   const pick = (id?: string | null) => (id ? list.find((t) => t.id === id || t.slug === id) : undefined);
   const defaultId = await getDefaultTenantId();
   const t = pick(wanted) || pick(defaultId) || list[0];
   if (t) return { tenantId: t.id, role: t.role as string, isDefault: t.id === defaultId };
-  // No membership at all (e.g. a user created before tenants existed): treat as default member
+  // Only a user with NO memberships at all (created before tenants existed) falls back
+  // to "default". A user whose tenants are all suspended gets no tenant — they used to
+  // land in "default" and could keep working there.
+  const anyMembership = await prisma.tenantMember.count({ where: { userId } });
+  if (anyMembership > 0) return null;
   return { tenantId: defaultId, role: 'member', isDefault: true };
 }

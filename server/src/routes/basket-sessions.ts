@@ -6,6 +6,18 @@ import path from 'path';
 import { archiveSession, archiveSessionFiles } from '../services/sessionArchive';
 import { requireSession } from '../middleware/requireSession';
 
+/** Session names become folder names: no path separators or "..", so a name
+ *  like "../../x" can't create folders outside the basket. */
+function safeSessionName(name: string): string {
+  return String(name)
+    .replace(/[\\/]+/g, '_')
+    .replace(/\.{2,}/g, '.')
+    .replace(/^[.\s]+/, '')
+    .replace(/[\x00-\x1f<>:"|?*]/g, '_')
+    .trim()
+    .slice(0, 200);
+}
+
 const router = Router();
 
 // Non-admins reach a basket through its project or a project it is shared with:
@@ -33,7 +45,12 @@ function generateBatchName(pattern: string): string {
     .replace(/\{HH\}/g, String(now.getHours()).padStart(2, '0'))
     .replace(/\{mm\}/g, String(now.getMinutes()).padStart(2, '0'))
     .replace(/\{ss\}/g, String(now.getSeconds()).padStart(2, '0'))
-    .replace(/\{HHMMSS\}/g, timeStr);
+    .replace(/\{HHMMSS\}/g, timeStr)
+    // dashed forms (the SEQ reset logic already recognised these, the names didn't)
+    .replace(/\{YYYY-MM-DD\}/g, `${year}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`)
+    .replace(/\{YYYY-MM\}/g, `${year}-${String(now.getMonth() + 1).padStart(2, '0')}`)
+    .replace(/\{BYYYY-MM-DD\}/g, `${buddhistYear}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`)
+    .replace(/\{BYYYY-MM\}/g, `${buddhistYear}-${String(now.getMonth() + 1).padStart(2, '0')}`);
   
   // Handle sequence numbers
   if (name.includes('{NNN}')) {
@@ -126,7 +143,8 @@ router.get('/:id/sessions', async (req: Request, res: Response) => {
 router.post('/:id/sessions', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { batchName: customName, publishMode = 'manual' } = req.body;
+    const { batchName: rawCustomName, publishMode = 'manual' } = req.body;
+    const customName = rawCustomName ? safeSessionName(rawCustomName) : rawCustomName;
 
     const basket = await prisma.basket.findUnique({ where: { id } });
     if (!basket) {
@@ -166,15 +184,27 @@ router.post('/:id/sessions', async (req: Request, res: Response) => {
       
       fromDate.setHours(0, 0, 0, 0);
       
-      const count = await prisma.processingSession.count({
-        where: { 
+      // Next number = highest number already used in this period + 1. ("count + 1"
+      // reused a number after a session was deleted: seq-011 then seq-011-1.)
+      const existing = await prisma.processingSession.findMany({
+        where: {
           basketId: id,
           startedAt: { gte: fromDate },
           status: { in: ['open', 'published', 'processing', 'completed', 'archived'] }
-        }
+        },
+        select: { batchName: true },
       });
-      const seqNum = String(count + 1).padStart(digits, '0');
-      finalBatchName = baseName.replace(seqMatch[0], digits === 1 ? String(count + 1) : seqNum);
+      const esc = (t: string) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const [before, after] = [baseName.slice(0, seqMatch.index), baseName.slice((seqMatch.index || 0) + seqMatch[0].length)];
+      const seqRe = new RegExp(`^${esc(before)}(\\d+)${esc(after)}(?:-\\d+)?$`);
+      let maxSeq = 0;
+      for (const s of existing) {
+        const m = seqRe.exec(s.batchName);
+        if (m) maxSeq = Math.max(maxSeq, parseInt(m[1], 10));
+      }
+      const next = Math.max(maxSeq, 0) + 1;
+      const seqNum = String(next).padStart(digits, '0');
+      finalBatchName = baseName.replace(seqMatch[0], digits === 1 ? String(next) : seqNum);
     }
 
     // Ensure unique name
@@ -243,7 +273,7 @@ router.put('/:id/sessions/:sessionId', async (req: Request, res: Response) => {
     const updatedSession = await prisma.processingSession.update({
       where: { id: sessionId },
       data: { 
-        ...(batchName && { batchName: batchName.trim() })
+        ...(batchName && { batchName: safeSessionName(batchName) })
       }
     });
 
@@ -473,7 +503,7 @@ router.post('/:id/sessions/:sessionId/restore', async (req: Request, res: Respon
     }
 
     // Generate new batch name
-    const finalBatchName = newBatchName || `${session.batchName}-restored`;
+    const finalBatchName = safeSessionName(newBatchName || `${session.batchName}-restored`);
     
     // Create new session
     const newSession = await prisma.processingSession.create({

@@ -1,8 +1,9 @@
 import { Router, Request, Response } from 'express';
 import { projectScope } from '../lib/access';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma';
 
-const prisma = new PrismaClient();
+// Shared client: carries the tenant filter (a private PrismaClient here showed
+// every tenant's flows and totals in metrics)
 const router = Router();
 // Every figure counts only runs of projects the user may see (all for admins)
 
@@ -235,14 +236,13 @@ router.get('/error-distribution', async (req: Request, res: Response) => {
         },
         status: 'Failed',
       },
-      _count: {
-        errorType: true,
-      },
+      // _all counts every row; _count.errorType skipped failures with no errorType
+      _count: { _all: true },
     });
 
     const data = errors.map(e => ({
       type: e.errorType || 'unknown',
-      count: e._count.errorType,
+      count: e._count._all,
     }));
 
     res.json({ success: true, data });

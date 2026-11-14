@@ -15,6 +15,7 @@ import { requireSession } from '../middleware/requireSession';
 import os from 'os';
 import fs from 'fs';
 import { guardProjects } from '../lib/access';
+import { errorMessage } from '../lib/errorMessage';
 
 const router = Router();
 
@@ -79,8 +80,8 @@ function remotePath(raw: unknown, fallback = '.'): string {
 
 function sendError(res: Response, err: any) {
   const status = err instanceof HttpError ? err.status : 500;
-  console.error('[SFTP Browser]', err?.message || err);
-  res.status(status).json({ success: false, error: err?.message || 'SFTP operation failed' });
+  console.error('[SFTP Browser]', errorMessage(err));
+  res.status(status).json({ success: false, error: errorMessage(err, 'SFTP operation failed') });
 }
 
 // GET /connections/:id/sftp/list?path=/some/dir

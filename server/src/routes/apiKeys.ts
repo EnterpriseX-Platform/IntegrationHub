@@ -3,12 +3,34 @@ import crypto from 'crypto';
 import archiver from 'archiver';
 import { prisma } from '../lib/prisma';
 import { generateApiKey } from '../middleware/auth';
+import { projectRole, roleAllows } from '../lib/access';
 import { normalizeRsaPublicKey, normalizeRsaPrivateKey, rsaKeysMatch } from '../lib/rsaKeys';
 
 // Register zip-encryptable format for password-protected ZIP export
 archiver.registerFormat('zip-encryptable', require('archiver-zip-encryptable'));
 
 const router = Router();
+
+// Every key/secret route needs the project in the caller's tenant and at least
+// editor on it — listing returns the actual keys, so even reads are editor-only.
+// (These routes had no check: any logged-in user could mint keys on any project,
+// including other tenants'.)
+router.param('projectId', async (req: Request, res: Response, next, projectId: string) => {
+  try {
+    const role = await projectRole(req, projectId);
+    if (!role) { res.status(404).json({ success: false, error: 'Project not found' }); return; }
+    if (!roleAllows(role, 'editor')) { res.status(403).json({ success: false, error: 'You need editor access to manage keys for this project' }); return; }
+    next();
+  } catch (err) { next(err); }
+});
+// …and a key/secret id must belong to that project
+router.param('id', async (req: Request, res: Response, next, id: string) => {
+  try {
+    const key = await prisma.apiKey.findFirst({ where: { id, projectId: req.params.projectId }, select: { id: true } });
+    if (!key) { res.status(404).json({ success: false, error: 'Key not found' }); return; }
+    next();
+  } catch (err) { next(err); }
+});
 
 // GET /api/projects/:projectId/api-keys - List all API keys for a project
 router.get('/projects/:projectId/api-keys', async (req: Request, res: Response) => {

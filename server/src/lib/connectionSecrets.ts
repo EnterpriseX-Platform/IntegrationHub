@@ -22,8 +22,13 @@ export const SECRET_KEYS = [
   'secret',
 ];
 
+// Beyond the exact names above, any key that *looks* secret is masked too —
+// e.g. S3 secretAccessKey, header names like Authorization / X-Api-Key, apiToken.
+// (Was an exact-name list only, so those came back to the browser in clear.)
+const SECRET_PATTERN = /(pass(word|wd|phrase)|secret|token|api[-_]?key|private[-_]?key|access[-_]?key|credential|signature|^authorization$|^proxy-authorization$|^cookie$)/i;
+
 function isSecretKey(k: string): boolean {
-  return SECRET_KEYS.includes(k);
+  return SECRET_KEYS.includes(k) || SECRET_PATTERN.test(k);
 }
 
 function maskObj(o: any): any {

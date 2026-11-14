@@ -248,6 +248,11 @@ router.put('/users/:id', async (req: Request, res: Response) => {
       }
     });
 
+    // A new password or a disabled account ends the user's open sessions
+    if (password || (status && status !== 'active')) {
+      await prisma.session.deleteMany({ where: { userId: id } });
+    }
+
     return res.json({
       success: true,
       data: user

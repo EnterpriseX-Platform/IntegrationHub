@@ -18,7 +18,13 @@ fs.mkdirSync(uploadDir, { recursive: true });
 const upload = multer({
   storage: multer.diskStorage({
     destination: (_req, _file, cb) => cb(null, uploadDir),
-    filename: (_req, file, cb) => cb(null, `${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${file.originalname}`)
+    filename: (_req, file, cb) => {
+      // Busboy hands multer the filename as latin1; UTF-8 names (Thai) arrived as
+      // "à¹\x84…". Re-decode when the bytes are valid UTF-8.
+      const utf8 = Buffer.from(file.originalname, 'latin1').toString('utf8');
+      if (utf8 !== file.originalname && !utf8.includes('�')) file.originalname = utf8;
+      cb(null, `${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${file.originalname}`);
+    }
   }),
   limits: {
     fileSize: 2 * 1024 * 1024 * 1024, // 2GB max file size
@@ -1139,6 +1145,13 @@ router.delete('/:id/files/:fileId', async (req: Request, res: Response) => {
   try {
     const { id, fileId } = req.params;
 
+    // Shared baskets: a read-only share must not delete (this check used to live in a
+    // second, unreachable handler further down — Express ran this one first)
+    const projectId = req.query.projectId as string;
+    if (projectId && !(await checkBasketWritePermission(id, projectId))) {
+      res.status(403).json({ success: false, error: 'Read-only access: cannot delete files from this shared basket' }); return;
+    }
+
     const file = await prisma.basketFile.findFirst({
       where: { id: fileId, basketId: id }
     });
@@ -1713,65 +1726,6 @@ router.get('/:id/files/:fileId/xlsx-data', async (req: Request, res: Response) =
   }
 });
 
-// DELETE /api/baskets/:id/files/:fileId - Delete a file
-router.delete('/:id/files/:fileId', async (req: Request, res: Response) => {
-  try {
-    const { id, fileId } = req.params;
-
-    // Permission check for shared baskets
-    const projectId = req.query.projectId as string;
-    if (projectId && !(await checkBasketWritePermission(id, projectId))) {
-      res.status(403).json({ success: false, error: 'Read-only access: cannot delete files from this shared basket' }); return;
-    }
-
-    const file = await prisma.basketFile.findFirst({
-      where: { id: fileId, basketId: id }
-    });
-
-    if (!file) {
-      res.status(404).json({ success: false, error: 'File not found' });
-      return;
-    }
-
-    // Delete physical file
-    if (fs.existsSync(file.path)) {
-      fs.unlinkSync(file.path);
-    }
-
-    // Delete from database
-    await prisma.basketFile.delete({
-      where: { id: fileId }
-    });
-
-    // Update session file count if file belongs to a session
-    if (file.sessionId) {
-      await prisma.processingSession.update({
-        where: { id: file.sessionId },
-        data: {
-          fileCount: { decrement: 1 },
-          totalSize: { decrement: file.size }
-        }
-      });
-    }
-
-    // Log deletion
-    await prisma.basketLog.create({
-      data: {
-        basketId: id,
-        type: 'file_deleted',
-        message: `File deleted: ${file.originalName}`,
-        fileCount: 1,
-        fileSize: file.size,
-        metadata: JSON.stringify({ fileId, originalName: file.originalName })
-      }
-    });
-
-    res.json({ success: true, message: 'File deleted' });
-  } catch (error) {
-    console.error('Error deleting file:', error);
-    res.status(500).json({ success: false, error: 'Failed to delete file' });
-  }
-});
 
 // ==================== Folder Routes for Shares Baskets ====================
 
@@ -1850,13 +1804,21 @@ router.post('/:id/folders', async (req: Request, res: Response) => {
       return;
     }
 
-    // Generate folder path
-    let folderPath = name.replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase();
+    // Folder path on disk: keep letters/digits in any script (Thai names used to
+    // collapse to "_" and share one directory), and never reuse a sibling's path.
+    let parentPath = '';
     if (parentId) {
-      const parent = await prisma.basketFolder.findUnique({ where: { id: parentId } });
-      if (parent) {
-        folderPath = path.join(parent.path, folderPath);
+      const parent = await prisma.basketFolder.findFirst({ where: { id: parentId, basketId: id } });
+      if (!parent) {
+        res.status(404).json({ success: false, error: 'Parent folder not found' });
+        return;
       }
+      parentPath = parent.path;
+    }
+    const slug = String(name).normalize('NFC').replace(/[^\p{L}\p{M}\p{N}_-]+/gu, '_').replace(/^_+|_+$/g, '').slice(0, 80) || 'folder';
+    let folderPath = parentPath ? path.join(parentPath, slug) : slug;
+    for (let n = 2; await prisma.basketFolder.findFirst({ where: { basketId: id, path: folderPath } }); n++) {
+      folderPath = parentPath ? path.join(parentPath, `${slug}-${n}`) : `${slug}-${n}`;
     }
 
     // Create physical directory

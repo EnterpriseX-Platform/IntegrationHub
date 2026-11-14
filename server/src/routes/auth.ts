@@ -51,6 +51,9 @@ router.post('/login', async (req: Request, res: Response) => {
     expiresAt.setHours(expiresAt.getHours() + 24); // 24 hours
 
     const tenant = await resolveTenant(user.id, user.role);
+    if (!tenant) {
+      return res.status(403).json({ success: false, error: 'Your organisation is suspended' });
+    }
     await prisma.session.create({
       data: {
         userId: user.id,
@@ -144,6 +147,9 @@ router.get('/me', async (req: Request, res: Response) => {
     }
 
     const tenant = await resolveTenant(user.id, user.role, session.tenantId);
+    if (!tenant) {
+      return res.status(403).json({ success: false, error: 'Your organisation is suspended' });
+    }
     const tenants = await tenantsForUser(user.id, user.role);
     return res.json({
       success: true,

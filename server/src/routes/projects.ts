@@ -338,8 +338,10 @@ router.post('/:id/flows', async (req: Request, res: Response) => {
         name,
         type,
         status: 'Active',
-        nodes: JSON.stringify(nodes || []),
-        connections: JSON.stringify(flowConnections || []),
+        // Accept arrays or JSON strings (as PUT /flows/:id does); a string used to be
+        // stringified again and the flow could not run ("nodes.some is not a function")
+        nodes: typeof nodes === 'string' ? nodes : JSON.stringify(nodes || []),
+        connections: typeof flowConnections === 'string' ? flowConnections : JSON.stringify(flowConnections || []),
         process: process || null,
         tags: JSON.stringify(tags || []),
       },

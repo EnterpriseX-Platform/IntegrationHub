@@ -195,11 +195,20 @@ export class ConditionExecutor extends NodeExecutor {
       }
     }
     
-    // Not a template - evaluate as expression or check truthiness
+    // Not a single template: substitute inline {{...}} values (as JSON literals, so
+    // strings stay quoted) and evaluate the expression, e.g. `{{year}} == 1` -> `5 == 1`.
+    const expr = condition.includes('{{')
+      ? condition.replace(/\{\{\s*([^{}]+?)\s*\}\}/g, (_m, p) => {
+          const v = this.resolveTemplate(`{{${p}}}`, context);
+          return v === undefined ? 'undefined' : JSON.stringify(v);
+        })
+      : condition;
     try {
-      return Boolean(eval(condition));
-    } catch {
-      return Boolean(condition);
+      return Boolean(eval(expr));
+    } catch (e) {
+      // Never guess a branch: a non-empty string used to count as TRUE here, so any
+      // typo silently took the "true" path. Fail the node with a clear message.
+      throw new Error(`Condition could not be evaluated: "${condition}" (${e instanceof Error ? e.message : e})`);
     }
   }
 

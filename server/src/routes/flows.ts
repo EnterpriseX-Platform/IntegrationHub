@@ -36,6 +36,7 @@ import { buildNodeLabelMap, buildNodeLogEntries } from '../sdk/execution/nodeLog
 import { resolveDateTimePlaceholders } from '../lib/scheduler-params';
 import { ExecutionProgressLogger, executionDeadline } from '../lib/execution-progress';
 import { guardProject, adminOnly } from '../lib/access';
+import { runWithoutTenant } from '../lib/tenantContext';
 
 // Helper: Extract path parameters from URL based on pattern
 // e.g., pattern: "/agency/{year}", path: "/agency/2567" -> { year: "2567" }
@@ -834,6 +835,19 @@ router.post('/:id/deploy', async (req: Request, res: Response): Promise<Response
     // Use provided publicUrl, or existing deployment publicUrl, or generate default: /deh/{projectCode}/v1
     const PUBLIC_ROOT = process.env.PUBLIC_API_ROOT || process.env.CTX_PUBLIC || '/deh';
     const publicUrl = deployment?.publicUrl || currentConfig.deployment?.publicUrl || `${PUBLIC_ROOT}/${flow.project?.code || 'p'}/v1`;
+
+    // A public URL belongs to one flow across ALL tenants — otherwise another
+    // tenant could deploy onto an existing path and receive its callers' requests.
+    const owners = await runWithoutTenant(() => prisma.flow.findMany({
+      where: { id: { not: flow.id }, config: { contains: `"publicUrl":${JSON.stringify(publicUrl)}` } },
+      select: { id: true, config: true },
+    }));
+    const taken = owners.some((f) => {
+      try { const d = JSON.parse(f.config || '{}').deployment; return d?.publicUrl === publicUrl && d?.enabled !== false; } catch { return false; }
+    });
+    if (taken) {
+      return res.status(409).json({ success: false, error: `The URL ${publicUrl} is already used by another deployed API` });
+    }
 
     // Save deployment config
     const deploymentConfig = {

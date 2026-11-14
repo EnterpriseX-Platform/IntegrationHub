@@ -40,16 +40,10 @@ function parseUrl(fullPath: string): { projectCode: string; remainingPath: strin
 
 // Get client IP
 function getClientIp(req: Request): string {
-  const forwarded = req.headers['x-forwarded-for'];
-  const realIp = req.headers['x-real-ip'];
-  
-  if (typeof forwarded === 'string') {
-    return forwarded.split(',')[0].trim();
-  }
-  if (typeof realIp === 'string') {
-    return realIp;
-  }
-  return req.socket.remoteAddress || 'unknown';
+  // req.ip honours X-Forwarded-For only from proxies trusted via app "trust proxy"
+  // (TRUST_PROXY). Reading the header directly let any caller spoof an
+  // IP-whitelisted address.
+  return (req.ip || req.socket.remoteAddress || 'unknown').replace(/^::ffff:/, '');
 }
 
 // Check if IP is allowed

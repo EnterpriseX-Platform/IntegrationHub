@@ -8,6 +8,7 @@ import { authMiddleware } from './auth';
 import { Pool as PgPool } from 'pg';
 import * as crypto from 'crypto';
 import * as oracledb from 'oracledb';
+import { errorMessage } from '../lib/errorMessage';
 
 const router = Router();
 router.use(authMiddleware);
@@ -222,7 +223,7 @@ router.get('/connections', async (_req: Request, res: Response) => {
   try {
     const connections = await prisma.wbConnection.findMany({ orderBy: { createdAt: 'asc' } });
     res.json({ success: true, data: { connections } });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 router.post('/connections', async (req: Request, res: Response) => {
@@ -233,7 +234,7 @@ router.post('/connections', async (req: Request, res: Response) => {
       data: { id: `wbc${crypto.randomBytes(10).toString('hex')}`, name, type, config: JSON.stringify(config || {}) },
     });
     res.json({ success: true, data: { connection: conn } });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 router.put('/connections/:id', async (req: Request, res: Response) => {
@@ -249,14 +250,14 @@ router.put('/connections/:id', async (req: Request, res: Response) => {
       },
     });
     res.json({ success: true, data: { connection: conn } });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 router.delete('/connections/:id', async (req: Request, res: Response) => {
   try {
     await prisma.wbConnection.delete({ where: { id: req.params.id } });
     res.json({ success: true });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 // Test connection + list tables
@@ -267,7 +268,7 @@ router.post('/connections/:id/test', async (req: Request, res: Response) => {
     res.json({ success: true, data: { tables, count: tables.length } });
   } catch (err: any) {
     await prisma.wbConnection.update({ where: { id: req.params.id }, data: { status: 'Error' } }).catch(() => {});
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ success: false, error: errorMessage(err) });
   }
 });
 
@@ -278,7 +279,7 @@ router.get('/connections/:id/tables', async (req: Request, res: Response) => {
     let tables = await getTableList(req.params.id);
     if (search) tables = tables.filter(t => t.toLowerCase().includes((search as string).toLowerCase()));
     res.json({ success: true, data: { tables } });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 // Get column schema for a specific table
@@ -286,7 +287,7 @@ router.get('/connections/:id/tables/:tableName/schema', async (req: Request, res
   try {
     const columns = await getTableSchema(req.params.id, req.params.tableName);
     res.json({ success: true, data: { columns } });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 // ─── API Keys ─────────────────────────────────────────────────────────────────
@@ -295,7 +296,7 @@ router.get('/api-keys', async (_req: Request, res: Response) => {
   try {
     const keys = await prisma.wbApiKey.findMany({ orderBy: { createdAt: 'desc' } });
     res.json({ success: true, data: { keys } });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 router.post('/api-keys', async (req: Request, res: Response) => {
@@ -312,7 +313,7 @@ router.post('/api-keys', async (req: Request, res: Response) => {
       },
     });
     res.json({ success: true, data: { key } });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 router.put('/api-keys/:id', async (req: Request, res: Response) => {
@@ -328,14 +329,14 @@ router.put('/api-keys/:id', async (req: Request, res: Response) => {
       },
     });
     res.json({ success: true, data: { key } });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 router.delete('/api-keys/:id', async (req: Request, res: Response) => {
   try {
     await prisma.wbApiKey.delete({ where: { id: req.params.id } });
     res.json({ success: true });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 // ─── Datasets ─────────────────────────────────────────────────────────────────
@@ -347,7 +348,7 @@ router.get('/datasets', async (_req: Request, res: Response) => {
       orderBy: { createdAt: 'desc' },
     });
     res.json({ success: true, data: { datasets } });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 router.get('/datasets/:id', async (req: Request, res: Response) => {
@@ -362,7 +363,7 @@ router.get('/datasets/:id', async (req: Request, res: Response) => {
     });
     if (!dataset) { res.status(404).json({ success: false, error: 'Dataset not found' }); return; }
     res.json({ success: true, data: { dataset } });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 // Add a table from connection as a dataset
@@ -386,7 +387,7 @@ router.post('/datasets', async (req: Request, res: Response) => {
       include: { connection: { select: { id: true, name: true, type: true } } },
     });
     res.json({ success: true, data: { dataset } });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 router.put('/datasets/:id', async (req: Request, res: Response) => {
@@ -397,14 +398,14 @@ router.put('/datasets/:id', async (req: Request, res: Response) => {
       data: { ...(name && { name }), ...(description !== undefined && { description }) },
     });
     res.json({ success: true, data: { dataset } });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 router.delete('/datasets/:id', async (req: Request, res: Response) => {
   try {
     await prisma.wbDataset.delete({ where: { id: req.params.id } });
     res.json({ success: true });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 // Refresh schema from live connection
@@ -415,7 +416,7 @@ router.post('/datasets/:id/refresh-schema', async (req: Request, res: Response) 
     const columns = await getTableSchema(dataset.connectionId, dataset.tableName);
     await prisma.wbDataset.update({ where: { id: dataset.id }, data: { schema: JSON.stringify(columns), updatedAt: new Date() } });
     res.json({ success: true, data: { columns } });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 // ─── Folders (Virtual Partition) ─────────────────────────────────────────────
@@ -428,7 +429,7 @@ router.get('/datasets/:datasetId/folders', async (req: Request, res: Response) =
       orderBy: { path: 'asc' },
     });
     res.json({ success: true, data: { folders } });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 router.post('/datasets/:datasetId/folders', async (req: Request, res: Response) => {
@@ -456,14 +457,14 @@ router.post('/datasets/:datasetId/folders', async (req: Request, res: Response) 
       },
     });
     res.json({ success: true, data: { folder } });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 router.delete('/folders/:id', async (req: Request, res: Response) => {
   try {
     await prisma.wbFolder.delete({ where: { id: req.params.id } });
     res.json({ success: true });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 // ─── Saved Queries ────────────────────────────────────────────────────────────
@@ -476,7 +477,7 @@ router.get('/saved-queries', async (req: Request, res: Response) => {
       orderBy: { updatedAt: 'desc' },
     });
     res.json({ success: true, data: { queries } });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 router.post('/saved-queries', async (req: Request, res: Response) => {
@@ -487,7 +488,7 @@ router.post('/saved-queries', async (req: Request, res: Response) => {
       data: { id: `wbq${crypto.randomBytes(10).toString('hex')}`, name, sql, datasetId: datasetId || null, description: description || null },
     });
     res.json({ success: true, data: { query } });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 router.put('/saved-queries/:id', async (req: Request, res: Response) => {
@@ -498,14 +499,14 @@ router.put('/saved-queries/:id', async (req: Request, res: Response) => {
       data: { ...(name && { name }), ...(sql && { sql }), ...(description !== undefined && { description }) },
     });
     res.json({ success: true, data: { query } });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 router.delete('/saved-queries/:id', async (req: Request, res: Response) => {
   try {
     await prisma.wbSavedQuery.delete({ where: { id: req.params.id } });
     res.json({ success: true });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 // ─── Dataset Schema & Field Query ────────────────────────────────────────────
@@ -525,7 +526,7 @@ router.get('/datasets/:id/schema', async (req: Request, res: Response) => {
     }
 
     res.json({ success: true, data: { columns: schema } });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 // POST /datasets/:id/query — build + execute SQL from field list & filters
@@ -565,7 +566,7 @@ router.post('/datasets/:id/query', async (req: Request, res: Response) => {
         default: continue;
       }
       if (whereParts.length > 0) {
-        condition = `${f.logic || 'AND'} ${condition}`;
+        condition = `${String(f.logic).toUpperCase() === 'OR' ? 'OR' : 'AND'} ${condition}`;
       }
       whereParts.push(condition);
     }
@@ -575,7 +576,7 @@ router.post('/datasets/:id/query', async (req: Request, res: Response) => {
     const result = await execWbQuery(dataset.connectionId, sql, Math.min(Number(limit), 5000), Number(offset));
 
     res.json({ success: true, data: result });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 // POST /datasets/:id/pivot — pivot (GROUP BY) query against a dataset
@@ -625,7 +626,7 @@ router.post('/datasets/:id/pivot', async (req: Request, res: Response) => {
         default: continue;
       }
       if (whereParts.length > 0) {
-        condition = `${f.logic || 'AND'} ${condition}`;
+        condition = `${String(f.logic).toUpperCase() === 'OR' ? 'OR' : 'AND'} ${condition}`;
       }
       whereParts.push(condition);
     }
@@ -652,7 +653,7 @@ router.post('/datasets/:id/pivot', async (req: Request, res: Response) => {
         totalRows: result.rows.length,
       },
     });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 // ─── Query Execution ──────────────────────────────────────────────────────────
@@ -679,7 +680,7 @@ router.post('/query', async (req: Request, res: Response) => {
 
     res.json({ success: true, data: result });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ success: false, error: errorMessage(err) });
   }
 });
 
@@ -704,7 +705,7 @@ router.get('/datasets/:id/autocomplete', async (req: Request, res: Response) => 
         columns: schema.map(c => ({ table: dataset.tableName, column: c.name, type: c.type })),
       },
     });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 // ─── External Public API (API Key auth, no JWT required) ─────────────────────
@@ -731,7 +732,7 @@ router.get('/ext/datasets', wbApiKeyAuth, async (_req: Request, res: Response) =
       orderBy: { name: 'asc' },
     });
     res.json({ success: true, data: { datasets } });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 // POST /analytics-workbench/ext/query — execute SQL on a dataset
@@ -753,7 +754,7 @@ router.post('/ext/query', wbApiKeyAuth, async (req: Request, res: Response) => {
     const innerSql = `SELECT * FROM (${sql.trim().replace(/;+$/, '')}) AS _wb`;
     const result = await execWbQuery(dataset.connectionId, innerSql, Math.min(Number(limit), 5000), Number(offset), folderWhere || undefined);
     res.json({ success: true, data: result });
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 // ─── Export Excel ─────────────────────────────────────────────────────────────
@@ -791,7 +792,7 @@ router.post('/export-excel', async (req: Request, res: Response) => {
 
     await workbook.xlsx.write(res);
     res.end();
-  } catch (err: any) { res.status(500).json({ success: false, error: err.message }); }
+  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
 });
 
 export default router;

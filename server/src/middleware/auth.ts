@@ -48,10 +48,10 @@ function validateHmac(payload: string, signature: string, secret: string): boole
     .createHmac('sha256', secret)
     .update(payload)
     .digest('hex');
-  return crypto.timingSafeEqual(
-    Buffer.from(signature),
-    Buffer.from(expected)
-  );
+  const a = Buffer.from(String(signature));
+  const b = Buffer.from(expected);
+  // timingSafeEqual throws on different lengths (a short bad signature gave a 500)
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
 // Check if IP is in whitelist/blacklist
@@ -105,18 +105,10 @@ function isIpInCidr(ip: string, cidr: string): boolean {
 
 // Get client IP from request
 function getClientIp(req: Request): string {
-  const forwarded = req.headers['x-forwarded-for'];
-  const realIp = req.headers['x-real-ip'];
-  
-  if (typeof forwarded === 'string') {
-    return forwarded.split(',')[0].trim();
-  }
-  
-  if (typeof realIp === 'string') {
-    return realIp;
-  }
-  
-  return req.socket.remoteAddress || 'unknown';
+  // req.ip honours X-Forwarded-For only from proxies trusted via app "trust proxy"
+  // (TRUST_PROXY). Reading the header directly let any caller spoof an
+  // IP-whitelisted address.
+  return (req.ip || req.socket.remoteAddress || 'unknown').replace(/^::ffff:/, '');
 }
 
 // Main authentication middleware
