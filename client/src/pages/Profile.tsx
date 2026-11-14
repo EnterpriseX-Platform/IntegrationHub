@@ -247,10 +247,10 @@ export default function Profile() {
             <div className="mt-4 pt-4 border-t border-gray-100">
               <div className="flex items-center justify-center gap-2 text-sm">
                 <span className={`w-2 h-2 rounded-full ${
-                  profile.status === 'active' ? 'bg-green-500' : 'bg-red-500'
+                  profile.status !== 'inactive' ? 'bg-green-500' : 'bg-red-500'
                 }`}></span>
-                <span className={profile.status === 'active' ? 'text-green-700' : 'text-red-700'}>
-                  {profile.status === 'active' ? 'Active Account' : 'Inactive Account'}
+                <span className={profile.status !== 'inactive' ? 'text-green-700' : 'text-red-700'}>
+                  {profile.status !== 'inactive' ? 'Active Account' : 'Inactive Account'}
                 </span>
               </div>
             </div>
@@ -258,7 +258,7 @@ export default function Profile() {
             {/* Member Since */}
             <div className="mt-4 flex items-center justify-center gap-1 text-sm text-gray-500">
               <Clock className="w-4 h-4" />
-              Member since {profile.createdAt}
+              Member since {profile.createdAt ? new Date(profile.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
             </div>
 
             {profile.lastLogin && (

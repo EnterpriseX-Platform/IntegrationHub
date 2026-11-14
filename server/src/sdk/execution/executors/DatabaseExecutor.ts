@@ -75,6 +75,12 @@ export class DatabaseExecutor extends NodeExecutor {
   readonly type = 'database';
 
   async executeNode(node: ExecutionNode, context: ExecutionContext): Promise<any> {
+    // Postgres COUNT/SUM/BIGINT columns come back as JS BigInt, which JSON.stringify
+    // cannot serialise — the execution then failed when its output was stored.
+    return toJsonSafe(await this.runOperation(node, context));
+  }
+
+  private async runOperation(node: ExecutionNode, context: ExecutionContext): Promise<any> {
     const data = node.data as DatabaseNodeData;
     
     if (!data.connectionId) {
@@ -1174,4 +1180,20 @@ export class DatabaseExecutor extends NodeExecutor {
     oraclePools.clear();
     connectionClients.clear();
   }
+}
+
+/** BigInt → number when it fits exactly, else a decimal string; walks arrays and plain objects. */
+export function toJsonSafe(value: any): any {
+  if (typeof value === 'bigint') {
+    return value <= BigInt(Number.MAX_SAFE_INTEGER) && value >= BigInt(Number.MIN_SAFE_INTEGER)
+      ? Number(value)
+      : value.toString();
+  }
+  if (Array.isArray(value)) return value.map(toJsonSafe);
+  if (value && typeof value === 'object' && Object.getPrototypeOf(value) === Object.prototype) {
+    const out: Record<string, any> = {};
+    for (const [k, v] of Object.entries(value)) out[k] = toJsonSafe(v);
+    return out;
+  }
+  return value;
 }

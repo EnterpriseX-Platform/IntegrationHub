@@ -3,6 +3,9 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import { installApiAuth } from './lib/apiAuth';
 import './index.css';
+import { APP_NAME } from './config/brand';
+
+document.title = APP_NAME;
 
 installApiAuth();
 

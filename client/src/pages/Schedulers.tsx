@@ -113,7 +113,7 @@ function formatDateTime(iso?: string): { date: string; time: string } {
 // History as height-varying bars (vs. dots) — communicates duration at a glance.
 function HistoryBars({ executions }: { executions: SchedulerExecution[] }) {
   const recent = executions.slice(0, 10).reverse();
-  if (recent.length === 0) return <span className="text-[10px] tabular-nums text-slate-300">— no runs</span>;
+  if (recent.length === 0) return <span className="text-[12px] tabular-nums text-slate-300">— no runs</span>;
   const maxDur = Math.max(...recent.map(e => e.duration || 100), 1);
   return (
     <div className="flex items-end gap-[3px] h-5">
@@ -447,7 +447,7 @@ export default function Schedulers() {
               <div className="min-w-0">
                 <div className="flex items-baseline gap-2">
                   <h1 className="text-[17px] font-semibold tracking-tight text-slate-900">Schedulers</h1>
-                  <span className="text-[11px] tabular-nums text-slate-400">
+                  <span className="text-[12px] tabular-nums text-slate-400">
                     {filter.label} · {finalList.length} of {scopeFiltered.length}
                   </span>
                 </div>
@@ -489,7 +489,7 @@ export default function Schedulers() {
                 <button
                   key={t.id}
                   onClick={() => setStatusTab(t.id as any)}
-                  className={`relative inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-medium transition-all ${
+                  className={`relative inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[12px] font-medium transition-all ${
                     statusTab === t.id
                       ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200/60'
                       : 'text-slate-600 hover:text-slate-900'
@@ -497,7 +497,7 @@ export default function Schedulers() {
                 >
                   {t.dot && <span className={`h-1.5 w-1.5 rounded-full ${t.dot}`} />}
                   {t.label}
-                  <span className={`tabular-nums text-[10px] ${statusTab === t.id ? 'text-slate-500' : 'text-slate-400'}`}>{t.count}</span>
+                  <span className={`tabular-nums text-[12px] ${statusTab === t.id ? 'text-slate-500' : 'text-slate-400'}`}>{t.count}</span>
                 </button>
               ))}
             </div>
@@ -562,7 +562,7 @@ export default function Schedulers() {
                       {/* Two-line label: flow name + cron */}
                       <div className="flex-1 min-w-0">
                         <div className="font-semibold text-[13px] text-slate-900 leading-tight line-clamp-2 break-words sm:truncate" title={s.flowName}>{s.flowName}</div>
-                        <div className="mt-0.5 text-[11px] leading-none whitespace-nowrap">
+                        <div className="mt-0.5 text-[12px] leading-none whitespace-nowrap">
                           <code className="font-mono tabular-nums text-slate-500">{s.schedule}</code>
                           {s.nextRun && (
                             <span className="md:hidden text-slate-400"> · next {formatDateTime(s.nextRun).date} {formatDateTime(s.nextRun).time}</span>
@@ -572,8 +572,8 @@ export default function Schedulers() {
 
                       {/* Stats: Last run, Next run, History — fixed widths align across rows */}
                       <div className="hidden md:flex shrink-0 items-stretch divide-x divide-slate-200/70 text-right">
-                        <div className="px-3 w-[150px]">
-                          <div className="text-[9px] uppercase tracking-wide text-slate-400 font-medium leading-none">Last run</div>
+                        <div className="hidden xl:block px-3 w-[150px]">
+                          <div className="text-[12px] uppercase tracking-wide text-slate-400 font-medium leading-none">Last run</div>
                           <div className="mt-1 flex items-center justify-end gap-1 leading-none">
                             {lastExec?.status === 'completed' && <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />}
                             {lastExec?.status === 'failed' && <XCircle className="h-3 w-3 text-rose-500 shrink-0" />}
@@ -587,7 +587,7 @@ export default function Schedulers() {
                           </div>
                           {lastExec?.status === 'failed' && lastExec?.error && (
                             <div
-                              className="mt-1 text-[10px] text-rose-600 truncate cursor-help"
+                              className="mt-1 text-[12px] text-rose-600 truncate cursor-help"
                               title={lastExec.error}
                             >
                               {lastExec.error}
@@ -595,15 +595,15 @@ export default function Schedulers() {
                           )}
                         </div>
                         <div className="px-3 w-[140px]">
-                          <div className="text-[9px] uppercase tracking-wide text-slate-400 font-medium leading-none">Next run</div>
+                          <div className="text-[12px] uppercase tracking-wide text-slate-400 font-medium leading-none">Next run</div>
                           <div className="mt-1 text-[11.5px] text-slate-700 whitespace-nowrap tabular-nums leading-none" title={formatAbsolute(s.nextRun)}>
                             {s.nextRun ? (
                               <>{formatDateTime(s.nextRun).date} <span className="text-slate-400">{formatDateTime(s.nextRun).time}</span></>
                             ) : <span className="text-slate-400">—</span>}
                           </div>
                         </div>
-                        <div className="px-3 w-[110px]">
-                          <div className="text-[9px] uppercase tracking-wide text-slate-400 font-medium leading-none">History</div>
+                        <div className="hidden 2xl:block px-3 w-[110px]">
+                          <div className="text-[12px] uppercase tracking-wide text-slate-400 font-medium leading-none">History</div>
                           <div className="mt-1 flex justify-end leading-none">
                             <HistoryBars executions={s.executions} />
                           </div>
@@ -739,7 +739,7 @@ export default function Schedulers() {
             <div className="p-5 space-y-3">
               {paramRunFor.parameters?.map(p => (
                 <div key={p.name}>
-                  <label className="block text-[11px] font-medium uppercase tracking-wide text-slate-500 mb-1">{p.name}</label>
+                  <label className="block text-[12px] font-medium uppercase tracking-wide text-slate-500 mb-1">{p.name}</label>
                   <input
                     type="text"
                     value={paramValues[p.name] ?? ''}

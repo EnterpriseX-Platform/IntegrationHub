@@ -124,7 +124,7 @@ function ProjectPicker({ projects, value, onChange }: { projects: Record<string,
       <button type="button" onClick={() => setOpen(o => !o)}
         className={cx('flex h-9 w-full items-center gap-2 rounded-lg border bg-white px-2.5 text-left text-[13px]', open ? 'border-brand ring-2 ring-brand/20' : 'border-slate-200 hover:border-slate-300')}>
         {value ? <>
-          <span className="grid h-5 w-5 flex-shrink-0 place-items-center rounded bg-brand text-[10px] font-semibold text-white">{initial(projects[value] || '')}</span>
+          <span className="grid h-5 w-5 flex-shrink-0 place-items-center rounded bg-brand text-[12px] font-semibold text-white">{initial(projects[value] || '')}</span>
           <span className="min-w-0 flex-1 truncate">{projects[value]}</span>
         </> : <span className="flex-1 text-slate-400">Select project…</span>}
         <ChevronDown className={cx('h-3.5 w-3.5 flex-shrink-0 text-slate-400 transition-transform', open && 'rotate-180')} />
@@ -143,7 +143,7 @@ function ProjectPicker({ projects, value, onChange }: { projects: Record<string,
             {list.map(([id, n]) => (
               <button key={id} type="button" onClick={() => { onChange(id); setOpen(false); setQ(''); }}
                 className={cx('flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[12.5px]', id === value ? 'bg-brand/10 text-brand' : 'hover:bg-slate-50')}>
-                <span className={cx('grid h-5 w-5 flex-shrink-0 place-items-center rounded text-[10px] font-semibold', id === value ? 'bg-brand text-white' : 'bg-slate-200 text-slate-600')}>{initial(n)}</span>
+                <span className={cx('grid h-5 w-5 flex-shrink-0 place-items-center rounded text-[12px] font-semibold', id === value ? 'bg-brand text-white' : 'bg-slate-200 text-slate-600')}>{initial(n)}</span>
                 <span className="min-w-0 flex-1 truncate">{n}</span>
                 {id === value && <Check className="h-3.5 w-3.5 flex-shrink-0" />}
               </button>
@@ -763,7 +763,7 @@ export function ShareFolderExplorer({ basket: single, readOnly = false, embedded
                         className="flex flex-col items-center gap-1 rounded-lg border border-transparent p-2.5 text-center transition-colors hover:bg-slate-100">
                         <FolderIcon className="h-[46px] w-[46px] fill-amber-200 text-amber-500" strokeWidth={1.4} />
                         <span className="line-clamp-2 break-all text-[12.5px] leading-snug text-slate-800">{f.name}</span>
-                        {f.sub && <span className="text-[11px] tabular-nums text-slate-400">{f.sub}</span>}
+                        {f.sub && <span className="text-[12px] tabular-nums text-slate-400">{f.sub}</span>}
                       </button>
                     ))}
                   </div>
@@ -796,7 +796,7 @@ export function ShareFolderExplorer({ basket: single, readOnly = false, embedded
                               <td className="py-1.5 pr-2">
                                 <button type="button" onClick={() => viewFile(fileBasketId, f.id, name)} className="flex min-w-0 items-center gap-2 text-left hover:text-brand">
                                   {rowIcon(name)}
-                                  <span className="min-w-0 break-all leading-snug">{name}{!inFe && <span className="ml-1.5 text-[11px] text-slate-400">{f.status}</span>}</span>
+                                  <span className="min-w-0 break-all leading-snug">{name}{!inFe && <span className="ml-1.5 text-[12px] text-slate-400">{f.status}</span>}</span>
                                 </button>
                               </td>
                               <td className="whitespace-nowrap py-1.5 pr-2 text-right text-[12px] tabular-nums text-slate-400">{formatSize(f.size)}</td>
@@ -985,7 +985,7 @@ function LinkBasketModal({ linkedIds, onClose, onLinked }: {
           {groups.length === 0 && <div className="px-2 py-6 text-center text-[13px] text-slate-400">No basket found</div>}
           {groups.map(([pn, list]) => (
             <div key={pn} className="mb-2">
-              <div className="px-2 py-1 text-[11px] font-medium text-slate-400">{pn}</div>
+              <div className="px-2 py-1 text-[12px] font-medium text-slate-400">{pn}</div>
               {list.map(b => {
                 const linked = linkedIds.includes(b.id);
                 const on = picked?.id === b.id;
@@ -995,7 +995,7 @@ function LinkBasketModal({ linkedIds, onClose, onLinked }: {
                       on ? 'bg-brand/10 text-brand' : 'hover:bg-slate-50 text-slate-700', linked && 'opacity-40 cursor-not-allowed')}>
                     {basketIcon(b.type)}
                     <span className="flex-1 min-w-0 truncate">{b.name}</span>
-                    <span className="text-[11px] text-slate-400">{linked ? 'Linked' : `${b.type} · ${b._count?.basketFiles ?? 0} files`}</span>
+                    <span className="text-[12px] text-slate-400">{linked ? 'Linked' : `${b.type} · ${b._count?.basketFiles ?? 0} files`}</span>
                   </button>
                 );
               })}
@@ -1269,7 +1269,7 @@ function FolderRow({ folder, rootLabel = 'File Explorer', selected, onSelect, on
       {isRoot ? <FolderTree className="w-4 h-4 text-brand" /> : (isExpanded ? <FolderOpen className="w-4 h-4 text-amber-500" /> : <FolderIcon className="w-4 h-4 text-amber-500" />)}
       <span className="truncate flex-1">{isRoot ? rootLabel : folder!.name}</span>
       {!isRoot && folder!._count && (
-        <span className="flex-shrink-0 text-[11px] tabular-nums font-normal text-slate-400 group-hover:hidden">{folder!._count.files.toLocaleString('en-US')}</span>
+        <span className="flex-shrink-0 text-[12px] tabular-nums font-normal text-slate-400 group-hover:hidden">{folder!._count.files.toLocaleString('en-US')}</span>
       )}
       {/* Kebab — inline, appears on hover. Click to open menu with
           "Add subfolder" + (when empty) "Delete folder". */}
@@ -1355,7 +1355,7 @@ function InlineNewFolderInput({ level, parentName, value, creating, onChange, on
       </button>
       <button
         onClick={onCancel}
-        className="inline-flex items-center justify-center px-1.5 h-7 text-[11px] text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded whitespace-nowrap"
+        className="inline-flex items-center justify-center px-1.5 h-7 text-[12px] text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded whitespace-nowrap"
         title="Cancel (Esc)"
       >
         ×

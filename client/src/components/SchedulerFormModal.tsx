@@ -373,9 +373,9 @@ export default function SchedulerFormModal({ open, mode, initialValues, onClose,
                                 </div>
                                 <div className="flex items-center gap-1 mt-0.5">
                                   <span className={`h-1.5 w-1.5 rounded-full ${isProjectActive ? 'bg-blue-500' : 'bg-gray-300'}`} />
-                                  <span className="text-[10px] text-gray-500 capitalize">{project?.status || 'unknown'}</span>
-                                  <span className="text-gray-300 text-[10px] mx-1">·</span>
-                                  <span className="text-[10px] text-gray-500">{projectFlows.length} flow{projectFlows.length !== 1 ? 's' : ''}</span>
+                                  <span className="text-[12px] text-gray-500 capitalize">{project?.status || 'unknown'}</span>
+                                  <span className="text-gray-300 text-[12px] mx-1">·</span>
+                                  <span className="text-[12px] text-gray-500">{projectFlows.length} flow{projectFlows.length !== 1 ? 's' : ''}</span>
                                 </div>
                               </div>
                             </div>
@@ -405,7 +405,7 @@ export default function SchedulerFormModal({ open, mode, initialValues, onClose,
                                         <span className={`font-medium text-sm truncate ${isSelected ? 'text-blue-700' : colors.text}`}>
                                           {f.name}
                                         </span>
-                                        <span className={`inline-flex items-center gap-1 text-[10px] ${isFlowActive ? 'text-green-600' : 'text-gray-400'}`}>
+                                        <span className={`inline-flex items-center gap-1 text-[12px] ${isFlowActive ? 'text-green-600' : 'text-gray-400'}`}>
                                           <span className={`h-1.5 w-1.5 rounded-full ${isFlowActive ? 'bg-green-500' : 'bg-gray-300'}`} />
                                           {f.status || 'draft'}
                                         </span>
@@ -540,7 +540,7 @@ export default function SchedulerFormModal({ open, mode, initialValues, onClose,
                           title={def?.label || p.name}
                         />
                         {def?.label && (
-                          <div className="mt-0.5 px-1 text-[10px] text-gray-500 truncate" title={def.label}>{def.label}{def.required && <span className="text-rose-600"> *</span>}</div>
+                          <div className="mt-0.5 px-1 text-[12px] text-gray-500 truncate" title={def.label}>{def.label}{def.required && <span className="text-rose-600"> *</span>}</div>
                         )}
                       </div>
                       {isDropdown ? (

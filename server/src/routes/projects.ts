@@ -124,6 +124,77 @@ router.post('/', async (req: Request, res: Response) => {
   }
 });
 
+// Must stay above GET /:id, or Express treats 'group-agency-order' as a project id (404)
+// GET /api/projects/group-agency-order - Get current group and agency orders
+router.get('/group-agency-order', async (_req: Request, res: Response) => {
+  try {
+    // Get all projects with their group and agency info
+    const projects = await prisma.project.findMany({
+      select: {
+        id: true,
+        projectGroup: true,
+        agency: true,
+        groupPosition: true,
+        agencyPosition: true,
+      },
+    });
+
+    // Extract unique groups with their positions
+    const groupMap = new Map<string, number>();
+    const agencyMap = new Map<string, Map<string, number>>();
+
+    projects.forEach(p => {
+      const group = p.projectGroup || 'Ungrouped';
+      const agency = p.agency || 'No Agency';
+      
+      // Track group position (use first non-zero or max)
+      if (!groupMap.has(group) || p.groupPosition > 0) {
+        groupMap.set(group, p.groupPosition);
+      }
+      
+      // Track agency position within group
+      if (!agencyMap.has(group)) {
+        agencyMap.set(group, new Map());
+      }
+      const groupAgencies = agencyMap.get(group)!;
+      if (!groupAgencies.has(agency) || p.agencyPosition > 0) {
+        groupAgencies.set(agency, p.agencyPosition);
+      }
+    });
+
+    // Convert to sorted arrays
+    const groupOrder = Array.from(groupMap.entries())
+      .sort((a, b) => a[1] - b[1])
+      .map(([group]) => group);
+
+    const agencyOrders: Record<string, string[]> = {};
+    agencyMap.forEach((agencies, group) => {
+      agencyOrders[group] = Array.from(agencies.entries())
+        .sort((a, b) => a[1] - b[1])
+        .map(([agency]) => agency);
+    });
+
+    const response: ApiResponseWrapper<{
+      groupOrder: string[];
+      agencyOrders: Record<string, string[]>;
+    }> = {
+      success: true,
+      data: {
+        groupOrder,
+        agencyOrders,
+      },
+    };
+    return res.json(response);
+  } catch (error) {
+    console.error('Error fetching group-agency order:', error);
+    const response: ApiResponseWrapper = {
+      success: false,
+      error: 'Failed to fetch group-agency order',
+    };
+    return res.status(500).json(response);
+  }
+});
+
 // GET /api/projects/:id - Get project details with flows, connections, scheduler, apiSpecs
 router.get('/:id', async (req: Request, res: Response) => {
   try {
@@ -557,75 +628,6 @@ router.post('/agency-position', async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/projects/group-agency-order - Get current group and agency orders
-router.get('/group-agency-order', async (_req: Request, res: Response) => {
-  try {
-    // Get all projects with their group and agency info
-    const projects = await prisma.project.findMany({
-      select: {
-        id: true,
-        projectGroup: true,
-        agency: true,
-        groupPosition: true,
-        agencyPosition: true,
-      },
-    });
-
-    // Extract unique groups with their positions
-    const groupMap = new Map<string, number>();
-    const agencyMap = new Map<string, Map<string, number>>();
-
-    projects.forEach(p => {
-      const group = p.projectGroup || 'Ungrouped';
-      const agency = p.agency || 'No Agency';
-      
-      // Track group position (use first non-zero or max)
-      if (!groupMap.has(group) || p.groupPosition > 0) {
-        groupMap.set(group, p.groupPosition);
-      }
-      
-      // Track agency position within group
-      if (!agencyMap.has(group)) {
-        agencyMap.set(group, new Map());
-      }
-      const groupAgencies = agencyMap.get(group)!;
-      if (!groupAgencies.has(agency) || p.agencyPosition > 0) {
-        groupAgencies.set(agency, p.agencyPosition);
-      }
-    });
-
-    // Convert to sorted arrays
-    const groupOrder = Array.from(groupMap.entries())
-      .sort((a, b) => a[1] - b[1])
-      .map(([group]) => group);
-
-    const agencyOrders: Record<string, string[]> = {};
-    agencyMap.forEach((agencies, group) => {
-      agencyOrders[group] = Array.from(agencies.entries())
-        .sort((a, b) => a[1] - b[1])
-        .map(([agency]) => agency);
-    });
-
-    const response: ApiResponseWrapper<{
-      groupOrder: string[];
-      agencyOrders: Record<string, string[]>;
-    }> = {
-      success: true,
-      data: {
-        groupOrder,
-        agencyOrders,
-      },
-    };
-    return res.json(response);
-  } catch (error) {
-    console.error('Error fetching group-agency order:', error);
-    const response: ApiResponseWrapper = {
-      success: false,
-      error: 'Failed to fetch group-agency order',
-    };
-    return res.status(500).json(response);
-  }
-});
 
 // ─── Members ─────────────────────────────────────────────────────────────────
 // A grant gives a role on the project to one user or to a user group.

@@ -226,7 +226,7 @@ export const FlowCanvas = ({
       <div 
         className="absolute inset-0 canvas-background"
         style={{
-          backgroundImage: 'radial-gradient(circle, #cbd5e1 1px, transparent 1px)',
+          backgroundImage: 'radial-gradient(circle, var(--canvas-dot) 1px, transparent 1px)',
           backgroundSize: '20px 20px'
         }}
       />

@@ -17,12 +17,12 @@ export const DehLogo: React.FC<DehLogoProps> = ({ size = 32, className }) => (
     viewBox="0 0 32 32"
     className={className}
     role="img"
-    aria-label="DEH"
+    aria-label="logo"
   >
     <g fill="none" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M11 7H6V25H11" stroke="#111827" strokeWidth="2.5" />
-      <path d="M21 7H26V25H21" stroke="#111827" strokeWidth="2.5" />
-      <g stroke="#2563eb" strokeWidth="2.2">
+      <path d="M11 7H6V25H11" stroke="currentColor" strokeWidth="2.5" />
+      <path d="M21 7H26V25H21" stroke="currentColor" strokeWidth="2.5" />
+      <g stroke="#4589ff" strokeWidth="2.2">
         <path d="M11 13H20" />
         <path d="M17.5 10.5 20 13 17.5 15.5" />
         <path d="M21 19H12" />

@@ -54,7 +54,7 @@ function TypeBadge({ type, sftpMode }: { type: string; sftpMode?: string }) {
       ? { bg: 'bg-cyan-50',   text: 'text-cyan-700',   ring: 'ring-cyan-200/60',   label: 'Shares' }
       : { bg: 'bg-slate-100', text: 'text-slate-700',  ring: 'ring-slate-200/60',  label: 'Batch' };
   return (
-    <span className={`inline-flex items-center justify-center gap-1 rounded px-2 py-0.5 text-[10px] font-medium ring-1 ring-inset whitespace-nowrap ${cfg.bg} ${cfg.text} ${cfg.ring}`}>
+    <span className={`inline-flex items-center justify-center gap-1 rounded px-2 py-0.5 text-[12px] font-medium ring-1 ring-inset whitespace-nowrap ${cfg.bg} ${cfg.text} ${cfg.ring}`}>
       {cfg.label}
     </span>
   );
@@ -123,14 +123,14 @@ function renderBasketRow(opts: RowOpts) {
         <div className="flex items-baseline gap-2 min-w-0">
           <span className="font-medium text-[13px] text-slate-900 truncate">{b.name}</span>
           {b.description && (
-            <span className="text-[11px] text-slate-500 truncate">— {b.description}</span>
+            <span className="text-[12px] text-slate-500 truncate">— {b.description}</span>
           )}
         </div>
       </div>
       <div className="hidden lg:flex shrink-0 items-center gap-1 w-[160px]">
         <span className="w-[88px] inline-flex">
           {scope === 'all' && b.projectName && (
-            <span className={`inline-flex items-center rounded ${colors.chip} px-1.5 py-0.5 text-[10px] font-medium ${colors.chipText} ring-1 ring-inset ring-black/5 truncate w-full`}>
+            <span className={`inline-flex items-center rounded ${colors.chip} px-1.5 py-0.5 text-[12px] font-medium ${colors.chipText} ring-1 ring-inset ring-black/5 truncate w-full`}>
               {b.projectName}
             </span>
           )}
@@ -141,20 +141,20 @@ function renderBasketRow(opts: RowOpts) {
       </div>
       <div className="hidden md:flex shrink-0 items-center divide-x divide-slate-200/70 text-right">
         <div className="px-3">
-          <div className="text-[9px] uppercase tracking-wide text-slate-400 font-medium leading-none">Files</div>
+          <div className="text-[12px] uppercase tracking-wide text-slate-400 font-medium leading-none">Files</div>
           <div className="mt-0.5 text-[13px] font-mono tabular-nums text-slate-800 leading-none">{b.fileCount.toLocaleString()}</div>
         </div>
         <div className="px-3">
-          <div className="text-[9px] uppercase tracking-wide text-slate-400 font-medium leading-none">Active</div>
+          <div className="text-[12px] uppercase tracking-wide text-slate-400 font-medium leading-none">Active</div>
           <div className={`mt-0.5 text-[13px] font-mono tabular-nums leading-none ${(b.activeFileCount || 0) > 0 ? 'text-emerald-700 font-semibold' : 'text-slate-300'}`}>
             {b.activeFileCount || 0}
           </div>
         </div>
         <div className="px-3">
-          <div className="text-[9px] uppercase tracking-wide text-slate-400 font-medium leading-none">Sessions</div>
+          <div className="text-[12px] uppercase tracking-wide text-slate-400 font-medium leading-none">Sessions</div>
           <div className="mt-0.5 flex items-center justify-end leading-none">
             {(b.activeSessionCount || 0) > 0 ? (
-              <span className="inline-flex items-center gap-1 rounded bg-violet-50 px-1.5 py-0 text-[11px] font-medium text-violet-700 ring-1 ring-inset ring-violet-200/60 tabular-nums">
+              <span className="inline-flex items-center gap-1 rounded bg-violet-50 px-1.5 py-0 text-[12px] font-medium text-violet-700 ring-1 ring-inset ring-violet-200/60 tabular-nums">
                 <Clock className="h-2.5 w-2.5" />
                 {b.activeSessionCount}
               </span>
@@ -164,7 +164,7 @@ function renderBasketRow(opts: RowOpts) {
           </div>
         </div>
         <div className="px-3 min-w-[120px]">
-          <div className="text-[9px] uppercase tracking-wide text-slate-400 font-medium leading-none">Updated</div>
+          <div className="text-[12px] uppercase tracking-wide text-slate-400 font-medium leading-none">Updated</div>
           <div className="mt-0.5 text-[11.5px] text-slate-700 whitespace-nowrap tabular-nums leading-none">
             {formatDateTime(b.updatedAt).date} <span className="text-slate-400">{formatDateTime(b.updatedAt).time}</span>
           </div>
@@ -374,7 +374,7 @@ export default function BasketManagement() {
               <div className="min-w-0">
                 <div className="flex items-baseline gap-2">
                   <h1 className="text-[17px] font-semibold tracking-tight text-slate-900">Baskets</h1>
-                  <span className="text-[11px] tabular-nums text-slate-400">
+                  <span className="text-[12px] tabular-nums text-slate-400">
                     {filter.label} · {finalList.length} of {scopeFiltered.length}
                   </span>
                 </div>
@@ -410,7 +410,7 @@ export default function BasketManagement() {
                 <button
                   key={t.id}
                   onClick={() => setTypeTab(t.id as any)}
-                  className={`relative inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-medium transition-all ${
+                  className={`relative inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[12px] font-medium transition-all ${
                     typeTab === t.id
                       ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200/60'
                       : 'text-slate-600 hover:text-slate-900'
@@ -418,7 +418,7 @@ export default function BasketManagement() {
                 >
                   {t.dot && <span className={`h-1.5 w-1.5 rounded-full ${t.dot}`} />}
                   {t.label}
-                  <span className={`tabular-nums text-[10px] ${typeTab === t.id ? 'text-slate-500' : 'text-slate-400'}`}>{t.count}</span>
+                  <span className={`tabular-nums text-[12px] ${typeTab === t.id ? 'text-slate-500' : 'text-slate-400'}`}>{t.count}</span>
                 </button>
               ))}
             </div>

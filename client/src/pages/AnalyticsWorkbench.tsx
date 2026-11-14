@@ -1166,7 +1166,7 @@ function LeftDatasetPanel({
                   <button
                     onClick={() => addBrowseTables(addConnId)}
                     disabled={!addConnId || addLoadingTables}
-                    className="text-[10px] px-2 py-0.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 disabled:opacity-40 flex items-center gap-1"
+                    className="text-[12px] px-2 py-0.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 disabled:opacity-40 flex items-center gap-1"
                   >
                     {addLoadingTables ? <Loader2 size={10} className="animate-spin" /> : <RefreshCw size={10} />} Browse
                   </button>
@@ -1188,7 +1188,7 @@ function LeftDatasetPanel({
                     ))}
                   </div>
                 )}
-                {addSelTable && <p className="text-[10px] text-blue-600 mt-1">Selected: <strong>{addSelTable}</strong></p>}
+                {addSelTable && <p className="text-[12px] text-blue-600 mt-1">Selected: <strong>{addSelTable}</strong></p>}
               </div>
               <div>
                 <label className="text-xs font-medium text-gray-600 block mb-1">Dataset Name</label>
@@ -1214,7 +1214,7 @@ function LeftDatasetPanel({
       <div className="flex-1 overflow-y-auto text-xs">
         {/* Datasets section */}
         <div className="px-3 pt-2 pb-1 flex items-center justify-between">
-          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Datasets</span>
+          <span className="text-[12px] font-bold text-gray-400 uppercase tracking-wider">Datasets</span>
           <button onClick={openAdd} className="p-0.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Add dataset">
             <Plus size={12} />
           </button>
@@ -1237,7 +1237,7 @@ function LeftDatasetPanel({
 
         {/* Saved Views */}
         <button onClick={() => setViewsOpen(o => !o)}
-          className="w-full flex items-center gap-1 px-3 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider hover:text-gray-600">
+          className="w-full flex items-center gap-1 px-3 py-1 text-[12px] font-bold text-gray-400 uppercase tracking-wider hover:text-gray-600">
           {viewsOpen ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
           Saved Views
         </button>
@@ -1296,10 +1296,10 @@ function FieldsTab({ schema, fields, onChange }: {
   function typeTag(t: string) {
     const n = t.toLowerCase();
     if (n.includes('int') || n.includes('num') || n.includes('float') || n.includes('decimal') || n.includes('double'))
-      return <span className="text-[9px] px-1.5 py-0.5 rounded bg-pink-100 text-pink-700 font-bold ml-auto flex-shrink-0">NUM</span>;
+      return <span className="text-[12px] px-1.5 py-0.5 rounded bg-pink-100 text-pink-700 font-bold ml-auto flex-shrink-0">NUM</span>;
     if (n.includes('date') || n.includes('time'))
-      return <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-bold ml-auto flex-shrink-0">DATE</span>;
-    return <span className="text-[9px] px-1.5 py-0.5 rounded bg-green-100 text-green-700 font-bold ml-auto flex-shrink-0">TEXT</span>;
+      return <span className="text-[12px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-bold ml-auto flex-shrink-0">DATE</span>;
+    return <span className="text-[12px] px-1.5 py-0.5 rounded bg-green-100 text-green-700 font-bold ml-auto flex-shrink-0">TEXT</span>;
   }
 
   return (
@@ -1310,7 +1310,7 @@ function FieldsTab({ schema, fields, onChange }: {
         <div className="border border-gray-200 rounded-lg overflow-hidden flex flex-col">
           <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b">
             <span className="text-xs font-semibold text-gray-600">Available Columns</span>
-            <span className="text-[10px] text-gray-400 bg-gray-200 px-1.5 py-0.5 rounded-full">{available.length}</span>
+            <span className="text-[12px] text-gray-400 bg-gray-200 px-1.5 py-0.5 rounded-full">{available.length}</span>
           </div>
           <div className="flex-1 overflow-y-auto">
             {available.map(col => (
@@ -1330,7 +1330,7 @@ function FieldsTab({ schema, fields, onChange }: {
             <ArrowRight size={13} />
           </button>
           <button onClick={addAll} title="Add all"
-            className="w-7 h-7 flex items-center justify-center border border-gray-200 rounded-md bg-white hover:bg-blue-50 hover:border-blue-300 text-gray-500 hover:text-blue-600 transition-colors text-[10px] font-bold">
+            className="w-7 h-7 flex items-center justify-center border border-gray-200 rounded-md bg-white hover:bg-blue-50 hover:border-blue-300 text-gray-500 hover:text-blue-600 transition-colors text-[12px] font-bold">
             »
           </button>
           <button onClick={removeAll} title="Remove all"
@@ -1343,7 +1343,7 @@ function FieldsTab({ schema, fields, onChange }: {
         <div className="border border-gray-200 rounded-lg overflow-hidden flex flex-col">
           <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b">
             <span className="text-xs font-semibold text-gray-600">Selected Columns</span>
-            <span className="text-[10px] text-gray-400 bg-gray-200 px-1.5 py-0.5 rounded-full">{fields.length}</span>
+            <span className="text-[12px] text-gray-400 bg-gray-200 px-1.5 py-0.5 rounded-full">{fields.length}</span>
           </div>
           <div className="flex-1 overflow-y-auto">
             {fields.map((f, idx) => (
@@ -1403,10 +1403,10 @@ function FilterTab({ schema, filters, onChange }: {
       {filters.map((f, i) => (
         <div key={f.id} className="flex items-center gap-2 p-2 bg-white border border-gray-200 rounded-lg">
           {i === 0 ? (
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700 min-w-[46px] text-center">WHERE</span>
+            <span className="text-[12px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700 min-w-[46px] text-center">WHERE</span>
           ) : (
             <select value={f.logic} onChange={e => update(f.id, { logic: e.target.value as 'AND' | 'OR' })}
-              className="text-[10px] font-bold px-1 py-0.5 rounded border border-gray-200 bg-green-50 text-green-700 min-w-[46px]">
+              className="text-[12px] font-bold px-1 py-0.5 rounded border border-gray-200 bg-green-50 text-green-700 min-w-[46px]">
               <option>AND</option><option>OR</option>
             </select>
           )}
@@ -1435,7 +1435,7 @@ function FilterTab({ schema, filters, onChange }: {
       </button>
 
       {filters.length > 0 && (
-        <pre className="text-[11px] bg-green-50 border border-green-200 rounded-lg p-3 text-green-800 leading-relaxed mt-2 font-mono whitespace-pre-wrap">
+        <pre className="text-[12px] bg-green-50 border border-green-200 rounded-lg p-3 text-green-800 leading-relaxed mt-2 font-mono whitespace-pre-wrap">
           {sqlPreview || '(no conditions)'}
         </pre>
       )}
@@ -1496,11 +1496,11 @@ function PivotTab({ schema, pivot, onChange, datasetId }: {
     const isValue = zone === 'values';
     const vf = field as PivotValueField;
     return (
-      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium border ${color}`}>
+      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[12px] font-medium border ${color}`}>
         {field.name}
         {isValue && (
           <select value={vf.fn} onChange={e => updateValueFn(field.name, e.target.value as typeof vf.fn)}
-            className="text-[9px] font-bold bg-white/60 border-0 rounded px-0.5 cursor-pointer ml-0.5 focus:outline-none">
+            className="text-[12px] font-bold bg-white/60 border-0 rounded px-0.5 cursor-pointer ml-0.5 focus:outline-none">
             {AGG_FNS.map(fn => <option key={fn}>{fn}</option>)}
           </select>
         )}
@@ -1515,14 +1515,14 @@ function PivotTab({ schema, pivot, onChange, datasetId }: {
     const items = pivot[zone] as (PivotField | PivotValueField)[];
     return (
       <div className="border border-gray-200 rounded-lg p-2 flex flex-col gap-1.5">
-        <div className="flex items-center gap-1.5 text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+        <div className="flex items-center gap-1.5 text-[12px] font-bold text-gray-500 uppercase tracking-wider">
           {icon} {label}
         </div>
         <div className={`min-h-[40px] border border-dashed rounded-md p-1.5 flex flex-wrap gap-1.5 items-start ${items.length > 0 ? 'border-gray-200 bg-white' : 'border-gray-200 bg-gray-50 hover:border-blue-300'}`}>
           {items.map(f => (
             <ZoneChip key={f.name} field={f} zone={zone} color={color} />
           ))}
-          {items.length === 0 && <span className="text-[10px] text-gray-300 italic self-center">ลาก field มาวาง หรือคลิก field ด้านซ้าย</span>}
+          {items.length === 0 && <span className="text-[12px] text-gray-300 italic self-center">ลาก field มาวาง หรือคลิก field ด้านซ้าย</span>}
         </div>
       </div>
     );
@@ -1572,7 +1572,7 @@ function PivotTab({ schema, pivot, onChange, datasetId }: {
     <div className="flex h-full overflow-hidden">
       {/* Left: Field list */}
       <div className="w-[180px] flex-shrink-0 border-r border-gray-100 flex flex-col">
-        <div className="px-3 py-2 bg-gray-50 border-b text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+        <div className="px-3 py-2 bg-gray-50 border-b text-[12px] font-bold text-gray-500 uppercase tracking-wider">
           Fields
         </div>
         <div className="flex-1 overflow-y-auto py-1">
@@ -1615,12 +1615,12 @@ function PivotTab({ schema, pivot, onChange, datasetId }: {
             Run Pivot
           </button>
           {!canRun && schema.length > 0 && (
-            <span className="text-[10px] text-gray-400">
+            <span className="text-[12px] text-gray-400">
               Assign at least one Row and one Value field
             </span>
           )}
           {pivotTotalRows > 0 && !pivotLoading && (
-            <span className="text-[10px] text-gray-500 ml-auto">
+            <span className="text-[12px] text-gray-500 ml-auto">
               {pivotTotalRows.toLocaleString()} row{pivotTotalRows !== 1 ? 's' : ''}
             </span>
           )}
@@ -1628,7 +1628,7 @@ function PivotTab({ schema, pivot, onChange, datasetId }: {
 
         {/* Error */}
         {pivotError && (
-          <div className="mx-3 mb-2 px-2 py-1.5 bg-red-50 border border-red-200 rounded text-[10px] text-red-600">
+          <div className="mx-3 mb-2 px-2 py-1.5 bg-red-50 border border-red-200 rounded text-[12px] text-red-600">
             {pivotError}
           </div>
         )}
@@ -1636,7 +1636,7 @@ function PivotTab({ schema, pivot, onChange, datasetId }: {
         {/* Results table */}
         {pivotCols.length > 0 && (
           <div className="flex-1 overflow-auto mx-3 mb-3 border border-gray-200 rounded-lg">
-            <table className="w-full border-collapse text-[11px]">
+            <table className="w-full border-collapse text-[12px]">
               <thead className="sticky top-0 z-10">
                 <tr>
                   {pivotCols.map(c => (
@@ -1717,15 +1717,15 @@ function PreviewPanel({ datasetId, fields, filters, loading: extLoading }: {
         {loading || extLoading ? (
           <Loader2 size={12} className="animate-spin text-blue-500" />
         ) : (
-          <span className="flex items-center gap-1 text-[10px] font-bold text-green-600">
+          <span className="flex items-center gap-1 text-[12px] font-bold text-green-600">
             <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" /> Live
           </span>
         )}
       </div>
-      {error && <div className="px-3 py-2 text-[10px] text-red-500">{error}</div>}
+      {error && <div className="px-3 py-2 text-[12px] text-red-500">{error}</div>}
       <div className="flex-1 overflow-auto">
         {cols.length > 0 ? (
-          <table className="w-full border-collapse text-[10px]">
+          <table className="w-full border-collapse text-[12px]">
             <thead>
               <tr>{cols.map(c => <th key={c.name} className="px-2 py-1.5 bg-gray-50 text-left font-semibold text-gray-500 border-b border-gray-200 whitespace-nowrap">{c.name}</th>)}</tr>
             </thead>
@@ -1738,11 +1738,11 @@ function PreviewPanel({ datasetId, fields, filters, loading: extLoading }: {
             </tbody>
           </table>
         ) : (
-          <div className="p-4 text-[10px] text-gray-400 italic">Select fields to preview</div>
+          <div className="p-4 text-[12px] text-gray-400 italic">Select fields to preview</div>
         )}
       </div>
       {rows.length > 0 && (
-        <div className="flex justify-between px-3 py-1.5 border-t bg-gray-50 text-[10px] text-gray-400">
+        <div className="flex justify-between px-3 py-1.5 border-t bg-gray-50 text-[12px] text-gray-400">
           <span>{rows.length} rows (preview)</span>
         </div>
       )}
@@ -1961,9 +1961,9 @@ function ViewerMode({ tabs, activeTabId, onSetActive, onCloseTab, onAddTab, save
             <table className="w-full border-collapse text-xs">
               <thead>
                 <tr>
-                  <th className="w-8 bg-gray-50 border-b border-r border-gray-200 text-[10px] text-gray-400 font-normal sticky top-0 z-10" />
+                  <th className="w-8 bg-gray-50 border-b border-r border-gray-200 text-[12px] text-gray-400 font-normal sticky top-0 z-10" />
                   {activeTab.columns.map(c => (
-                    <th key={c.name} className="px-3 py-2 bg-gray-100 text-left text-[10px] font-bold text-gray-500 border-b border-r border-gray-200 sticky top-0 z-10 whitespace-nowrap cursor-pointer hover:bg-gray-200">
+                    <th key={c.name} className="px-3 py-2 bg-gray-100 text-left text-[12px] font-bold text-gray-500 border-b border-r border-gray-200 sticky top-0 z-10 whitespace-nowrap cursor-pointer hover:bg-gray-200">
                       {c.name}
                     </th>
                   ))}
@@ -1972,7 +1972,7 @@ function ViewerMode({ tabs, activeTabId, onSetActive, onCloseTab, onAddTab, save
               <tbody>
                 {activeTab.rows.map((r, i) => (
                   <tr key={i} className="hover:bg-blue-50 group">
-                    <td className="text-center text-[9px] text-gray-300 bg-gray-50 border-b border-r border-gray-100 w-8">{i + 1}</td>
+                    <td className="text-center text-[12px] text-gray-300 bg-gray-50 border-b border-r border-gray-100 w-8">{i + 1}</td>
                     {activeTab.columns.map(c => {
                       const val = r[c.name];
                       const isNum = typeof val === 'number';
@@ -1992,7 +1992,7 @@ function ViewerMode({ tabs, activeTabId, onSetActive, onCloseTab, onAddTab, save
 
       {/* Status bar */}
       {activeTab && !activeTab.loading && (
-        <div className="flex items-center px-4 h-6 bg-gray-50 border-t border-gray-100 text-[10px] text-gray-400">
+        <div className="flex items-center px-4 h-6 bg-gray-50 border-t border-gray-100 text-[12px] text-gray-400">
           <span>{activeTab.total} rows · {activeTab.columns.length} columns</span>
         </div>
       )}

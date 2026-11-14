@@ -736,7 +736,7 @@ export const SftpBasketDetail = ({ basket, onBack, sftpConnections = [] }: SftpB
                       placeholder="Search..."
                       value={filesSearch}
                       onChange={(e) => setFilesSearch(e.target.value)}
-                      className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm w-40 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                      className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm w-40 focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
                     />
                     <button
                       onClick={() => fetchEntries(currentPath)}
@@ -958,7 +958,7 @@ export const SftpBasketDetail = ({ basket, onBack, sftpConnections = [] }: SftpB
                 value={newFolderName}
                 onChange={(e) => setNewFolderName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && createFolder()}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600"
                 autoFocus
               />
             </div>

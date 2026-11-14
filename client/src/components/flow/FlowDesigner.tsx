@@ -52,6 +52,10 @@ const templateVariableHighlight = (): Extension => [templateVariablePlugin];
 
 import { API_URL } from '../../config/api';
 
+// Node card size (Robot Factory style). Edge anchors are computed from these.
+const NODE_WIDTH = 176;
+const NODE_HEIGHT = 64;
+
 // Generate a readable varName for a node based on its type
 const varNamePrefixMap: Record<string, string> = {
   'database': 'db',
@@ -554,8 +558,6 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
     if (type === 'connect' && nodeId) {
       const node = flow.nodes.find(n => n.id === nodeId);
       if (node) {
-        const NODE_WIDTH = 120;
-        const NODE_HEIGHT = 46;
         const DOT_OFFSET = 5; // adjusted
         const centerY = node.y + 30.5; // adjusted to match HTML dot
         const centerX = node.x + NODE_WIDTH / 2;
@@ -632,8 +634,6 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
       const fromNode = flow.nodes.find(n => n.id === dragState.connectFrom);
       if (fromNode) {
         // Keep starting from right connection dot
-        const NODE_WIDTH = 120;
-        const NODE_HEIGHT = 46;
         const DOT_OFFSET = 6;
         const startX = fromNode.x + NODE_WIDTH + DOT_OFFSET;
         const startY = fromNode.y + NODE_HEIGHT / 2;
@@ -651,8 +651,6 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
         const source = flow.nodes.find(n => n.id === edge.source);
         const target = flow.nodes.find(n => n.id === edge.target);
         if (source && target) {
-          const NODE_WIDTH = 120;
-          const NODE_HEIGHT = 46;
           const DOT_OFFSET = 6;
           
           // Calculate base dot positions based on relative positions
@@ -710,8 +708,6 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
 
   // Helper to detect which port is closest to a point
   const detectPort = (node: FlowNode, x: number, y: number): 'top' | 'right' | 'bottom' | 'left' => {
-    const NODE_WIDTH = 120;
-    const NODE_HEIGHT = 46;
     const DOT_OFFSET = 5;
     const centerY = node.y + 30.5;
     const centerX = node.x + NODE_WIDTH / 2;
@@ -825,8 +821,8 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
   };
 
   const addNode = (type: string, x?: number, y?: number) => {
-    const centerX = x !== undefined ? x : (-pan.x + (canvasRef.current?.clientWidth || 800) / 2) / scale - 60;
-    const centerY = y !== undefined ? y : (-pan.y + (canvasRef.current?.clientHeight || 600) / 2) / scale - 25;
+    const centerX = x !== undefined ? x : (-pan.x + (canvasRef.current?.clientWidth || 800) / 2) / scale - NODE_WIDTH / 2;
+    const centerY = y !== undefined ? y : (-pan.y + (canvasRef.current?.clientHeight || 600) / 2) / scale - NODE_HEIGHT / 2;
     
     const newNode: FlowNode = {
       id: createId(),
@@ -946,8 +942,6 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
       if (!source || !target) continue;
       
       // Node center points - must match rendering (120x46)
-      const NODE_WIDTH = 120;
-      const NODE_HEIGHT = 46;
       const sx = source.x + NODE_WIDTH / 2;
       const sy = source.y + NODE_HEIGHT / 2;
       const tx = target.x + NODE_WIDTH / 2;
@@ -1076,7 +1070,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
       <div className={`${showPalette ? 'flex absolute inset-y-0 left-0 z-30 shadow-xl' : 'hidden'} lg:static lg:z-auto lg:shadow-none lg:flex w-56 bg-white border-r flex-col h-full min-h-0`}>
         {/* Quick Add */}
         <div className="p-3 border-b bg-gray-50">
-          <span className="text-[10px] text-gray-500 block mb-2">Quick Add</span>
+          <span className="text-[12px] text-gray-500 block mb-2">Quick Add</span>
           <div className="flex gap-1">
             {safeNodeTypes.slice(0, 4).map(node => (
               <button
@@ -1102,13 +1096,13 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
         <div className="px-3 py-2 border-b bg-white flex gap-2">
           <button
             onClick={() => setExpandedGroups({ trigger: true, integration: true, action: true, processing: true, aggregate: true, api: true })}
-            className="flex-1 text-[10px] px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-600 transition-colors"
+            className="flex-1 whitespace-nowrap text-[12px] px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-600 transition-colors"
           >
             <i className="fas fa-expand-alt mr-1"></i>Expand All
           </button>
           <button
             onClick={() => setExpandedGroups({ trigger: false, integration: false, action: false, processing: false, aggregate: false, api: false })}
-            className="flex-1 text-[10px] px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-600 transition-colors"
+            className="flex-1 whitespace-nowrap text-[12px] px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-600 transition-colors"
           >
             <i className="fas fa-compress-alt mr-1"></i>Collapse All
           </button>
@@ -1123,8 +1117,8 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
               className="w-full p-2 bg-orange-50 border-b border-orange-100 flex items-center justify-between hover:bg-orange-100 transition-colors"
             >
               <h3 className="font-medium text-xs text-orange-600 flex items-center gap-1">
-                <i className="fas fa-bolt text-[10px]"></i> Triggers
-                <span className="text-[10px] opacity-60">({safeNodeTypes.filter(n => n.category === 'trigger').length})</span>
+                <i className="fas fa-bolt text-[12px]"></i> Triggers
+                <span className="text-[12px] opacity-60">({safeNodeTypes.filter(n => n.category === 'trigger').length})</span>
               </h3>
               {expandedGroups.trigger ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             </button>
@@ -1139,7 +1133,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                     className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded hover:bg-orange-50 text-left transition-colors group/node"
                   >
                     <div className={`w-6 h-6 ${node.color} rounded flex items-center justify-center flex-shrink-0 group-hover/node:scale-110 transition-transform`}>
-                      <i className={`fas ${node.icon} text-white text-[10px]`}></i>
+                      <i className={`fas ${node.icon} text-white text-[12px]`}></i>
                     </div>
                     <div className="min-w-0">
                       <span className="text-xs font-medium block truncate">{node.label}</span>
@@ -1155,8 +1149,8 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
               className="w-full p-2 bg-indigo-50 border-b border-indigo-100 flex items-center justify-between hover:bg-indigo-100 transition-colors"
             >
               <h3 className="font-medium text-xs text-indigo-600 flex items-center gap-1">
-                <i className="fas fa-plug text-[10px]"></i> Integration
-                <span className="text-[10px] opacity-60">({safeNodeTypes.filter(n => n.category === 'integration').length})</span>
+                <i className="fas fa-plug text-[12px]"></i> Integration
+                <span className="text-[12px] opacity-60">({safeNodeTypes.filter(n => n.category === 'integration').length})</span>
               </h3>
               {expandedGroups.integration ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             </button>
@@ -1171,7 +1165,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                     className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded hover:bg-indigo-50 text-left transition-colors group/node"
                   >
                     <div className={`w-6 h-6 ${node.color} rounded flex items-center justify-center flex-shrink-0 group-hover/node:scale-110 transition-transform`}>
-                      <i className={`fas ${node.icon} text-white text-[10px]`}></i>
+                      <i className={`fas ${node.icon} text-white text-[12px]`}></i>
                     </div>
                     <div className="min-w-0">
                       <span className="text-xs font-medium block truncate">{node.label}</span>
@@ -1187,8 +1181,8 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
               className="w-full p-2 bg-blue-50 border-b border-blue-100 flex items-center justify-between hover:bg-blue-100 transition-colors"
             >
               <h3 className="font-medium text-xs text-blue-600 flex items-center gap-1">
-                <i className="fas fa-cogs text-[10px]"></i> Actions
-                <span className="text-[10px] opacity-60">({safeNodeTypes.filter(n => n.category === 'action').length})</span>
+                <i className="fas fa-cogs text-[12px]"></i> Actions
+                <span className="text-[12px] opacity-60">({safeNodeTypes.filter(n => n.category === 'action').length})</span>
               </h3>
               {expandedGroups.action ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             </button>
@@ -1203,7 +1197,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                     className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded hover:bg-blue-50 text-left transition-colors group/node"
                   >
                     <div className={`w-6 h-6 ${node.color} rounded flex items-center justify-center flex-shrink-0 group-hover/node:scale-110 transition-transform`}>
-                      <i className={`fas ${node.icon} text-white text-[10px]`}></i>
+                      <i className={`fas ${node.icon} text-white text-[12px]`}></i>
                     </div>
                     <div className="min-w-0">
                       <span className="text-xs font-medium block truncate">{node.label}</span>
@@ -1219,8 +1213,8 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
               className="w-full p-2 bg-purple-50 border-b border-purple-100 flex items-center justify-between hover:bg-purple-100 transition-colors"
             >
               <h3 className="font-medium text-xs text-purple-600 flex items-center gap-1">
-                <i className="fas fa-project-diagram text-[10px]"></i> Aggregate
-                <span className="text-[10px] opacity-60">({safeNodeTypes.filter(n => n.category === 'aggregate').length})</span>
+                <i className="fas fa-project-diagram text-[12px]"></i> Aggregate
+                <span className="text-[12px] opacity-60">({safeNodeTypes.filter(n => n.category === 'aggregate').length})</span>
               </h3>
               {expandedGroups.aggregate ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             </button>
@@ -1235,7 +1229,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                     className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded hover:bg-purple-50 text-left transition-colors group/node"
                   >
                     <div className={`w-6 h-6 ${node.color} rounded flex items-center justify-center flex-shrink-0 group-hover/node:scale-110 transition-transform`}>
-                      <i className={`fas ${node.icon} text-white text-[10px]`}></i>
+                      <i className={`fas ${node.icon} text-white text-[12px]`}></i>
                     </div>
                     <div className="min-w-0">
                       <span className="text-xs font-medium block truncate">{node.label}</span>
@@ -1251,8 +1245,8 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
               className="w-full p-2 bg-gray-100 border-b flex items-center justify-between hover:bg-gray-200 transition-colors"
             >
               <h3 className="font-medium text-xs text-gray-600 flex items-center gap-1">
-                <i className="fas fa-code-branch text-[10px]"></i> Processing
-                <span className="text-[10px] opacity-60">({safeNodeTypes.filter(n => n.category === 'processing' || !n.category).length})</span>
+                <i className="fas fa-code-branch text-[12px]"></i> Processing
+                <span className="text-[12px] opacity-60">({safeNodeTypes.filter(n => n.category === 'processing' || !n.category).length})</span>
               </h3>
               {expandedGroups.processing ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             </button>
@@ -1267,7 +1261,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                     className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded hover:bg-gray-100 text-left transition-colors group/node"
                   >
                     <div className={`w-6 h-6 ${node.color} rounded flex items-center justify-center flex-shrink-0 group-hover/node:scale-110 transition-transform`}>
-                      <i className={`fas ${node.icon} text-white text-[10px]`}></i>
+                      <i className={`fas ${node.icon} text-white text-[12px]`}></i>
                     </div>
                     <div className="min-w-0">
                       <span className="text-xs font-medium block truncate">{node.label}</span>
@@ -1286,8 +1280,8 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
               className="w-full p-2 bg-blue-50 border-b border-blue-100 flex items-center justify-between hover:bg-blue-100 transition-colors"
             >
               <h3 className="font-medium text-xs text-blue-600 flex items-center gap-1">
-                <i className="fas fa-exchange-alt text-[10px]"></i> API
-                <span className="text-[10px] opacity-60">({safeNodeTypes.filter(n => n.category === 'api').length})</span>
+                <i className="fas fa-exchange-alt text-[12px]"></i> API
+                <span className="text-[12px] opacity-60">({safeNodeTypes.filter(n => n.category === 'api').length})</span>
               </h3>
               {expandedGroups.api ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             </button>
@@ -1302,7 +1296,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                     className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded hover:bg-blue-50 text-left transition-colors group/node"
                   >
                     <div className={`w-6 h-6 ${node.color} rounded flex items-center justify-center flex-shrink-0 group-hover/node:scale-110 transition-transform`}>
-                      <i className={`fas ${node.icon} text-white text-[10px]`}></i>
+                      <i className={`fas ${node.icon} text-white text-[12px]`}></i>
                     </div>
                     <div className="min-w-0">
                       <span className="text-xs font-medium block truncate">{node.label}</span>
@@ -1318,8 +1312,8 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
               className="w-full p-2 bg-indigo-50 border-b border-indigo-100 flex items-center justify-between hover:bg-indigo-100 transition-colors"
             >
               <h3 className="font-medium text-xs text-indigo-600 flex items-center gap-1">
-                <i className="fas fa-plug text-[10px]"></i> Integration
-                <span className="text-[10px] opacity-60">({safeNodeTypes.filter(n => n.category === 'integration').length})</span>
+                <i className="fas fa-plug text-[12px]"></i> Integration
+                <span className="text-[12px] opacity-60">({safeNodeTypes.filter(n => n.category === 'integration').length})</span>
               </h3>
               {expandedGroups.integration ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             </button>
@@ -1334,7 +1328,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                     className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded hover:bg-indigo-50 text-left transition-colors group/node"
                   >
                     <div className={`w-6 h-6 ${node.color} rounded flex items-center justify-center flex-shrink-0 group-hover/node:scale-110 transition-transform`}>
-                      <i className={`fas ${node.icon} text-white text-[10px]`}></i>
+                      <i className={`fas ${node.icon} text-white text-[12px]`}></i>
                     </div>
                     <div className="min-w-0">
                       <span className="text-xs font-medium block truncate">{node.label}</span>
@@ -1350,8 +1344,8 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
               className="w-full p-2 bg-cyan-50 border-b border-cyan-100 flex items-center justify-between hover:bg-cyan-100 transition-colors"
             >
               <h3 className="font-medium text-xs text-cyan-600 flex items-center gap-1">
-                <i className="fas fa-code-branch text-[10px]"></i> Processing
-                <span className="text-[10px] opacity-60">({safeNodeTypes.filter(n => n.category === 'processing' || !n.category).length})</span>
+                <i className="fas fa-code-branch text-[12px]"></i> Processing
+                <span className="text-[12px] opacity-60">({safeNodeTypes.filter(n => n.category === 'processing' || !n.category).length})</span>
               </h3>
               {expandedGroups.processing ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             </button>
@@ -1366,7 +1360,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                     className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded hover:bg-cyan-50 text-left transition-colors group/node"
                   >
                     <div className={`w-6 h-6 ${node.color} rounded flex items-center justify-center flex-shrink-0 group-hover/node:scale-110 transition-transform`}>
-                      <i className={`fas ${node.icon} text-white text-[10px]`}></i>
+                      <i className={`fas ${node.icon} text-white text-[12px]`}></i>
                     </div>
                     <div className="min-w-0">
                       <span className="text-xs font-medium block truncate">{node.label}</span>
@@ -1440,8 +1434,8 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
             className="absolute inset-0 pointer-events-none"
             style={{
               backgroundImage: `
-                linear-gradient(to right, #e2e8f0 1px, transparent 1px),
-                linear-gradient(to bottom, #e2e8f0 1px, transparent 1px)
+                linear-gradient(to right, var(--canvas-grid) 1px, transparent 1px),
+                linear-gradient(to bottom, var(--canvas-grid) 1px, transparent 1px)
               `,
               backgroundSize: `${GRID_SIZE * scale}px ${GRID_SIZE * scale}px`,
               backgroundPosition: `${pan.x}px ${pan.y}px`,
@@ -1482,8 +1476,6 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                 const isDraggingThisEdge = draggingEdgeHandle?.edgeId === edge.id;
                 
                 // Node dimensions - MUST match HTML node rendering
-                const NODE_WIDTH = 120;   // width in style={{ width: 120 }}
-                const NODE_HEIGHT = 46;   // approx header(28px) + body(18px)
                 const DOT_OFFSET = 5;     // Adjusted: was 6, now 5 to align with HTML dot
                 
                 // Node centers - adjusted to match HTML dot positions
@@ -1757,87 +1749,92 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                   style={{
                     left: node.x,
                     top: node.y,
-                    width: 120,
+                    width: NODE_WIDTH,
+                    height: NODE_HEIGHT,
                   }}
                 >
-                  {/* Connection points - visible in connect mode or always */}
+                  {/* Ports: small hollow dots on every side (Robot Factory style) */}
                   {(connectMode || true) && (
                     <>
                       <div
-                        className={`absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full border border-white cursor-crosshair hover:bg-blue-500 z-30 transition-colors ${
-                          connectMode ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
+                        className={`absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full cursor-crosshair z-30 transition-shadow bg-[var(--canvas-node)] ${
+                          connectMode ? 'shadow-[inset_0_0_0_2px_#24a148] animate-pulse' : 'shadow-[inset_0_0_0_2px_var(--canvas-port)] hover:shadow-[inset_0_0_0_2px_#4589ff]'
                         }`}
-                        style={{ marginTop: '1.5px' }}
                         onMouseDown={(e) => handleMouseDown(e, 'connect', node.id, 'top')}
                         title="Drag to connect"
                       />
                       <div
-                        className={`absolute top-1/2 -right-1.5 -translate-y-1/2 w-3 h-3 rounded-full border border-white cursor-crosshair hover:bg-blue-500 z-30 transition-colors ${
-                          connectMode ? 'bg-green-500 animate-pulse' : 'bg-blue-500'
+                        className={`absolute top-1/2 -right-1.5 -translate-y-1/2 w-3 h-3 rounded-full cursor-crosshair z-30 transition-shadow bg-[var(--canvas-node)] ${
+                          connectMode ? 'shadow-[inset_0_0_0_2px_#24a148] animate-pulse' : 'shadow-[inset_0_0_0_2px_var(--canvas-port)] hover:shadow-[inset_0_0_0_2px_#4589ff]'
                         }`}
-                        style={{ marginTop: '1.5px' }}
                         onMouseDown={(e) => handleMouseDown(e, 'connect', node.id, 'right')}
                         title="Drag to connect"
                       />
                       <div
-                        className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full border border-white cursor-crosshair hover:bg-blue-500 z-30 transition-colors ${
-                          connectMode ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
+                        className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full cursor-crosshair z-30 transition-shadow bg-[var(--canvas-node)] ${
+                          connectMode ? 'shadow-[inset_0_0_0_2px_#24a148] animate-pulse' : 'shadow-[inset_0_0_0_2px_var(--canvas-port)] hover:shadow-[inset_0_0_0_2px_#4589ff]'
                         }`}
-                        style={{ marginBottom: '-1.5px' }}
                         onMouseDown={(e) => handleMouseDown(e, 'connect', node.id, 'bottom')}
                         title="Drag to connect"
                       />
                       <div
-                        className={`absolute top-1/2 -left-1.5 -translate-y-1/2 w-3 h-3 rounded-full border border-white cursor-crosshair hover:bg-blue-500 z-30 transition-colors ${
-                          connectMode ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
+                        className={`absolute top-1/2 -left-1.5 -translate-y-1/2 w-3 h-3 rounded-full cursor-crosshair z-30 transition-shadow bg-[var(--canvas-node)] ${
+                          connectMode ? 'shadow-[inset_0_0_0_2px_#24a148] animate-pulse' : 'shadow-[inset_0_0_0_2px_var(--canvas-port)] hover:shadow-[inset_0_0_0_2px_#4589ff]'
                         }`}
-                        style={{ marginTop: '1.5px' }}
                         onMouseDown={(e) => handleMouseDown(e, 'connect', node.id, 'left')}
                         title="Drag to connect"
                       />
                     </>
                   )}
 
-                  {/* Node body */}
+                  {/* Node card: icon tile · type · name · summary */}
                   <div
-                    className={`bg-white rounded-lg shadow-md border-2 cursor-move overflow-hidden transition-all ${
-                      isSelected ? 'border-blue-500 shadow-lg' : connectMode ? 'border-green-400' : 'border-gray-300 hover:border-gray-400'
+                    className={`relative select-none grid grid-cols-[36px_minmax(0,1fr)] items-center gap-2.5 h-full pl-2.5 pr-3 rounded-[10px] bg-[var(--canvas-node)] text-[var(--canvas-node-text)] cursor-move transition-shadow ${
+                      isSelected
+                        ? 'shadow-[inset_0_0_0_2px_var(--canvas-node-text),0_10px_22px_rgb(0_0_0/0.18)]'
+                        : connectMode
+                        ? 'shadow-[inset_0_0_0_1px_#24a148,0_1px_2px_rgb(0_0_0/0.06)]'
+                        : 'shadow-[inset_0_0_0_1px_var(--canvas-node-line),0_1px_2px_rgb(0_0_0/0.06),0_4px_12px_rgb(0_0_0/0.04)] hover:shadow-[inset_0_0_0_1px_var(--canvas-port),0_2px_4px_rgb(0_0_0/0.08),0_8px_18px_rgb(0_0_0/0.06)]'
                     }`}
                     onMouseDown={(e) => handleMouseDown(e, 'node', node.id)}
                   >
-                    <div className={`${def?.color || 'bg-gray-500'} px-2 py-1.5 flex items-center gap-2`}>
-                      <i className={`fas ${def?.icon || 'fa-cube'} text-white text-xs`}></i>
-                      <span className="text-white text-xs font-medium truncate flex-1">
+                    <span className={`grid place-items-center w-9 h-9 rounded-[9px] ${def?.color || 'bg-gray-500'}`}>
+                      <i className={`fas ${def?.icon || 'fa-cube'} text-white text-[15px]`}></i>
+                    </span>
+                    <span className="grid gap-px min-w-0 leading-tight">
+                      <small className="text-[11px] font-semibold uppercase tracking-[0.02em] text-[var(--canvas-node-muted)] truncate">
+                        {def?.label || node.type}
+                      </small>
+                      <b className="text-[14px] font-semibold truncate">
                         {node.data?.label || def?.label || node.type}
+                      </b>
+                      <span className="text-[12px] text-[var(--canvas-node-muted)] truncate">
+                        {node.type === 'database' && node.data?.connectionId
+                          ? `${connections.find(c => c.id === node.data?.connectionId)?.name || '...'} · ${node.data?.operation || 'select'}`
+                          : node.type === 'file-read' && node.data?.basketId
+                          ? `Basket: ${baskets.find(b => b.id === node.data?.basketId)?.name || '...'}`
+                          : node.type === 'for-each'
+                          ? `Loop: ${node.data?.source || 'triggerFiles'}${(node.data?.workers || 1) > 1 ? ` (${node.data?.workers}w)` : ''}`
+                          : node.data?.varName || node.type}
                       </span>
-                      {isSelected && (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); deleteNode(node.id); }}
-                          className="text-white/80 hover:text-white"
-                        >
-                          <i className="fas fa-times text-xs"></i>
-                        </button>
-                      )}
-                    </div>
-                    
-                    {/* Node preview */}
-                    <div className="px-2 py-1 text-[10px] text-gray-500 bg-gray-50 truncate">
-                      {node.type === 'database' && node.data?.connectionId
-                        ? `DB: ${connections.find(c => c.id === node.data?.connectionId)?.name || '...'} (${node.data?.operation || 'select'})`
-                        : node.type === 'file-read' && node.data?.basketId
-                        ? `Basket: ${baskets.find(b => b.id === node.data?.basketId)?.name || '...'}`
-                        : node.type === 'for-each'
-                        ? `Loop: ${node.data?.source || 'triggerFiles'}${(node.data?.workers || 1) > 1 ? ` (${node.data?.workers}w)` : ''}`
-                        : node.type}
-                    </div>
-                    {/* Port labels for multi-output nodes */}
+                    </span>
+                    {isSelected && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); deleteNode(node.id); }}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        className="absolute -top-2.5 -right-2.5 grid place-items-center w-5 h-5 rounded-full bg-red-600 text-white shadow"
+                        title="Delete node"
+                      >
+                        <i className="fas fa-times text-[10px]"></i>
+                      </button>
+                    )}
                     {(node.type === 'condition' || node.type === 'for-each') && (
                       <>
-                        <span className="absolute -right-1 top-1/2 translate-x-full -translate-y-1/2 text-[8px] text-gray-400 ml-1 pointer-events-none" style={{ marginTop: '1.5px' }}>
-                          {node.type === 'condition' ? 'T' : 'body'}
+                        <span className="absolute -right-2 top-1/2 translate-x-full -translate-y-1/2 pl-1 text-[11px] font-semibold text-[var(--canvas-node-muted)] pointer-events-none">
+                          {node.type === 'condition' ? 'true' : 'body'}
                         </span>
-                        <span className="absolute bottom-0 left-1/2 translate-y-full -translate-x-1/2 text-[8px] text-gray-400 pointer-events-none" style={{ marginTop: '2px' }}>
-                          {node.type === 'condition' ? 'F' : 'done'}
+                        <span className="absolute bottom-0 left-1/2 translate-y-full -translate-x-1/2 pt-2 text-[11px] font-semibold text-[var(--canvas-node-muted)] pointer-events-none">
+                          {node.type === 'condition' ? 'false' : 'done'}
                         </span>
                       </>
                     )}
@@ -1906,9 +1903,9 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                 placeholder="e.g. db1, http1"
               />
               {selectedNodeData.data?.varName && flow.nodes.some(n => n.id !== selectedNodeData.id && n.data?.varName === selectedNodeData.data?.varName) && (
-                <p className="text-[10px] text-red-500 mt-0.5">ID ซ้ำกับ node อื่น</p>
+                <p className="text-[12px] text-red-500 mt-0.5">ID ซ้ำกับ node อื่น</p>
               )}
-              <p className="text-[10px] text-gray-400 mt-0.5">ใช้อ้างอิง: <code className="bg-gray-100 px-1">{`{{${selectedNodeData.data?.varName || 'id'}.rows}}`}</code></p>
+              <p className="text-[12px] text-gray-400 mt-0.5">ใช้อ้างอิง: <code className="bg-gray-100 px-1">{`{{${selectedNodeData.data?.varName || 'id'}.rows}}`}</code></p>
             </div>
 
             {/* Label */}
@@ -1966,7 +1963,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                       <label className="text-xs font-medium text-gray-700">Code Editor</label>
                       <button
                         onClick={() => openSqlModal(selectedNodeData.id, selectedNodeData.data?.code || '', 'Code Editor')}
-                        className="text-[10px] px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center gap-1"
+                        className="text-[12px] px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center gap-1"
                       >
                         <Maximize2 size={10} />
                         Expand Editor
@@ -1975,11 +1972,11 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                     <textarea
                       value={selectedNodeData.data?.code || ''}
                       onChange={(e) => updateNodeData(selectedNodeData.id, { code: e.target.value })}
-                      className="w-full px-2 py-1.5 text-sm border rounded font-mono text-[10px] leading-relaxed"
+                      className="w-full px-2 py-1.5 text-sm border rounded font-mono text-[12px] leading-relaxed"
                       rows={12}
                       placeholder={'// input = previous node output\n// vars = trigger parameters\n// return SQL string or { sql: "...", summary: {...} }\nconst sql = `BEGIN\\n  ...\\nEND;`;\nreturn sql;'}
                     />
-                    <p className="text-[10px] text-gray-500 mt-1">
+                    <p className="text-[12px] text-gray-500 mt-1">
                       Access: <code className="bg-gray-100 px-1">input</code> (prev node), <code className="bg-gray-100 px-1">vars</code> (parameters), <code className="bg-gray-100 px-1">context</code>. Return SQL string or {'{ sql, summary }'}
                     </p>
                   </div>
@@ -1990,7 +1987,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                         <label className="text-xs font-medium text-gray-700">SQL / PL/SQL</label>
                         <button
                           onClick={() => openSqlModal(selectedNodeData.id, selectedNodeData.data?.sql || '', 'SQL/PL/SQL Editor')}
-                          className="text-[10px] px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center gap-1"
+                          className="text-[12px] px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center gap-1"
                         >
                           <Maximize2 size={10} />
                           Expand Editor
@@ -1999,11 +1996,11 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                       <textarea
                         value={selectedNodeData.data?.sql || ''}
                         onChange={(e) => updateNodeData(selectedNodeData.id, { sql: e.target.value })}
-                        className="w-full px-2 py-1.5 text-sm border rounded font-mono text-[10px] leading-relaxed"
+                        className="w-full px-2 py-1.5 text-sm border rounded font-mono text-[12px] leading-relaxed"
                         rows={6}
                         placeholder={'DECLARE\n  v_id VARCHAR2(200) := :myParam;\nBEGIN\n  INSERT INTO my_table (id) VALUES (v_id);\n  COMMIT;\nEND;'}
                       />
-                      <p className="text-[10px] text-gray-500 mt-1">
+                      <p className="text-[12px] text-gray-500 mt-1">
                         Bind variables: <code className="bg-gray-100 px-1">:paramName</code> — values defined in Params below
                       </p>
                     </div>
@@ -2017,7 +2014,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                             const newKey = `param${Object.keys(params).length + 1}`;
                             updateNodeData(selectedNodeData.id, { params: { ...params, [newKey]: '' } });
                           }}
-                          className="text-[10px] px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 flex items-center gap-1"
+                          className="text-[12px] px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 flex items-center gap-1"
                         >
                           <i className="fas fa-plus text-[8px]"></i> Add
                         </button>
@@ -2034,7 +2031,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                               params[e.target.value] = val;
                               updateNodeData(selectedNodeData.id, { params });
                             }}
-                            className="w-1/3 px-2 py-1 text-[10px] border rounded font-mono bg-teal-50"
+                            className="w-1/3 px-2 py-1 text-[12px] border rounded font-mono bg-teal-50"
                             placeholder="name"
                           />
                           <input
@@ -2045,7 +2042,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                               params[key] = e.target.value;
                               updateNodeData(selectedNodeData.id, { params });
                             }}
-                            className="flex-1 px-2 py-1 text-[10px] border rounded font-mono"
+                            className="flex-1 px-2 py-1 text-[12px] border rounded font-mono"
                             placeholder="{{vars.nodeName.field}}"
                           />
                           <button
@@ -2056,12 +2053,12 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                             }}
                             className="text-red-400 hover:text-red-600 px-1"
                           >
-                            <i className="fas fa-times text-[10px]"></i>
+                            <i className="fas fa-times text-[12px]"></i>
                           </button>
                         </div>
                       ))}
                       {Object.keys(selectedNodeData.data?.params || {}).length === 0 && (
-                        <p className="text-[10px] text-gray-400 italic">No bind parameters</p>
+                        <p className="text-[12px] text-gray-400 italic">No bind parameters</p>
                       )}
                     </div>
                   </>
@@ -2088,7 +2085,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                               {sourceNode?.type === 'transform' && (
                                 <button
                                   onClick={() => openSqlModal(sourceNodeId, sourceNode.data?.code || '', 'Code Editor (Read-only)')}
-                                  className="text-[10px] px-2 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600 flex items-center gap-1"
+                                  className="text-[12px] px-2 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600 flex items-center gap-1"
                                 >
                                   <Maximize2 size={10} />
                                   View Code
@@ -2096,8 +2093,8 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                               )}
                             </div>
                             <div className="px-3 py-2 bg-white">
-                              <p className="text-[10px] text-gray-500 mb-1.5">Transform node returns object:</p>
-                              <div className="font-mono text-[10px] text-gray-600 bg-gray-50 rounded p-2 border">
+                              <p className="text-[12px] text-gray-500 mb-1.5">Transform node returns object:</p>
+                              <div className="font-mono text-[12px] text-gray-600 bg-gray-50 rounded p-2 border">
                                 <div>{'{'}</div>
                                 <div className="pl-3"><span className={sourceField === 'sql' ? 'text-indigo-600 font-bold' : ''}>sql</span>: <span className="text-green-600">"BEGIN...END;"</span>,</div>
                                 <div className="pl-3">summary: {'{ stgCount, goalCount, mapCount }'},</div>
@@ -2108,7 +2105,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                                 type="text"
                                 value={sqlVal}
                                 onChange={(e) => updateNodeData(selectedNodeData.id, { sql: e.target.value })}
-                                className="w-full mt-2 px-2 py-1 text-[10px] border rounded font-mono text-gray-500"
+                                className="w-full mt-2 px-2 py-1 text-[12px] border rounded font-mono text-gray-500"
                               />
                             </div>
                           </div>
@@ -2120,7 +2117,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                             <label className="text-xs font-medium text-gray-700">SQL Query</label>
                             <button
                               onClick={() => openSqlModal(selectedNodeData.id, selectedNodeData.data?.sql || '', selectedNodeData.data?.operation === 'query' ? 'PL/SQL Editor' : 'SQL Editor')}
-                              className="text-[10px] px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center gap-1"
+                              className="text-[12px] px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center gap-1"
                             >
                               <Maximize2 size={10} />
                               Expand Editor
@@ -2135,7 +2132,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                               ? '-- PL/SQL Block\nBEGIN\n  ...\nEND;'
                               : '-- SQL Query\nSELECT * FROM table_name'}
                           />
-                          <p className="text-[10px] text-gray-500 mt-1">
+                          <p className="text-[12px] text-gray-500 mt-1">
                             Variables: <code className="bg-gray-100 px-1">${'{path.xxx}'}</code> <code className="bg-gray-100 px-1">${'{query.xxx}'}</code> <code className="bg-gray-100 px-1">${'{body.xxx}'}</code> <code className="bg-gray-100 px-1">{'{{nodeId.field}}'}</code>
                           </p>
                         </div>
@@ -2164,7 +2161,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                         className="w-full px-2 py-1.5 text-sm border rounded font-mono text-xs"
                         placeholder="vars.fileread.data"
                       />
-                      <p className="text-[10px] text-gray-500 mt-1">
+                      <p className="text-[12px] text-gray-500 mt-1">
                         Path to data array. Use <code className="bg-gray-100 px-1">filesPath</code> below for multi-file.
                       </p>
                     </div>
@@ -2196,7 +2193,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                           type="text"
                           value={selectedNodeData.data?.idColumn || 'ID'}
                           onChange={(e) => updateNodeData(selectedNodeData.id, { idColumn: e.target.value })}
-                          className="flex-1 px-2 py-1 text-[10px] border rounded font-mono"
+                          className="flex-1 px-2 py-1 text-[12px] border rounded font-mono"
                           placeholder="ID column name"
                         />
                       )}
@@ -2215,13 +2212,13 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                               fileColumns: [...fileCols, ''],
                             });
                           }}
-                          className="text-[10px] px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                          className="text-[12px] px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
                         >
                           <i className="fas fa-plus mr-1"></i>Add
                         </button>
                       </div>
 
-                      <div className="flex gap-1 mb-1 text-[10px] text-gray-500 font-medium">
+                      <div className="flex gap-1 mb-1 text-[12px] text-gray-500 font-medium">
                         <span className="flex-1">File Column</span>
                         <span className="w-4"></span>
                         <span className="flex-1">DB Column</span>
@@ -2238,7 +2235,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                               fileCols[index] = e.target.value;
                               updateNodeData(selectedNodeData.id, { fileColumns: fileCols });
                             }}
-                            className="flex-1 px-2 py-1 text-[10px] border rounded font-mono"
+                            className="flex-1 px-2 py-1 text-[12px] border rounded font-mono"
                             placeholder="file_col"
                           />
                           <i className="fas fa-arrow-right text-[8px] text-gray-400"></i>
@@ -2250,7 +2247,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                               cols[index] = e.target.value;
                               updateNodeData(selectedNodeData.id, { columns: cols });
                             }}
-                            className="flex-1 px-2 py-1 text-[10px] border rounded font-mono"
+                            className="flex-1 px-2 py-1 text-[12px] border rounded font-mono"
                             placeholder="DB_COL"
                           />
                           <button
@@ -2259,7 +2256,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                               const fileCols = (selectedNodeData.data?.fileColumns || []).filter((_: any, i: number) => i !== index);
                               updateNodeData(selectedNodeData.id, { columns: cols, fileColumns: fileCols });
                             }}
-                            className="px-2 py-1 text-red-500 hover:bg-red-50 rounded text-[10px]"
+                            className="px-2 py-1 text-red-500 hover:bg-red-50 rounded text-[12px]"
                           >
                             <i className="fas fa-times"></i>
                           </button>
@@ -2267,7 +2264,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                       ))}
 
                       {(selectedNodeData.data?.columns || []).length === 0 && (
-                        <p className="text-[10px] text-gray-400 text-center py-1">
+                        <p className="text-[12px] text-gray-400 text-center py-1">
                           Map file columns to database columns
                         </p>
                       )}
@@ -2284,7 +2281,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                               extraColumns: [...current, { column: '', value: '' }]
                             });
                           }}
-                          className="text-[10px] px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+                          className="text-[12px] px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600"
                         >
                           <i className="fas fa-plus mr-1"></i>Add
                         </button>
@@ -2300,10 +2297,10 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                               extras[index] = { ...extra, column: e.target.value };
                               updateNodeData(selectedNodeData.id, { extraColumns: extras });
                             }}
-                            className="flex-1 px-2 py-1 text-[10px] border rounded font-mono"
+                            className="flex-1 px-2 py-1 text-[12px] border rounded font-mono"
                             placeholder="COLUMN"
                           />
-                          <span className="text-[10px] text-gray-400 self-center">=</span>
+                          <span className="text-[12px] text-gray-400 self-center">=</span>
                           <input
                             type="text"
                             value={extra.value}
@@ -2312,7 +2309,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                               extras[index] = { ...extra, value: e.target.value };
                               updateNodeData(selectedNodeData.id, { extraColumns: extras });
                             }}
-                            className="flex-1 px-2 py-1 text-[10px] border rounded font-mono"
+                            className="flex-1 px-2 py-1 text-[12px] border rounded font-mono"
                             placeholder="{{value}} or static"
                           />
                           <button
@@ -2320,7 +2317,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                               const extras = (selectedNodeData.data?.extraColumns || []).filter((_: any, i: number) => i !== index);
                               updateNodeData(selectedNodeData.id, { extraColumns: extras });
                             }}
-                            className="px-2 py-1 text-red-500 hover:bg-red-50 rounded text-[10px]"
+                            className="px-2 py-1 text-red-500 hover:bg-red-50 rounded text-[12px]"
                           >
                             <i className="fas fa-times"></i>
                           </button>
@@ -2328,7 +2325,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                       ))}
 
                       {(selectedNodeData.data?.extraColumns || []).length === 0 && (
-                        <p className="text-[10px] text-gray-400 text-center py-1">
+                        <p className="text-[12px] text-gray-400 text-center py-1">
                           Static values added to every row
                         </p>
                       )}
@@ -2349,21 +2346,21 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
 
                       <div className="flex gap-2">
                         <div className="flex-1">
-                          <label className="block text-[10px] text-gray-600 mb-0.5">Batch Size</label>
+                          <label className="block text-[12px] text-gray-600 mb-0.5">Batch Size</label>
                           <input
                             type="number"
                             value={selectedNodeData.data?.batchSize || 1000}
                             onChange={(e) => updateNodeData(selectedNodeData.id, { batchSize: parseInt(e.target.value) || 1000 })}
-                            className="w-full px-2 py-1 text-[10px] border rounded"
+                            className="w-full px-2 py-1 text-[12px] border rounded"
                           />
                         </div>
                         <div className="flex-1">
-                          <label className="block text-[10px] text-gray-600 mb-0.5">Skip Rows</label>
+                          <label className="block text-[12px] text-gray-600 mb-0.5">Skip Rows</label>
                           <input
                             type="number"
                             value={selectedNodeData.data?.skipRows || 0}
                             onChange={(e) => updateNodeData(selectedNodeData.id, { skipRows: parseInt(e.target.value) || 0 })}
-                            className="w-full px-2 py-1 text-[10px] border rounded"
+                            className="w-full px-2 py-1 text-[12px] border rounded"
                           />
                         </div>
                       </div>
@@ -2392,7 +2389,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                               columnMapping: [...current, { column: '', value: '' }]
                             });
                           }}
-                          className="text-[10px] px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                          className="text-[12px] px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
                         >
                           <i className="fas fa-plus mr-1"></i>Add
                         </button>
@@ -2408,7 +2405,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                               newMapping[index] = { ...mapping, column: e.target.value };
                               updateNodeData(selectedNodeData.id, { columnMapping: newMapping });
                             }}
-                            className="flex-1 px-2 py-1 text-[10px] border rounded"
+                            className="flex-1 px-2 py-1 text-[12px] border rounded"
                             placeholder="Column"
                           />
                           <input
@@ -2419,7 +2416,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                               newMapping[index] = { ...mapping, value: e.target.value };
                               updateNodeData(selectedNodeData.id, { columnMapping: newMapping });
                             }}
-                            className="flex-1 px-2 py-1 text-[10px] border rounded font-mono"
+                            className="flex-1 px-2 py-1 text-[12px] border rounded font-mono"
                             placeholder="{{input.field}}"
                           />
                           <button
@@ -2427,7 +2424,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                               const newMapping = (selectedNodeData.data?.columnMapping || []).filter((_: any, i: number) => i !== index);
                               updateNodeData(selectedNodeData.id, { columnMapping: newMapping });
                             }}
-                            className="px-2 py-1 text-red-500 hover:bg-red-50 rounded text-[10px]"
+                            className="px-2 py-1 text-red-500 hover:bg-red-50 rounded text-[12px]"
                           >
                             <i className="fas fa-times"></i>
                           </button>
@@ -2435,7 +2432,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                       ))}
                       
                       {(selectedNodeData.data?.columnMapping || []).length === 0 && (
-                        <p className="text-[10px] text-gray-400 text-center py-1">
+                        <p className="text-[12px] text-gray-400 text-center py-1">
                           Click "Add" to map columns
                         </p>
                       )}
@@ -2452,7 +2449,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                           placeholder="id = {{input.id}}"
                         />
                         {selectedNodeData.data?.operation === 'delete' && (
-                          <p className="text-[10px] text-red-500 mt-1">
+                          <p className="text-[12px] text-red-500 mt-1">
                             <i className="fas fa-exclamation-triangle mr-1"></i>
                             Without WHERE, all rows deleted!
                           </p>
@@ -2730,7 +2727,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                     </label>
                     <button
                       onClick={() => openSqlModal(selectedNodeData.id, selectedNodeData.data?.code || '', 'Code Editor')}
-                      className="text-[10px] px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center gap-1"
+                      className="text-[12px] px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center gap-1"
                     >
                       <Maximize2 size={10} />
                       Expand Editor
@@ -2739,13 +2736,13 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                   <textarea
                     value={selectedNodeData.data?.code || ''}
                     onChange={(e) => updateNodeData(selectedNodeData.id, { code: e.target.value })}
-                    className="w-full px-2 py-1.5 text-sm border rounded font-mono text-[10px] leading-relaxed"
+                    className="w-full px-2 py-1.5 text-sm border rounded font-mono text-[12px] leading-relaxed"
                     rows={12}
                     placeholder={selectedNodeData.data?.mode === 'mapping'
                       ? '{"targetField": "input.sourceField"}'
                       : '// input = previous node output\n// vars = trigger parameters\n// return transformed data\nconst result = input;\nreturn result;'}
                   />
-                  <p className="text-[10px] text-gray-500 mt-1">
+                  <p className="text-[12px] text-gray-500 mt-1">
                     Access: <code className="bg-gray-100 px-1">input</code> (prev node), <code className="bg-gray-100 px-1">vars</code> (parameters), <code className="bg-gray-100 px-1">context</code>
                   </p>
                 </div>
@@ -2763,7 +2760,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                   rows={3}
                   placeholder="e.g., input.status === 'active'"
                 />
-                <p className="text-[10px] text-gray-500 mt-1">
+                <p className="text-[12px] text-gray-500 mt-1">
                   Use double curly braces for variables. Support &&, ||, ! operators.
                 </p>
               </div>
@@ -2796,7 +2793,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                     ))}
                   </select>
                   {baskets.length === 0 && (
-                    <p className="text-[10px] text-amber-600 mt-1">
+                    <p className="text-[12px] text-amber-600 mt-1">
                       <i className="fas fa-exclamation-triangle mr-1"></i>
                       No baskets found. Create a basket first.
                     </p>
@@ -2806,7 +2803,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">
                     Trigger On Session Status
-                    <span className="text-[10px] text-amber-600 ml-1">(Session, not File)</span>
+                    <span className="text-[12px] text-amber-600 ml-1">(Session, not File)</span>
                   </label>
                   <MiniDropdown
                     value={selectedNodeData.data?.triggerOn || 'published'}
@@ -2819,10 +2816,10 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                       { value: 'archived', label: 'Archived', icon: 'fa-archive', color: 'text-gray-600' },
                     ]}
                   />
-                  <p className="text-[10px] text-gray-500 mt-1">
+                  <p className="text-[12px] text-gray-500 mt-1">
                     Trigger when session status matches. Recommended: <b>Published</b>
                   </p>
-                  <p className="text-[10px] text-amber-600 mt-1">
+                  <p className="text-[12px] text-amber-600 mt-1">
                     <i className="fas fa-info-circle mr-1"></i>
                     Auto-updates to "Processing" after trigger to prevent duplicates
                   </p>
@@ -2861,11 +2858,11 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                             </label>
                           ))}
                         </div>
-                        <p className="text-[10px] text-gray-500 mt-1">
+                        <p className="text-[12px] text-gray-500 mt-1">
                           Used when you press Run without publishing. A Publish still runs on that session only.
                         </p>
                         {picked.includes('completed') && (
-                          <p className="text-[10px] text-amber-600 mt-1">
+                          <p className="text-[12px] text-amber-600 mt-1">
                             <i className="fas fa-exclamation-triangle mr-1"></i>
                             Completed sessions were processed before — their files will be imported again.
                           </p>
@@ -2884,7 +2881,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                     className="w-full px-2 py-1.5 text-sm border rounded text-xs"
                     placeholder="*"
                   />
-                  <p className="text-[10px] text-gray-500 mt-1">e.g., *.csv, data_*.txt</p>
+                  <p className="text-[12px] text-gray-500 mt-1">e.g., *.csv, data_*.txt</p>
                 </div>
 
                 <div className="border-t pt-3 mt-3">
@@ -2957,7 +2954,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                         className="w-full px-2 py-1.5 text-sm border rounded text-xs"
                         placeholder="{{dl.localPath}}"
                       />
-                      <p className="text-[10px] text-gray-500 mt-1">
+                      <p className="text-[12px] text-gray-500 mt-1">
                         ไฟล์จาก node ก่อนหน้า เช่น <code className="bg-gray-100 px-1 rounded">{'{{dl.localPath}}'}</code> (HTTP Request download)
                       </p>
                     </div>
@@ -3033,7 +3030,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                         className="w-full px-2 py-1.5 text-sm border rounded text-xs"
                         placeholder="*"
                       />
-                      <p className="text-[10px] text-gray-500 mt-1">e.g., *.csv, *.pdf, data_*.txt</p>
+                      <p className="text-[12px] text-gray-500 mt-1">e.g., *.csv, *.pdf, data_*.txt</p>
                     </div>
                   </>
                 )}
@@ -3076,7 +3073,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                     className="w-full px-2 py-1.5 text-sm border rounded text-xs"
                     placeholder="e.g., {BYYYY}/{MM}"
                   />
-                  <p className="text-[10px] text-gray-500 mt-1">
+                  <p className="text-[12px] text-gray-500 mt-1">
                     Placeholders: <code className="bg-gray-100 px-1 rounded">{'{BYYYY}'}</code> พ.ศ.,
                     <code className="bg-gray-100 px-1 rounded ml-1">{'{YYYY}'}</code> ค.ศ.,
                     <code className="bg-gray-100 px-1 rounded ml-1">{'{MM}'}</code> เดือน,
@@ -3094,7 +3091,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                     </label>
                     <div className="space-y-2">
                       <div>
-                        <label className="block text-[10px] text-gray-500 mb-1">ZIP File Name</label>
+                        <label className="block text-[12px] text-gray-500 mb-1">ZIP File Name</label>
                         <input
                           type="text"
                           value={selectedNodeData.data?.zipFileName || ''}
@@ -3102,12 +3099,12 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                           className="w-full px-2 py-1.5 text-sm border rounded text-xs"
                           placeholder="archive_{{date}}.zip"
                         />
-                        <p className="text-[10px] text-gray-500 mt-1">
+                        <p className="text-[12px] text-gray-500 mt-1">
                           <code className="bg-gray-100 px-1 rounded">{'{'}{'{'}</code>date, timestamp, year, buddhistYear<code className="bg-gray-100 px-1 rounded">{'}'}{'}' }</code>
                         </p>
                       </div>
                       <div>
-                        <label className="block text-[10px] text-gray-500 mb-1">Compression Level (0-9)</label>
+                        <label className="block text-[12px] text-gray-500 mb-1">Compression Level (0-9)</label>
                         <input
                           type="number"
                           min={0}
@@ -3183,9 +3180,9 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
               const isNewFolders = d.operation === 'download-new-folders' || (op === 'download' && d.newFoldersOnly === true);
               const inputCls = 'w-full px-2 py-1.5 text-xs border rounded focus:ring-2 focus:ring-blue-500 outline-none';
               const labelCls = 'block text-xs font-medium text-gray-700 mb-1';
-              const hintCls = 'text-[10px] text-gray-500 mt-1 leading-snug';
+              const hintCls = 'text-[12px] text-gray-500 mt-1 leading-snug';
               const section = (title: string, icon: string) => (
-                <div className="border-t pt-3 mt-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                <div className="border-t pt-3 mt-1 flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-wide text-gray-500">
                   <i className={`fas ${icon} text-gray-400`}></i>{title}
                 </div>
               );
@@ -3249,7 +3246,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                   </div>
                   {isUpload && (
                     <div>
-                      <label className={labelCls}>File Status <span className="text-[10px] text-blue-600 ml-1">(file, not session)</span></label>
+                      <label className={labelCls}>File Status <span className="text-[12px] text-blue-600 ml-1">(file, not session)</span></label>
                       <MiniDropdown
                         value={d.fileStatus || 'published'}
                         onChange={(value) => set({ fileStatus: value })}
@@ -3403,7 +3400,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                       {smtpConnections.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                     {smtpConnections.length === 0 && (
-                      <p className="text-[11px] text-amber-600 mt-1">No SMTP connection in this project yet — add one under Connections (type "SMTP (Email)").</p>
+                      <p className="text-[12px] text-amber-600 mt-1">No SMTP connection in this project yet — add one under Connections (type "SMTP (Email)").</p>
                     )}
                   </div>
                   <div>
@@ -3427,7 +3424,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <label className="block text-xs font-medium text-gray-700">Body</label>
-                      <select value={d.bodyFormat || 'text'} onChange={(e) => set({ bodyFormat: e.target.value })} className="text-[11px] border rounded px-1 py-0.5 bg-white">
+                      <select value={d.bodyFormat || 'text'} onChange={(e) => set({ bodyFormat: e.target.value })} className="text-[12px] border rounded px-1 py-0.5 bg-white">
                         <option value="text">Plain text</option>
                         <option value="html">HTML</option>
                       </select>
@@ -3439,7 +3436,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                       rows={6}
                       placeholder={'New files are ready:\n{{download.files}}'}
                     />
-                    <p className="text-[11px] text-gray-500 mt-1">{'{{nodeName.field}}'} inserts output from earlier nodes.</p>
+                    <p className="text-[12px] text-gray-500 mt-1">{'{{nodeName.field}}'} inserts output from earlier nodes.</p>
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Attachments</label>
@@ -3511,7 +3508,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                     </select>
                   </div>
                 </div>
-                <div className="text-[10px] text-gray-500">
+                <div className="text-[12px] text-gray-500">
                   Delays are capped at 5 minutes for safety.
                 </div>
               </>
@@ -3529,7 +3526,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                     className="w-full px-2 py-1.5 text-sm border rounded font-mono text-xs"
                     placeholder="triggerFiles"
                   />
-                  <p className="text-[10px] text-gray-500 mt-1">
+                  <p className="text-[12px] text-gray-500 mt-1">
                     Path to array: <code className="bg-gray-100 px-1">triggerFiles</code>, <code className="bg-gray-100 px-1">vars.nodeId.files</code>
                   </p>
                 </div>
@@ -3543,7 +3540,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                     className="w-full px-2 py-1.5 text-sm border rounded font-mono text-xs"
                     placeholder="currentFile"
                   />
-                  <p className="text-[10px] text-gray-500 mt-1">
+                  <p className="text-[12px] text-gray-500 mt-1">
                     Each iteration sets this variable
                   </p>
                 </div>
@@ -3568,7 +3565,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                     className="w-full px-2 py-1.5 text-sm border rounded font-mono text-xs"
                     placeholder="*AnnualPay*.csv"
                   />
-                  <p className="text-[10px] text-gray-500 mt-1">
+                  <p className="text-[12px] text-gray-500 mt-1">
                     Filter items by file name pattern (glob: <code className="bg-gray-100 px-1">*.csv</code>, <code className="bg-gray-100 px-1">*Pay*.csv</code>)
                   </p>
                 </div>
@@ -3586,11 +3583,11 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                       onChange={(e) => updateNodeData(selectedNodeData.id, { workers: Math.max(1, Math.min(parseInt(e.target.value) || 1, 20)) })}
                       className="w-20 px-2 py-1.5 text-sm border rounded font-mono text-xs"
                     />
-                    <span className="text-[10px] text-gray-500">
+                    <span className="text-[12px] text-gray-500">
                       {(selectedNodeData.data?.workers || 1) <= 1 ? 'Sequential' : `${selectedNodeData.data?.workers} items parallel`}
                     </span>
                   </div>
-                  <p className="text-[10px] text-gray-500 mt-1">
+                  <p className="text-[12px] text-gray-500 mt-1">
                     1 = sequential (safe), 2-20 = parallel workers
                   </p>
                 </div>
@@ -3664,7 +3661,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                         className="w-full px-2 py-1.5 text-sm border rounded font-mono text-xs"
                         placeholder="{{vars.currentFile.path}}"
                       />
-                      <p className="text-[10px] text-gray-500 mt-1">Path to file to upload (supports templates)</p>
+                      <p className="text-[12px] text-gray-500 mt-1">Path to file to upload (supports templates)</p>
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-1">Field Name</label>
@@ -3720,7 +3717,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                         className="w-full px-2 py-1.5 text-sm border rounded font-mono text-xs"
                         placeholder="{{original}} or data-{{date}}.csv"
                       />
-                      <p className="text-[10px] text-gray-500 mt-1">{`{{original}}, {{date}}, {{timestamp}}`}</p>
+                      <p className="text-[12px] text-gray-500 mt-1">{`{{original}}, {{date}}, {{timestamp}}`}</p>
                     </div>
                   </>
                 ) : (
@@ -3765,7 +3762,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                         <div className="mt-2 space-y-2 pl-1">
                           <div className="grid grid-cols-2 gap-2">
                             <div>
-                              <label className="block text-[10px] font-medium text-gray-600 mb-1">Page size</label>
+                              <label className="block text-[12px] font-medium text-gray-600 mb-1">Page size</label>
                               <input
                                 type="number"
                                 value={selectedNodeData.data?.pageSize ?? 1000}
@@ -3775,7 +3772,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                               />
                             </div>
                             <div>
-                              <label className="block text-[10px] font-medium text-gray-600 mb-1">Params in</label>
+                              <label className="block text-[12px] font-medium text-gray-600 mb-1">Params in</label>
                               <MiniDropdown
                                 value={selectedNodeData.data?.paginationIn || (['POST', 'PUT', 'PATCH'].includes(selectedNodeData.data?.method) ? 'body' : 'query')}
                                 onChange={(value) => updateNodeData(selectedNodeData.id, { paginationIn: value })}
@@ -3788,7 +3785,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                           </div>
                           <div className="grid grid-cols-2 gap-2">
                             <div>
-                              <label className="block text-[10px] font-medium text-gray-600 mb-1">Limit param</label>
+                              <label className="block text-[12px] font-medium text-gray-600 mb-1">Limit param</label>
                               <input
                                 type="text"
                                 value={selectedNodeData.data?.limitParam ?? 'limit'}
@@ -3798,7 +3795,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                               />
                             </div>
                             <div>
-                              <label className="block text-[10px] font-medium text-gray-600 mb-1">Offset param</label>
+                              <label className="block text-[12px] font-medium text-gray-600 mb-1">Offset param</label>
                               <input
                                 type="text"
                                 value={selectedNodeData.data?.offsetParam ?? 'offset'}
@@ -3809,7 +3806,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                             </div>
                           </div>
                           <div>
-                            <label className="block text-[10px] font-medium text-gray-600 mb-1">Items path</label>
+                            <label className="block text-[12px] font-medium text-gray-600 mb-1">Items path</label>
                             <input
                               type="text"
                               value={selectedNodeData.data?.itemsPath ?? ''}
@@ -3819,7 +3816,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                             />
                           </div>
                           <div>
-                            <label className="block text-[10px] font-medium text-gray-600 mb-1">Total path</label>
+                            <label className="block text-[12px] font-medium text-gray-600 mb-1">Total path</label>
                             <input
                               type="text"
                               value={selectedNodeData.data?.totalPath ?? ''}
@@ -3828,7 +3825,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                               placeholder="value.total"
                             />
                           </div>
-                          <p className="text-[10px] text-gray-500">
+                          <p className="text-[12px] text-gray-500">
                             วน offset += page size จนสะสม ≥ total — executor merge items ทุกหน้าเป็นชุดเดียวให้ (ไม่ต้องใส่ limit/offset ใน Body เอง)
                           </p>
                         </div>
@@ -3968,7 +3965,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                     className="w-full px-2 py-1.5 text-sm border rounded font-mono text-xs"
                     placeholder="*.csv or {{currentFile}}"
                   />
-                  <p className="text-[10px] text-gray-400 mt-0.5">
+                  <p className="text-[12px] text-gray-400 mt-0.5">
                     Glob pattern (*.csv) or {'{{variable}}'} from For-Each loop
                   </p>
                 </div>
@@ -4024,7 +4021,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                           className="w-full px-2 py-1.5 text-sm border rounded font-mono text-xs"
                           placeholder="name,email,phone (or leave empty for col0,col1...)"
                         />
-                        <p className="text-[10px] text-gray-500 mt-1">
+                        <p className="text-[12px] text-gray-500 mt-1">
                           Leave empty to use col0, col1, col2...
                         </p>
                       </div>
@@ -4124,7 +4121,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                     className="w-full px-2 py-1.5 text-sm border rounded font-mono text-xs"
                     placeholder="export-{{timestamp}}.csv"
                   />
-                  <p className="text-[10px] text-gray-500 mt-1">{`{{timestamp}}, {{date}}, {{extension}}`}</p>
+                  <p className="text-[12px] text-gray-500 mt-1">{`{{timestamp}}, {{date}}, {{extension}}`}</p>
                 </div>
 
                 {/* Destination — moved up so it's always visible */}
@@ -4172,7 +4169,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                         ]}
                       />
                       {baskets.length === 0 && (
-                        <p className="text-[10px] text-amber-600 mt-1">No baskets found</p>
+                        <p className="text-[12px] text-amber-600 mt-1">No baskets found</p>
                       )}
                     </div>
 
@@ -4187,7 +4184,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                           className="w-full px-2 py-1.5 text-sm border rounded text-xs"
                           placeholder="e.g., /incoming, /data/2024"
                         />
-                        <p className="text-[10px] text-gray-500 mt-1">Folder path within shares basket</p>
+                        <p className="text-[12px] text-gray-500 mt-1">Folder path within shares basket</p>
                       </div>
                     )}
 
@@ -4252,7 +4249,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                       ZIP Options
                     </label>
                     <div>
-                      <label className="block text-[10px] text-gray-500 mb-1">Source Basket (files to zip)</label>
+                      <label className="block text-[12px] text-gray-500 mb-1">Source Basket (files to zip)</label>
                       <select
                         value={selectedNodeData.data?.sourceBasketId || ''}
                         onChange={(e) => {
@@ -4262,7 +4259,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                             sourceBasketName: selectedBasket?.name || ''
                           });
                         }}
-                        className="w-full px-2 py-1.5 text-sm border rounded focus:ring-2 focus:ring-purple-500 outline-none"
+                        className="w-full px-2 py-1.5 text-sm border rounded focus:ring-2 focus:ring-blue-600 outline-none"
                       >
                         <option value="">Same as destination basket</option>
                         {baskets.map(b => (
@@ -4271,7 +4268,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                       </select>
                     </div>
                     <div>
-                      <label className="block text-[10px] text-gray-500 mb-1">File Pattern (which files to include)</label>
+                      <label className="block text-[12px] text-gray-500 mb-1">File Pattern (which files to include)</label>
                       <input
                         type="text"
                         value={selectedNodeData.data?.zipFilePattern || '*'}
@@ -4279,12 +4276,12 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                         className="w-full px-2 py-1.5 text-sm border rounded font-mono text-xs"
                         placeholder="*"
                       />
-                      <p className="text-[10px] text-gray-500 mt-1">
+                      <p className="text-[12px] text-gray-500 mt-1">
                         Glob or comma-separated: <code className="bg-gray-100 px-1 rounded">*.txt,*.xlsx</code> or <code className="bg-gray-100 px-1 rounded">S_ITEM.*</code>
                       </p>
                     </div>
                     <div>
-                      <label className="block text-[10px] text-gray-500 mb-1">Compression Level (0-9)</label>
+                      <label className="block text-[12px] text-gray-500 mb-1">Compression Level (0-9)</label>
                       <input
                         type="number"
                         min={0}
@@ -4389,7 +4386,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                         <label className="block text-xs font-medium text-gray-700">Sheets ({sheets.length})</label>
                         <button
                           onClick={() => updateSheets([...sheets, { name: `Sheet${sheets.length + 1}`, dataVar: '', freezeHeader: true, autoFitColumns: true }])}
-                          className="text-[10px] text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                          className="text-[12px] text-blue-600 hover:text-blue-800 flex items-center gap-1"
                         >
                           <i className="fas fa-plus text-[8px]" /> Add Sheet
                         </button>
@@ -4398,11 +4395,11 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                       {sheets.map((sheet, idx) => (
                         <div key={idx} className="border rounded p-2 space-y-2 bg-gray-50">
                           <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-medium text-gray-500">Sheet {idx + 1}</span>
+                            <span className="text-[12px] font-medium text-gray-500">Sheet {idx + 1}</span>
                             {sheets.length > 1 && (
                               <button
                                 onClick={() => updateSheets(sheets.filter((_, i) => i !== idx))}
-                                className="text-[10px] text-red-400 hover:text-red-600"
+                                className="text-[12px] text-red-400 hover:text-red-600"
                               >
                                 <i className="fas fa-trash text-[8px]" /> Remove
                               </button>
@@ -4410,7 +4407,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                           </div>
 
                           <div>
-                            <label className="block text-[10px] text-gray-600 mb-0.5">Sheet Name</label>
+                            <label className="block text-[12px] text-gray-600 mb-0.5">Sheet Name</label>
                             <input
                               type="text"
                               value={sheet.name || ''}
@@ -4421,7 +4418,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                           </div>
 
                           <div>
-                            <label className="block text-[10px] text-gray-600 mb-0.5">Data Variable</label>
+                            <label className="block text-[12px] text-gray-600 mb-0.5">Data Variable</label>
                             <input
                               type="text"
                               value={sheet.dataVar || ''}
@@ -4429,11 +4426,11 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                               className="w-full px-2 py-1 text-xs border rounded font-mono"
                               placeholder="nodeId (e.g., agency_query)"
                             />
-                            <p className="text-[10px] text-gray-400 mt-0.5">Node ID or varName of upstream data source</p>
+                            <p className="text-[12px] text-gray-400 mt-0.5">Node ID or varName of upstream data source</p>
                           </div>
 
                           <div>
-                            <label className="block text-[10px] text-gray-600 mb-0.5">Columns (optional)</label>
+                            <label className="block text-[12px] text-gray-600 mb-0.5">Columns (optional)</label>
                             <textarea
                               value={sheet.columns?.join('\n') || ''}
                               onChange={(e) => {
@@ -4447,7 +4444,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                           </div>
 
                           <div>
-                            <label className="block text-[10px] text-gray-600 mb-0.5">Header Mapping (optional)</label>
+                            <label className="block text-[12px] text-gray-600 mb-0.5">Header Mapping (optional)</label>
                             <textarea
                               value={sheet.headerMapping
                                 ? Object.entries(sheet.headerMapping).map(([k, v]) => `${k}=${v}`).join('\n')
@@ -4471,7 +4468,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                           </div>
 
                           <div className="flex items-center gap-3">
-                            <label className="flex items-center gap-1 text-[10px] text-gray-600">
+                            <label className="flex items-center gap-1 text-[12px] text-gray-600">
                               <input
                                 type="checkbox"
                                 checked={sheet.freezeHeader !== false}
@@ -4480,7 +4477,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                               />
                               Freeze Header
                             </label>
-                            <label className="flex items-center gap-1 text-[10px] text-gray-600">
+                            <label className="flex items-center gap-1 text-[12px] text-gray-600">
                               <input
                                 type="checkbox"
                                 checked={sheet.autoFitColumns !== false}
@@ -4562,7 +4559,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                     className="w-full px-2 py-1.5 text-sm border rounded font-mono text-xs"
                     placeholder="vars.currentFile.path"
                   />
-                  <p className="text-[10px] text-gray-500 mt-1">
+                  <p className="text-[12px] text-gray-500 mt-1">
                     Variable path to file: <code className="bg-gray-100 px-1">vars.currentFile.path</code>
                   </p>
                 </div>
@@ -4646,15 +4643,15 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                 <div className="border-t pt-2 mt-1">
                   <p className="text-xs font-medium text-gray-700 mb-2">Custom Endpoints</p>
                   <div>
-                    <label className="block text-[10px] text-gray-500 mb-0.5">Upload Endpoint</label>
+                    <label className="block text-[12px] text-gray-500 mb-0.5">Upload Endpoint</label>
                     <input type="text" value={selectedNodeData.data?.uploadEndpoint || '/api/v1/process'} onChange={(e) => updateNodeData(selectedNodeData.id, { uploadEndpoint: e.target.value })} className="w-full px-2 py-1 text-xs border rounded font-mono" />
                   </div>
                   <div className="mt-1">
-                    <label className="block text-[10px] text-gray-500 mb-0.5">Status Endpoint</label>
+                    <label className="block text-[12px] text-gray-500 mb-0.5">Status Endpoint</label>
                     <input type="text" value={selectedNodeData.data?.statusEndpoint || '/api/v1/status/{taskId}'} onChange={(e) => updateNodeData(selectedNodeData.id, { statusEndpoint: e.target.value })} className="w-full px-2 py-1 text-xs border rounded font-mono" />
                   </div>
                   <div className="mt-1">
-                    <label className="block text-[10px] text-gray-500 mb-0.5">Result Endpoint</label>
+                    <label className="block text-[12px] text-gray-500 mb-0.5">Result Endpoint</label>
                     <input type="text" value={selectedNodeData.data?.resultEndpoint || '/api/v1/result/{taskId}'} onChange={(e) => updateNodeData(selectedNodeData.id, { resultEndpoint: e.target.value })} className="w-full px-2 py-1 text-xs border rounded font-mono" />
                   </div>
                 </div>
@@ -4663,11 +4660,11 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                   <p className="text-xs font-medium text-gray-700 mb-2">Polling</p>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-[10px] text-gray-500 mb-0.5">Interval (ms)</label>
+                      <label className="block text-[12px] text-gray-500 mb-0.5">Interval (ms)</label>
                       <input type="number" value={selectedNodeData.data?.pollInterval || 5000} onChange={(e) => updateNodeData(selectedNodeData.id, { pollInterval: parseInt(e.target.value) })} className="w-full px-2 py-1 text-xs border rounded" />
                     </div>
                     <div>
-                      <label className="block text-[10px] text-gray-500 mb-0.5">Max Wait (ms)</label>
+                      <label className="block text-[12px] text-gray-500 mb-0.5">Max Wait (ms)</label>
                       <input type="number" value={selectedNodeData.data?.maxWaitTime || 300000} onChange={(e) => updateNodeData(selectedNodeData.id, { maxWaitTime: parseInt(e.target.value) })} className="w-full px-2 py-1 text-xs border rounded" />
                     </div>
                   </div>
@@ -4688,7 +4685,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                     className="w-full px-2 py-1.5 text-sm border rounded font-mono text-xs"
                     placeholder="e.g. {{year}}/mis/customers"
                   />
-                  <p className="text-[10px] text-gray-400 mt-1">
+                  <p className="text-[12px] text-gray-400 mt-1">
                     Supports: <code className="bg-gray-100 px-1">{'{{year}}'}</code> <code className="bg-gray-100 px-1">{'{{vars.xxx}}'}</code> or static <code className="bg-gray-100 px-1">ref/provinces</code>
                   </p>
                 </div>
@@ -4702,7 +4699,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                     className="w-full px-2 py-1.5 text-sm border rounded font-mono text-xs"
                     placeholder={`e.g. year = '{{vars.year}}'`}
                   />
-                  <p className="text-[10px] text-gray-400 mt-1">Optional SQL WHERE clause (without WHERE keyword)</p>
+                  <p className="text-[12px] text-gray-400 mt-1">Optional SQL WHERE clause (without WHERE keyword)</p>
                 </div>
 
                 <div>
@@ -4717,7 +4714,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                   />
                 </div>
 
-                <div className="bg-violet-50 border border-violet-200 rounded-lg p-2.5 text-[10px] text-violet-700">
+                <div className="bg-violet-50 border border-violet-200 rounded-lg p-2.5 text-[12px] text-violet-700">
                   <p className="font-semibold mb-1">Output:</p>
                   <code className="block">{'{'} rows: [...], rowCount: N {'}'}</code>
                   <p className="mt-1 text-violet-500">Access: <code className="bg-violet-100 px-1">{'{{vars.' + (selectedNodeData.data?.varName || 'catalog1') + '.rows}}'}</code></p>

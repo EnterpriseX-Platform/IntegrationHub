@@ -102,7 +102,7 @@ export function TagGroupView<T extends { id: string }>(props: TagGroupViewProps<
               ) : (
                 <button
                   onClick={() => { setAddingTagFor(proj.id); setNewTagName(''); }}
-                  className="inline-flex items-center gap-1 rounded-md ring-1 ring-slate-200 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                  className="inline-flex items-center gap-1 rounded-md ring-1 ring-slate-200 bg-white px-2 py-0.5 text-[12px] font-medium text-slate-600 hover:bg-slate-50 transition-colors"
                   title={`Add a tag group under ${proj.name}`}
                 >
                   <Plus className="h-3 w-3" /> Tag
@@ -148,7 +148,7 @@ export function TagGroupView<T extends { id: string }>(props: TagGroupViewProps<
                         </button>
                       )}
                     </header>
-                    <ul className={`space-y-1.5 min-h-[8px] ${isEmpty ? `rounded-md border-2 border-dashed ${isDropTargetEmpty ? 'border-blue-400 bg-blue-50/40' : 'border-slate-200 bg-slate-50/40'} px-3 py-3 text-center text-[11px] text-slate-400` : ''}`}>
+                    <ul className={`space-y-1.5 min-h-[8px] ${isEmpty ? `rounded-md border-2 border-dashed ${isDropTargetEmpty ? 'border-blue-400 bg-blue-50/40' : 'border-slate-200 bg-slate-50/40'} px-3 py-3 text-center text-[12px] text-slate-400` : ''}`}>
                       {tg.items.length > 0
                         ? tg.items.map(it => renderItem(it, compositeId, makeDragHandlers(it, compositeId)))
                         : <li className="select-none">Drag a {itemNoun} from this project here to add the "{tg.name}" tag</li>}

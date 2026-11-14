@@ -160,7 +160,7 @@ function DatasetItem({ dataset, level, isSelected, onSelect }: {
     >
       <Table2 className="h-3.5 w-3.5 flex-shrink-0 text-blue-400" />
       <span className="flex-1 truncate">{dataset.name}</span>
-      <span className="text-[10px] text-gray-400 flex-shrink-0 inline-flex items-center gap-1" title={dataset.sourceType}>
+      <span className="text-[12px] text-gray-400 flex-shrink-0 inline-flex items-center gap-1" title={dataset.sourceType}>
         <SourceIcon className="h-3 w-3" /> {dataset.rowCount.toLocaleString()}
       </span>
     </div>
@@ -515,9 +515,9 @@ export default function DataAdmin() {
   // ─── Source badge helper ─────────────────────────────────────────────────
 
   function sourceTypeBadge(type: string) {
-    if (type === 'import') return <span className="px-2 py-0.5 rounded-full text-[11px] bg-blue-100 text-blue-700">Import</span>;
-    if (type === 'connection') return <span className="px-2 py-0.5 rounded-full text-[11px] bg-green-100 text-green-700">Live DB</span>;
-    return <span className="px-2 py-0.5 rounded-full text-[11px] bg-purple-100 text-purple-700">API Push</span>;
+    if (type === 'import') return <span className="px-2 py-0.5 rounded-full text-[12px] bg-blue-100 text-blue-700">Import</span>;
+    if (type === 'connection') return <span className="px-2 py-0.5 rounded-full text-[12px] bg-green-100 text-green-700">Live DB</span>;
+    return <span className="px-2 py-0.5 rounded-full text-[12px] bg-purple-100 text-purple-700">API Push</span>;
   }
 
   // ─── Render ───────────────────────────────────────────────────────────────

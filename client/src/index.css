@@ -1,10 +1,14 @@
+@import './carbon-theme.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Prompt Font - Thai support */
+/* IBM Carbon: IBM Plex Sans (+ Plex Sans Thai for Thai glyphs) */
 * {
-  font-family: 'Prompt', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'IBM Plex Sans', 'IBM Plex Sans Thai', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+code, pre, kbd, samp, .font-mono, .font-mono * {
+  font-family: 'IBM Plex Mono', Menlo, Consolas, monospace !important;
 }
 
 @layer base {
@@ -15,8 +19,8 @@
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 220 99% 53%;
+    --primary-foreground: 0 0% 100%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
     --muted: 210 40% 96.1%;
@@ -28,7 +32,7 @@
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
+    --radius: 0px;
   }
 
   .dark {
@@ -55,10 +59,10 @@
 }
 
 @layer base {
-  /* Density: everything in Tailwind is rem-based, so a 14 px root makes text,
-     spacing and controls about 12% more compact across the whole app at once. */
+  /* Carbon type scale: 16px root, so text-sm = 14px body and text-xs = 12px labels.
+     (Was 14px for density; raised to match Carbon/RunLoop legibility.) */
   html {
-    font-size: 14px;
+    font-size: 16px;
   }
   /* One focus style for every text field: a blue border with a soft halo.
      Without this the browser's own outline was drawn on top of each field's
@@ -72,8 +76,19 @@
   select:focus,
   textarea:focus {
     outline: none !important;
-    border-color: #3b82f6 !important;
-    box-shadow: 0 0 0 3px rgb(59 130 246 / 0.15) !important;
+    /* Carbon focus: 2px inset interactive-blue outline */
+    border-color: #0f62fe !important;
+    box-shadow: inset 0 0 0 1px #0f62fe !important;
+  }
+  /* Carbon buttons / links: 2px focus ring, no rounded glow */
+  button:focus-visible, a:focus-visible {
+    outline: 2px solid #0f62fe;
+    outline-offset: -2px;
+  }
+  body {
+    background: rgb(var(--c-gray-50));
+    color: rgb(var(--c-gray-900));
+    letter-spacing: 0.16px;
   }
   * {
     @apply border-border;
@@ -102,14 +117,14 @@
 
 /* Connection line styles */
 .connection-line-group:hover .connection-line-animated {
-  stroke: #2563eb;
+  stroke: #0f62fe;
   stroke-width: 3;
 }
 
 /* Handle hover effects */
 .handle-hover:hover {
   transform: scale(1.2);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 0 0 3px rgba(15, 98, 254, 0.3);
 }
 
 /* Node drag preview */
@@ -120,7 +135,7 @@
 
 /* Node selection glow */
 .node-selected {
-  box-shadow: 0 0 0 2px #6366f1, 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 0 0 2px #0f62fe, 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
 }
 
 /* Custom scrollbar */
@@ -208,3 +223,83 @@
 .btn-primary:disabled {
   @apply opacity-50 cursor-not-allowed;
 }
+
+/* ---- Carbon g100 (dark) overrides for literal colours used in components ---- */
+:root[data-theme='dark'] .bg-white { background-color: rgb(var(--c-layer) / var(--tw-bg-opacity, 1)); }
+:root[data-theme='dark'] .text-black { color: #f4f4f4; }
+:root[data-theme='dark'] .border-white { border-color: #393939; }
+:root[data-theme='dark'] .ring-white { --tw-ring-color: #161616; }
+:root[data-theme='dark'] .from-white { --tw-gradient-from: #262626 var(--tw-gradient-from-position); }
+:root[data-theme='dark'] input:not([type='checkbox']):not([type='radio']):not([type='range']),
+:root[data-theme='dark'] select,
+:root[data-theme='dark'] textarea {
+  background-color: #262626;
+  color: #f4f4f4;
+}
+:root[data-theme='dark'] ::placeholder { color: #6f6f6f; }
+:root[data-theme='dark'] ::-webkit-scrollbar-track { background: #161616; }
+:root[data-theme='dark'] ::-webkit-scrollbar-thumb { background: #393939; }
+:root[data-theme='dark'] {
+  --background: 0 0% 9%;
+  --foreground: 0 0% 96%;
+  --card: 0 0% 15%;
+  --card-foreground: 0 0% 96%;
+  --popover: 0 0% 15%;
+  --popover-foreground: 0 0% 96%;
+  --secondary: 0 0% 22%;
+  --secondary-foreground: 0 0% 96%;
+  --muted: 0 0% 22%;
+  --muted-foreground: 0 0% 66%;
+  --accent: 0 0% 22%;
+  --accent-foreground: 0 0% 96%;
+  --border: 0 0% 22%;
+  --input: 0 0% 22%;
+}
+
+/* Carbon productive heading: page titles are large and light (RunLoop style) */
+main h1.text-2xl, main h1.text-xl {
+  font-size: 2rem;
+  line-height: 2.5rem;
+  font-weight: 300 !important;
+}
+
+/* Shell + canvas tokens (light = Carbon g10, dark = RunLoop/g100) */
+:root {
+  --nav-bg: #ffffff; --nav-border: #e0e0e0; --nav-hover: #e8e8e8; --nav-active: #e0e0e0;
+  --nav-bar: #0f62fe; --nav-text: #525252; --nav-text-strong: #161616; --nav-icon: #6f6f6f;
+  --canvas-grid: #e0e0e0; --canvas-dot: #c6c6c6;
+}
+:root[data-theme='dark'] {
+  --nav-bg: #161616; --nav-border: #262626; --nav-hover: #262626; --nav-active: #333333;
+  --nav-bar: #4589ff; --nav-text: #c6c6c6; --nav-text-strong: #ffffff; --nav-icon: #a8a8a8;
+  --canvas-grid: #262626; --canvas-dot: #393939;
+}
+/* Charts: grid and axis lines follow the theme */
+:root[data-theme='dark'] .recharts-cartesian-grid line { stroke: #393939; }
+:root[data-theme='dark'] .recharts-cartesian-axis-line,
+:root[data-theme='dark'] .recharts-cartesian-axis-tick-line { stroke: #525252; }
+:root[data-theme='dark'] .recharts-text { fill: #a8a8a8; }
+
+/* Dark theme: modal backdrops stay dark (gray-900 flips to a light shade in g100) */
+:root[data-theme='dark'] .bg-gray-900\/50,
+:root[data-theme='dark'] .bg-gray-900\/30,
+:root[data-theme='dark'] .bg-gray-900\/20,
+:root[data-theme='dark'] .bg-slate-900\/40 { background-color: rgb(0 0 0 / 0.6); }
+/* Dark surfaces with white text (tooltips, chips) keep a dark fill */
+:root[data-theme='dark'] .bg-gray-900.text-white,
+:root[data-theme='dark'] .bg-gray-800.text-white,
+:root[data-theme='dark'] .bg-slate-900.text-white,
+:root[data-theme='dark'] .bg-slate-800.text-white { background-color: #393939; }
+
+/* Solid neutral fills that carry white text/icons (node headers, avatars, chips)
+   keep a mid-dark grey in dark mode instead of flipping to a light grey. */
+:root[data-theme='dark'] .bg-gray-400:has(> .text-white),
+:root[data-theme='dark'] .bg-gray-500:has(> .text-white),
+:root[data-theme='dark'] .bg-gray-600:has(> .text-white),
+:root[data-theme='dark'] .bg-gray-400.text-white,
+:root[data-theme='dark'] .bg-gray-500.text-white,
+:root[data-theme='dark'] .bg-gray-600.text-white { background-color: #525252; }
+
+/* Flow canvas node cards (Robot Factory style) */
+:root { --canvas-node: #ffffff; --canvas-node-text: #161616; --canvas-node-muted: #6f6f6f; --canvas-node-line: #e0e0e0; --canvas-port: #8d8d8d; }
+:root[data-theme='dark'] { --canvas-node: #262626; --canvas-node-text: #f4f4f4; --canvas-node-muted: #a8a8a8; --canvas-node-line: #393939; --canvas-port: #8d8d8d; }

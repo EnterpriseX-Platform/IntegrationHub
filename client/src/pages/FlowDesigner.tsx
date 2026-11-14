@@ -794,7 +794,7 @@ export const FlowDesigner = () => {
   const selectedNode = nodes.find(n => n.id === selectedNodeId);
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-full flex flex-col">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -908,9 +908,9 @@ export const FlowDesigner = () => {
                     placeholder="e.g. db1, http1"
                   />
                   {selectedNode.config?.varName && nodes.some(n => n.id !== selectedNode.id && n.config?.varName === selectedNode.config?.varName) && (
-                    <p className="text-[10px] text-red-500 mt-0.5">ID ซ้ำกับ node อื่น</p>
+                    <p className="text-[12px] text-red-500 mt-0.5">ID ซ้ำกับ node อื่น</p>
                   )}
-                  <p className="text-[10px] text-gray-400 mt-0.5">ใช้อ้างอิง: <code className="bg-gray-100 px-1">{`{{${selectedNode.config?.varName || 'id'}.rows}}`}</code></p>
+                  <p className="text-[12px] text-gray-400 mt-0.5">ใช้อ้างอิง: <code className="bg-gray-100 px-1">{`{{${selectedNode.config?.varName || 'id'}.rows}}`}</code></p>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">Label</label>

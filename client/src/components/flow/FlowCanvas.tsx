@@ -133,7 +133,7 @@ const NodeCard = ({
         </div>
         
         {/* Body - show type */}
-        <div className="px-2 py-1.5 text-[10px] text-gray-500 bg-gray-50">
+        <div className="px-2 py-1.5 text-[12px] text-gray-500 bg-gray-50">
           {node.type}
         </div>
       </div>
@@ -789,8 +789,8 @@ export const FlowCanvas = ({
             className="absolute inset-0 pointer-events-none"
             style={{
               backgroundImage: `
-                linear-gradient(to right, #e5e7eb 1px, transparent 1px),
-                linear-gradient(to bottom, #e5e7eb 1px, transparent 1px)
+                linear-gradient(to right, var(--canvas-grid) 1px, transparent 1px),
+                linear-gradient(to bottom, var(--canvas-grid) 1px, transparent 1px)
               `,
               backgroundSize: `${20 * scale}px ${20 * scale}px`,
               backgroundPosition: `${pan.x}px ${pan.y}px`,

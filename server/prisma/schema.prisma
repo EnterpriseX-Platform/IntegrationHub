@@ -36,6 +36,9 @@ model Project {
   members       ProjectMember[] // Who can see/edit this project (admins see every project)
 
   @@index([position])
+  tenantId      String?      @map("tenantId") // Tenant phase 1: nullable, back-filled to "default" on startup
+
+  @@index([tenantId])
   @@map("projects")
 }
 
@@ -87,6 +90,9 @@ model Tag {
   createdAt   DateTime        @default(now()) @map("createdAt")
   connections ConnectionTag[]
 
+  tenantId      String?      @map("tenantId") // Tenant phase 1: nullable, back-filled to "default" on startup
+
+  @@index([tenantId])
   @@map("tags")
 }
 
@@ -268,6 +274,7 @@ model User {
   repoTableMemberships RepoTableMember[]
   groupMemberships   UserGroupMember[]
   folderMemberships  BasketFolderMember[]
+  tenantMemberships  TenantMember[]
 
   @@map("users")
 }
@@ -304,6 +311,9 @@ model UserGroup {
   tableGrants   RepoTableMember[]
   folderGrants  BasketFolderMember[]
 
+  tenantId      String?      @map("tenantId") // Tenant phase 1: nullable, back-filled to "default" on startup
+
+  @@index([tenantId])
   @@map("user_groups")
 }
 
@@ -497,6 +507,9 @@ model TransferJob {
   basket         Basket        @relation(fields: [sourceBasketId], references: [id], onDelete: Cascade)
   logs           TransferLog[]
 
+  tenantId      String?      @map("tenantId") // Tenant phase 1: nullable, back-filled to "default" on startup
+
+  @@index([tenantId])
   @@map("transfer_jobs")
 }
 
@@ -547,6 +560,9 @@ model SystemConfig {
   updatedAt   DateTime @updatedAt @map("updatedAt")
   updatedBy   String?  @map("updatedBy")
 
+  tenantId      String?      @map("tenantId") // Tenant phase 1: nullable, back-filled to "default" on startup
+
+  @@index([tenantId])
   @@map("system_configs")
 }
 
@@ -555,6 +571,7 @@ model Session {
   id        String   @id @default(cuid())
   userId    String   @map("userId")
   token     String   @unique
+  tenantId  String?  @map("tenantId") // active tenant for this login (switchable)
   ipAddress String?  @map("ipAddress")
   userAgent String?  @map("userAgent")
   expiresAt DateTime @map("expiresAt")
@@ -576,6 +593,9 @@ model WbConnection {
   updatedAt   DateTime    @updatedAt @map("updated_at")
   datasets    WbDataset[]
 
+  tenantId      String?      @map("tenantId") // Tenant phase 1: nullable, back-filled to "default" on startup
+
+  @@index([tenantId])
   @@map("wb_connections")
 }
 
@@ -590,6 +610,9 @@ model WbApiKey {
   lastUsedAt  DateTime? @map("last_used_at")
   createdAt   DateTime  @default(now()) @map("created_at")
 
+  tenantId      String?      @map("tenantId") // Tenant phase 1: nullable, back-filled to "default" on startup
+
+  @@index([tenantId])
   @@map("wb_api_keys")
 }
 
@@ -608,6 +631,9 @@ model WbDataset {
   folders      WbFolder[]
   savedQueries WbSavedQuery[]
 
+  tenantId      String?      @map("tenantId") // Tenant phase 1: nullable, back-filled to "default" on startup
+
+  @@index([tenantId])
   @@map("wb_datasets")
 }
 
@@ -627,6 +653,9 @@ model WbFolder {
   children       WbFolder[] @relation("WbFolderTree")
 
   @@index([datasetId])
+  tenantId      String?      @map("tenantId") // Tenant phase 1: nullable, back-filled to "default" on startup
+
+  @@index([tenantId])
   @@map("wb_folders")
 }
 
@@ -642,6 +671,9 @@ model WbSavedQuery {
 
   dataset     WbDataset? @relation(fields: [datasetId], references: [id], onDelete: SetNull)
 
+  tenantId      String?      @map("tenantId") // Tenant phase 1: nullable, back-filled to "default" on startup
+
+  @@index([tenantId])
   @@map("wb_saved_queries")
 }
 
@@ -658,6 +690,9 @@ model RepoConnection {
   updatedAt   DateTime    @updatedAt @map("updated_at")
   tables      RepoTable[]
 
+  tenantId      String?      @map("tenantId") // Tenant phase 1: nullable, back-filled to "default" on startup
+
+  @@index([tenantId])
   @@map("repo_connections")
 }
 
@@ -672,6 +707,9 @@ model RepoApiKey {
   lastUsedAt  DateTime? @map("last_used_at")
   createdAt   DateTime  @default(now()) @map("created_at")
 
+  tenantId      String?      @map("tenantId") // Tenant phase 1: nullable, back-filled to "default" on startup
+
+  @@index([tenantId])
   @@map("repo_api_keys")
 }
 
@@ -706,6 +744,9 @@ model RepoTable {
   folder       RepoFolder?     @relation(fields: [folderId], references: [id], onDelete: SetNull)
   members      RepoTableMember[]
 
+  tenantId      String?      @map("tenantId") // Tenant phase 1: nullable, back-filled to "default" on startup
+
+  @@index([tenantId])
   @@map("repo_tables")
 }
 
@@ -738,6 +779,9 @@ model RepoSqlQuery {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
+  tenantId      String?      @map("tenantId") // Tenant phase 1: nullable, back-filled to "default" on startup
+
+  @@index([tenantId])
   @@map("repo_sql_queries")
 }
 
@@ -753,6 +797,9 @@ model RepoFolder {
   children       RepoFolder[] @relation("RepoFolderTree")
   tables         RepoTable[]
 
+  tenantId      String?      @map("tenantId") // Tenant phase 1: nullable, back-filled to "default" on startup
+
+  @@index([tenantId])
   @@map("repo_folders")
 }
 
@@ -771,6 +818,9 @@ model DataViewFolder {
   children    DataViewFolder[] @relation("DataViewFolderTree")
   views       DataView[]
 
+  tenantId      String?      @map("tenantId") // Tenant phase 1: nullable, back-filled to "default" on startup
+
+  @@index([tenantId])
   @@map("data_view_folders")
 }
 
@@ -795,6 +845,9 @@ model DataView {
 
   @@index([datasetId])
   @@index([folderId])
+  tenantId      String?      @map("tenantId") // Tenant phase 1: nullable, back-filled to "default" on startup
+
+  @@index([tenantId])
   @@map("data_views")
 }
 
@@ -810,6 +863,9 @@ model ShareLink {
 
   @@index([folderId])
   @@index([fileId])
+  tenantId      String?      @map("tenantId") // Tenant phase 1: nullable, back-filled to "default" on startup
+
+  @@index([tenantId])
   @@map("share_links")
 }
 
@@ -831,4 +887,34 @@ model BasketFolderMember {
   @@index([userId])
   @@index([groupId])
   @@map("basket_folder_members")
+}
+
+// ─── Multi-tenancy (phase 1) ─────────────────────────────────────────────────
+// Tenant-owned rows carry a plain `tenantId` column (no FK yet). Existing data is
+// back-filled into the tenant with slug "default" at server start.
+model Tenant {
+  id        String         @id @default(cuid())
+  slug      String         @unique
+  name      String
+  status    String         @default("active") // 'active' | 'suspended'
+  branding  String         @default("{}")     // JSON: { name, tagline, logo, color }
+  createdAt DateTime       @default(now()) @map("createdAt")
+  updatedAt DateTime       @updatedAt @map("updatedAt")
+  members   TenantMember[]
+
+  @@map("tenants")
+}
+
+model TenantMember {
+  id        String   @id @default(cuid())
+  tenantId  String   @map("tenantId")
+  userId    String   @map("userId")
+  role      String   @default("member") // 'tenant-admin' | 'member'
+  createdAt DateTime @default(now()) @map("createdAt")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId])
+  @@index([userId])
+  @@map("tenant_members")
 }

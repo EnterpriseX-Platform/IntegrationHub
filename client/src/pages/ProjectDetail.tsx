@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate, useLocation, NavLink, Routes, Route } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, NavLink, Routes, Route, Navigate } from 'react-router-dom';
 import { 
   LayoutDashboard, GitBranch, FolderKanban,
   Plug, History, ArrowLeft, Settings, Plus,
@@ -63,7 +63,11 @@ const colorMap: Record<string, { bg: string; icon: string; border: string; text:
   neutral: { bg: 'bg-neutral-500', icon: 'text-neutral-500', border: 'border-neutral-200', text: 'text-neutral-700', light: 'bg-neutral-50', hex: '#737373' },
 };
 
-const availableColors = Object.entries(colorMap).map(([key, value]) => ({ 
+// Carbon palette: several Tailwind families render as the same Carbon colour
+// (rose = red, violet = purple, sky = blue, every grey…), so the picker offers
+// one swatch per distinct colour. Projects saved with an older key still render.
+const PICKER_COLORS = ['red', 'pink', 'purple', 'blue', 'cyan', 'teal', 'green', 'yellow', 'orange', 'gray'];
+const availableColors = Object.entries(colorMap).filter(([key]) => PICKER_COLORS.includes(key)).map(([key, value]) => ({ 
   key, 
   label: key.charAt(0).toUpperCase() + key.slice(1),
   hex: value.hex 
@@ -245,14 +249,14 @@ const CompactEditForm = ({
                     <button
                       type="button"
                       onClick={() => document.getElementById('edit-image-upload')?.click()}
-                      className="px-1.5 py-0.5 bg-white rounded text-[10px] font-medium text-gray-700"
+                      className="px-1.5 py-0.5 bg-white rounded text-[12px] font-medium text-gray-700"
                     >
                       Change
                     </button>
                     <button
                       type="button"
                       onClick={() => setEditForm((prev: any) => ({ ...prev, image: null }))}
-                      className="px-1.5 py-0.5 bg-red-500 rounded text-[10px] font-medium text-white"
+                      className="px-1.5 py-0.5 bg-red-500 rounded text-[12px] font-medium text-white"
                     >
                       Remove
                     </button>
@@ -264,7 +268,7 @@ const CompactEditForm = ({
                   className={`w-full h-full rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-100`}
                 >
                   <Plus className="h-4 w-4 text-gray-400 mb-0.5" />
-                  <p className="text-[9px] text-gray-500 text-center">Click upload</p>
+                  <p className="text-[12px] text-gray-500 text-center">Click upload</p>
                 </div>
               )}
               <input
@@ -414,7 +418,7 @@ const CompactEditForm = ({
                 title={label}
               >
                 {editForm.color === key && (
-                  <span className="absolute inset-0 flex items-center justify-center text-white text-[10px]">
+                  <span className="absolute inset-0 flex items-center justify-center text-white text-[12px]">
                     <i className="fas fa-check"></i>
                   </span>
                 )}
@@ -597,7 +601,7 @@ export const ProjectDetailLayout = () => {
                   <p className="text-xs text-gray-500 truncate">{project.description}</p>
                 </div>
               </div>
-              <span className="hidden sm:inline-block px-2 py-0.5 bg-green-100 text-green-700 text-[11px] rounded-full font-medium shrink-0">
+              <span className="hidden sm:inline-block px-2 py-0.5 bg-green-100 text-green-700 text-[12px] rounded-full font-medium shrink-0">
                 {project.status}
               </span>
             </div>
@@ -673,6 +677,8 @@ export const ProjectDetailLayout = () => {
           <Route path="secrets-vault" element={<ProjectApiKeys project={project} />} />
           {/* Backward compatibility */}
           <Route path="api-keys" element={<ProjectApiKeys project={project} />} />
+          {/* Unknown sub-path (old link, typo): back to the project dashboard instead of a blank page */}
+          <Route path="*" element={<Navigate to="." replace />} />
         </Routes>
       </div>
 

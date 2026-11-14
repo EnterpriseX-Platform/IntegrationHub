@@ -1182,21 +1182,21 @@ export const ProjectBaskets = ({ project }: { project: Project }) => {
                   <div className="flex items-center gap-2">
                     <h3 className="font-medium text-sm text-gray-900 truncate">{basket.name}</h3>
                     {basket.type === 'sftp' ? (
-                      <span className="px-1.5 py-0 bg-purple-50 text-purple-600 text-[10px] rounded-full border border-purple-100 flex items-center gap-1">
+                      <span className="px-1.5 py-0 bg-purple-50 text-purple-600 text-[12px] rounded-full border border-purple-100 flex items-center gap-1">
                         <Server className="h-3 w-3" /> SFTP
                       </span>
                     ) : basket.type === 'shares' ? (
-                      <span className="px-1.5 py-0 bg-cyan-50 text-cyan-600 text-[10px] rounded-full border border-cyan-100 flex items-center gap-1">
+                      <span className="px-1.5 py-0 bg-cyan-50 text-cyan-600 text-[12px] rounded-full border border-cyan-100 flex items-center gap-1">
                         <Folder className="h-3 w-3" /> File Explorer
                       </span>
                     ) : (
-                      <span className="px-1.5 py-0 bg-orange-50 text-orange-600 text-[10px] rounded-full border border-orange-100">Batch</span>
+                      <span className="px-1.5 py-0 bg-orange-50 text-orange-600 text-[12px] rounded-full border border-orange-100">Batch</span>
                     )}
                     {basket.autoArchive && (
-                      <span className="px-1.5 py-0 bg-green-50 text-green-600 text-[10px] rounded-full border border-green-100">Auto-ZIP</span>
+                      <span className="px-1.5 py-0 bg-green-50 text-green-600 text-[12px] rounded-full border border-green-100">Auto-ZIP</span>
                     )}
                     {basket.autoPublish !== 'manual' && (
-                      <span className="px-1.5 py-0 bg-purple-50 text-purple-600 text-[10px] rounded-full border border-purple-100">Auto-Pub</span>
+                      <span className="px-1.5 py-0 bg-purple-50 text-purple-600 text-[12px] rounded-full border border-purple-100">Auto-Pub</span>
                     )}
                   </div>
                   <p className="text-xs text-gray-500 truncate">
@@ -1969,7 +1969,7 @@ function SessionCard({
               <span className={`text-xs font-medium ${isDragOver ? 'text-blue-700' : 'text-gray-600'}`}>
                 Drop files here
               </span>
-              <span className={`text-[10px] ${isDragOver ? 'text-blue-500' : 'text-gray-400'}`}>
+              <span className={`text-[12px] ${isDragOver ? 'text-blue-500' : 'text-gray-400'}`}>
                 or click to browse
               </span>
             </div>

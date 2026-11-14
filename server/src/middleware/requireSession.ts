@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../lib/prisma';
+import { resolveTenant } from '../lib/tenants';
+import { runWithTenant } from '../lib/tenantContext';
 
 /**
  * Require a logged-in user (a valid row in `sessions`, as issued by /auth/login).
@@ -25,7 +27,15 @@ export async function requireSession(req: Request, res: Response, next: NextFunc
     const session = await prisma.session.findUnique({ where: { token } });
     if (!session || session.expiresAt < new Date()) return reject(req, res, 'Session expired — please log in again');
     (req as any).userId = session.userId;
-    next();
+
+    // Tenant: the session's active tenant; a super-admin may override per request with X-Tenant-Id
+    const user = await prisma.user.findUnique({ where: { id: session.userId }, select: { role: true } });
+    const header = req.get('x-tenant-id');
+    const wanted = header && user?.role === 'admin' ? header : session.tenantId;
+    const t = await resolveTenant(session.userId, user?.role, wanted);
+    (req as any).tenantId = t.tenantId;
+    (req as any).tenantRole = t.role;
+    runWithTenant({ tenantId: t.tenantId, isDefault: t.isDefault }, () => next());
   } catch (err) {
     next(err);
   }

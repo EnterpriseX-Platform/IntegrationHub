@@ -256,7 +256,7 @@ export const ProjectApiKeys = ({ project }: { project: Project }) => {
     const config = keyTypeConfig[type as keyof typeof keyTypeConfig];
     const Icon = config.icon;
     return (
-      <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${config.bg} ${config.color}`}>
+      <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[12px] font-medium ${config.bg} ${config.color}`}>
         <Icon className="h-3 w-3" />
         {config.label}
       </span>
@@ -555,11 +555,11 @@ export const ProjectApiKeys = ({ project }: { project: Project }) => {
                           </div>
                           <h3 className="font-medium text-sm text-gray-900 truncate">{apiKey.name}</h3>
                           {apiKey.isActive ? (
-                            <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-[10px] rounded-full">
+                            <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-[12px] rounded-full">
                               Active
                             </span>
                           ) : (
-                            <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-[10px] rounded-full">
+                            <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-[12px] rounded-full">
                               Inactive
                             </span>
                           )}
@@ -569,18 +569,18 @@ export const ProjectApiKeys = ({ project }: { project: Project }) => {
                         <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                           {getKeyTypeBadge(apiKey.type)}
                           {apiKey.scopes.map(scope => (
-                            <span key={scope} className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-[10px] rounded">
+                            <span key={scope} className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-[12px] rounded">
                               {scope}
                             </span>
                           ))}
                           {apiKey.validateIp && (
-                            <span className="flex items-center gap-0.5 px-1.5 py-0.5 bg-purple-50 text-purple-700 text-[10px] rounded">
+                            <span className="flex items-center gap-0.5 px-1.5 py-0.5 bg-purple-50 text-purple-700 text-[12px] rounded">
                               <Lock className="h-2.5 w-2.5" />
                               IP
                             </span>
                           )}
                           {apiKey.rateLimit && (
-                            <span className="px-1.5 py-0.5 bg-orange-50 text-orange-700 text-[10px] rounded">
+                            <span className="px-1.5 py-0.5 bg-orange-50 text-orange-700 text-[12px] rounded">
                               {apiKey.rateLimit}/min
                             </span>
                           )}
@@ -609,7 +609,7 @@ export const ProjectApiKeys = ({ project }: { project: Project }) => {
                             title="Copy"
                           >
                             {copiedId === apiKey.id ? (
-                              <span className="text-green-600 text-[10px] font-medium">✓</span>
+                              <span className="text-green-600 text-[12px] font-medium">✓</span>
                             ) : (
                               <Copy className="h-3.5 w-3.5" />
                             )}
@@ -617,7 +617,7 @@ export const ProjectApiKeys = ({ project }: { project: Project }) => {
                         </div>
 
                         {/* Row 4: Meta Info */}
-                        <div className="mt-1.5 flex items-center gap-3 text-[10px] text-gray-400">
+                        <div className="mt-1.5 flex items-center gap-3 text-[12px] text-gray-400">
                           <span>Created {new Date(apiKey.createdAt).toLocaleString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}</span>
                           {apiKey.lastUsedAt && (
                             <span>Used {new Date(apiKey.lastUsedAt).toLocaleString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}</span>
@@ -755,11 +755,11 @@ export const ProjectApiKeys = ({ project }: { project: Project }) => {
                         </div>
                         <h3 className="font-medium text-sm text-gray-900 truncate">{encKey.name}</h3>
                         {encKey.isActive ? (
-                          <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] rounded-full">
+                          <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 text-[12px] rounded-full">
                             Active
                           </span>
                         ) : (
-                          <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-[10px] rounded-full">
+                          <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-[12px] rounded-full">
                             Inactive
                           </span>
                         )}
@@ -767,31 +767,31 @@ export const ProjectApiKeys = ({ project }: { project: Project }) => {
 
                       {/* Row 2: Algorithm + Format badges */}
                       <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-100 text-emerald-700">
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[12px] font-medium bg-emerald-100 text-emerald-700">
                           <ShieldCheck className="h-3 w-3" />
                           {encKey.algorithm}
                         </span>
                         {encKey.keyFormat && (
-                          <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-[10px] rounded">
+                          <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-[12px] rounded">
                             {encKey.keyFormat}
                           </span>
                         )}
                         {/* Private Key indicator — only for asymmetric keys */}
                         {encKey.algorithm && !encKey.algorithm.startsWith('aes') && (
                           encKey.hasPrivateKey ? (
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-blue-700" title="Private key stored in system">
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[12px] font-medium bg-blue-100 text-blue-700" title="Private key stored in system">
                               <Lock className="h-3 w-3" />
                               มี Private Key
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-700" title="No private key — encrypt only">
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[12px] font-medium bg-amber-100 text-amber-700" title="No private key — encrypt only">
                               <Lock className="h-3 w-3" />
                               Public Only
                             </span>
                           )
                         )}
                         {encKey.description && (
-                          <span className="px-1.5 py-0.5 bg-gray-50 text-gray-500 text-[10px] rounded italic">
+                          <span className="px-1.5 py-0.5 bg-gray-50 text-gray-500 text-[12px] rounded italic">
                             {encKey.description}
                           </span>
                         )}
@@ -808,7 +808,7 @@ export const ProjectApiKeys = ({ project }: { project: Project }) => {
                       </div>}
 
                       {/* Row 4: Meta Info */}
-                      <div className="mt-1.5 flex items-center gap-3 text-[10px] text-gray-400">
+                      <div className="mt-1.5 flex items-center gap-3 text-[12px] text-gray-400">
                         <span>Created {new Date(encKey.createdAt).toLocaleString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}</span>
                       </div>
                     </div>
@@ -1534,7 +1534,7 @@ export const ProjectApiKeys = ({ project }: { project: Project }) => {
                     {showDownloadPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
-                <p className="text-[10px] text-gray-400 mt-1">
+                <p className="text-[12px] text-gray-400 mt-1">
                   Leave empty to download as plain file
                 </p>
               </div>

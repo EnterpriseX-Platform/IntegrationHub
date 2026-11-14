@@ -88,14 +88,14 @@ export const ProjectDashboard = ({ project }: { project: Project }) => {
   const getFlowTypeBadge = (type: string) => {
     if (type === 'API_SPEC') {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-100">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[12px] font-medium bg-blue-50 text-blue-700 border border-blue-100">
           <Zap className="h-3 w-3" />
           API Flow
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-purple-50 text-purple-700 border border-purple-100">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[12px] font-medium bg-purple-50 text-purple-700 border border-purple-100">
         <Activity className="h-3 w-3" />
         Triggers
       </span>
@@ -252,7 +252,7 @@ export const ProjectDashboard = ({ project }: { project: Project }) => {
             </div>
             <div className="flex items-baseline gap-2 min-w-0">
               <span className="text-lg font-semibold text-gray-900 leading-tight tabular-nums">{card.value}</span>
-              {card.meta && <span className="flex items-center gap-1.5 text-[11px] whitespace-nowrap overflow-hidden">{card.meta}</span>}
+              {card.meta && <span className="flex items-center gap-1.5 text-[12px] whitespace-nowrap overflow-hidden">{card.meta}</span>}
             </div>
           </button>
         ))}

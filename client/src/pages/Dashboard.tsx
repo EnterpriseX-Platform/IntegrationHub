@@ -88,18 +88,23 @@ const KpiCard = ({
   // (failures today), and only when that number isn't zero.
   const alert = color === 'red' && Number(value) > 0;
 
+  // Carbon tile (RunLoop style): small coloured icon + label, big light number
+  const tint: Record<string, string> = {
+    blue: 'text-blue-600', green: 'text-green-600', purple: 'text-purple-600', cyan: 'text-cyan-600',
+    orange: 'text-orange-600', red: 'text-red-600', amber: 'text-yellow-600',
+  };
+
   return (
-    <div 
+    <div
       onClick={onClick}
-      className="bg-white rounded-lg border border-gray-200 px-3 py-2.5 sm:px-4 sm:py-3 cursor-pointer transition-colors hover:border-blue-300 flex items-center gap-3 min-w-0"
+      className="bg-white px-4 py-4 cursor-pointer transition-colors hover:bg-gray-100 min-w-0"
     >
-      <div className={`h-9 w-9 shrink-0 rounded-lg flex items-center justify-center ${alert ? 'bg-red-50' : 'bg-gray-100'}`}>
-        <Icon className={`h-[18px] w-[18px] ${alert ? 'text-red-600' : 'text-gray-500'}`} />
+      <div className="flex items-center gap-2 text-sm text-gray-600 min-w-0">
+        <Icon className={`h-4 w-4 shrink-0 ${tint[color] || 'text-gray-500'}`} />
+        <span className="truncate" title={title}>{title}</span>
       </div>
-      <div className="min-w-0">
-        <p className={`text-xl font-semibold leading-tight tabular-nums ${alert ? 'text-red-600' : 'text-gray-900'}`}>{value}</p>
-        <p className="text-xs text-gray-500 truncate" title={subtext ? `${title} — ${subtext}` : title}>{title}</p>
-      </div>
+      <p className={`mt-3 text-[2.5rem] leading-none font-light tabular-nums ${alert ? 'text-red-600' : 'text-gray-900'}`}>{value}</p>
+      <p className="mt-3 text-xs text-gray-500 truncate">{subtext || '\u00a0'}</p>
     </div>
   );
 };
@@ -133,16 +138,16 @@ const ProjectCard = ({ project, onClick }: { project: Project; onClick: () => vo
               {project.name}
             </h3>
             <div className="flex items-center gap-2 mt-0.5">
-              <span className={`text-[10px] px-1.5 py-0.5 rounded ${colors.light} ${colors.text}`}>
+              <span className={`text-[12px] px-1.5 py-0.5 rounded ${colors.light} ${colors.text}`}>
                 {project.status}
               </span>
-              <span className="text-[10px] text-gray-400">{project.flowCount || 0} flows</span>
+              <span className="text-[12px] text-gray-400">{project.flowCount || 0} flows</span>
             </div>
           </div>
         </div>
       </div>
       <div className="px-3 py-1.5 bg-gray-50 border-t border-gray-100">
-        <span className="text-[10px] text-gray-400">Updated {formatTime(project.updatedAt)}</span>
+        <span className="text-[12px] text-gray-400">Updated {formatTime(project.updatedAt)}</span>
       </div>
     </div>
   );
@@ -317,8 +322,8 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-20 shadow-sm">
-        <div className="px-6 py-4">
+      <header>
+        <div className="px-4 sm:px-6 pt-6 pb-2">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
@@ -336,7 +341,7 @@ export default function Dashboard() {
 
       <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
         {/* KPI Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 2xl:grid-cols-8 gap-2 sm:gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
           <KpiCard
             title="Total Projects"
             value={stats.totalProjects}
@@ -411,20 +416,20 @@ export default function Dashboard() {
         </div>
 
         {/* Live Activity Panel */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="bg-white p-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
               <h2 className="font-semibold text-gray-900">Live Activity</h2>
             </div>
             {updatedAt && (
-              <span className="text-xs text-gray-400">
+              <span className="whitespace-nowrap text-xs text-gray-400">
                 Updated {updatedAt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
               </span>
             )}
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
             {/* Executions Summary */}
             <div 
               onClick={() => navigate('/executions')}
@@ -434,16 +439,16 @@ export default function Dashboard() {
                 <div className="w-10 h-10 bg-white border border-gray-200 rounded-xl flex items-center justify-center">
                   <Activity className="h-5 w-5 text-gray-600" />
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900">Executions</p>
-                  <div className="flex items-center gap-3 mt-1">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
                     <div className="flex items-center gap-1">
                       <Play className="h-3 w-3 text-gray-500" />
-                      <span className="text-xs font-semibold text-gray-700">{stats.runningExecutions} running</span>
+                      <span className="whitespace-nowrap text-xs font-semibold text-gray-700">{stats.runningExecutions} running</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <CheckCircle2 className="h-3 w-3 text-green-600" />
-                      <span className="text-xs text-gray-500">{stats.todayExecutions} today</span>
+                      <span className="whitespace-nowrap text-xs text-gray-500">{stats.todayExecutions} today</span>
                     </div>
                   </div>
                 </div>
@@ -459,16 +464,16 @@ export default function Dashboard() {
                 <div className="w-10 h-10 bg-white border border-gray-200 rounded-xl flex items-center justify-center">
                   <Clock className="h-5 w-5 text-gray-600" />
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900">Schedulers</p>
-                  <div className="flex items-center gap-3 mt-1">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
                     <div className="flex items-center gap-1">
                       <Zap className="h-3 w-3 text-gray-500" />
-                      <span className="text-xs font-semibold text-gray-700">{stats.activeSchedulers} active</span>
+                      <span className="whitespace-nowrap text-xs font-semibold text-gray-700">{stats.activeSchedulers} active</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <Pause className="h-3 w-3 text-gray-500" />
-                      <span className="text-xs text-gray-500">{stats.pausedSchedulers} paused</span>
+                      <span className="whitespace-nowrap text-xs text-gray-500">{stats.pausedSchedulers} paused</span>
                     </div>
                   </div>
                 </div>
@@ -484,12 +489,12 @@ export default function Dashboard() {
                 <div className="w-10 h-10 bg-white border border-gray-200 rounded-xl flex items-center justify-center">
                   <Inbox className="h-5 w-5 text-gray-600" />
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900">Baskets</p>
-                  <div className="flex items-center gap-3 mt-1">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
                     <div className="flex items-center gap-1">
                       <Inbox className="h-3 w-3 text-gray-500" />
-                      <span className="text-xs font-semibold text-gray-700">{stats.pendingBaskets} total</span>
+                      <span className="whitespace-nowrap text-xs font-semibold text-gray-700">{stats.pendingBaskets} total</span>
                     </div>
                   </div>
                 </div>
@@ -502,15 +507,15 @@ export default function Dashboard() {
                 <div className="w-10 h-10 bg-white border border-gray-200 rounded-xl flex items-center justify-center">
                   <CheckCircle2 className="h-5 w-5 text-green-600" />
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900">Today's Success Rate</p>
-                  <div className="flex items-center gap-3 mt-1">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
                     {stats.todayExecutions > 0 ? (
-                      <span className="text-xs text-green-600 font-semibold">
+                      <span className="whitespace-nowrap text-xs text-green-600 font-semibold">
                         {Math.round(((stats.todayExecutions - stats.failedExecutions) / stats.todayExecutions) * 100)}% of {stats.todayExecutions} runs
                       </span>
                     ) : (
-                      <span className="text-xs text-gray-500">No runs yet today</span>
+                      <span className="whitespace-nowrap text-xs text-gray-500">No runs yet today</span>
                     )}
                   </div>
                 </div>
@@ -531,7 +536,7 @@ export default function Dashboard() {
               <ArrowRight className="h-4 w-4" />
             </button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-3">
             {projects.map((project) => (
               <ProjectCard 
                 key={project.id} 

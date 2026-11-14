@@ -191,7 +191,7 @@ export default function TxtViewer() {
           </div>
           <span className="text-sm font-medium text-gray-200">{fileName}</span>
           {encoding !== 'utf-8' && (
-            <span className="text-[10px] px-1.5 py-0.5 bg-yellow-600/30 text-yellow-300 rounded">
+            <span className="text-[12px] px-1.5 py-0.5 bg-yellow-600/30 text-yellow-300 rounded">
               {encoding.toUpperCase()}
             </span>
           )}
@@ -235,7 +235,7 @@ export default function TxtViewer() {
             className="flex-1 px-2 py-0.5 text-xs bg-[#2d2d2d] border border-[#505050] rounded text-gray-200 outline-none focus:border-blue-500"
           />
           {searchResults.length > 0 && (
-            <span className="text-[11px] text-gray-400">
+            <span className="text-[12px] text-gray-400">
               {currentMatch + 1} / {searchResults.length}
             </span>
           )}
@@ -269,7 +269,7 @@ export default function TxtViewer() {
                   id={`line-${idx}`}
                   className={`${isCurrentMatch ? 'bg-yellow-800/30' : isMatch ? 'bg-yellow-900/20' : idx % 2 === 0 ? 'bg-[#1e1e1e]' : 'bg-[#222222]'} hover:bg-[#2a2d2e]`}
                 >
-                  <td className="sticky left-0 px-3 py-0 text-right text-[11px] text-[#858585] select-none bg-inherit border-r border-[#333333] w-[60px] min-w-[60px]">
+                  <td className="sticky left-0 px-3 py-0 text-right text-[12px] text-[#858585] select-none bg-inherit border-r border-[#333333] w-[60px] min-w-[60px]">
                     {idx + 1}
                   </td>
                   <td className="px-4 py-0 text-[12px] whitespace-pre" style={{ tabSize: 4 }}>
@@ -289,7 +289,7 @@ export default function TxtViewer() {
       </div>
 
       {/* Status Bar */}
-      <div className="flex items-center justify-between px-4 py-1 bg-[#007acc] text-white text-[11px] flex-shrink-0 select-none">
+      <div className="flex items-center justify-between px-4 py-1 bg-[#007acc] text-white text-[12px] flex-shrink-0 select-none">
         <div className="flex items-center gap-4">
           <span>Lines: {totalLines.toLocaleString()}</span>
           <span>Loaded: {lines.length.toLocaleString()} ({loadedPercent}%)</span>

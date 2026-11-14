@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { 
+  Building2,
   Users, 
   UserPlus, 
   Shield, 
@@ -19,7 +20,8 @@ import {
   UsersRound
 } from 'lucide-react';
 import { GroupsPanel } from '../components/access/GroupsPanel';
-import { useCurrentUser, isAdminUser } from '../lib/currentUser';
+import { TenantsPanel } from '../components/tenant/TenantsPanel';
+import { useCurrentUser, isSuperAdmin } from '../lib/currentUser';
 import { AdminOnlyNotice } from '../components/access/AdminOnly';
 import { Button } from '../components/ui/Button';
 
@@ -78,6 +80,7 @@ import { API_URL, apiFetch } from '../config/api';
 declare const __APP_VERSION__: string;
 
 const tabs = [
+  { id: 'tenants', label: 'Tenants', icon: Building2 },
   { id: 'users', label: 'User Management', icon: Users },
   { id: 'groups', label: 'Groups', icon: UsersRound },
   { id: 'config', label: 'Configuration', icon: Variable },
@@ -87,12 +90,12 @@ const tabs = [
 /** Settings is admin only; the server refuses these APIs to other users anyway. */
 export default function SystemSettings() {
   const user = useCurrentUser();
-  if (!isAdminUser(user)) return <AdminOnlyNotice page="System Settings" />;
+  if (!isSuperAdmin(user)) return <AdminOnlyNotice page="System Settings" />;
   return <SettingsAdmin />;
 }
 
 function SettingsAdmin() {
-  const [activeTab, setActiveTab] = useState<'users' | 'groups' | 'config' | 'system'>('users');
+  const [activeTab, setActiveTab] = useState<'tenants' | 'users' | 'groups' | 'config' | 'system'>('users');
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(false);
   const [showAddUser, setShowAddUser] = useState(false);
@@ -369,10 +372,10 @@ function SettingsAdmin() {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">User</th>
-                      <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Role</th>
-                      <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-3 py-2 text-right text-[11px] font-medium text-gray-500 uppercase tracking-wider"></th>
+                      <th className="px-3 py-2 text-left text-[12px] font-medium text-gray-500 uppercase tracking-wider">User</th>
+                      <th className="px-3 py-2 text-left text-[12px] font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Role</th>
+                      <th className="px-3 py-2 text-left text-[12px] font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="px-3 py-2 text-right text-[12px] font-medium text-gray-500 uppercase tracking-wider"></th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -392,7 +395,7 @@ function SettingsAdmin() {
                           </div>
                         </td>
                         <td className="px-3 py-2 whitespace-nowrap hidden sm:table-cell">
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium ${
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-[12px] font-medium ${
                             user.role === 'admin' 
                               ? 'bg-blue-50 text-blue-700' 
                               : 'bg-gray-100 text-gray-700'
@@ -401,7 +404,7 @@ function SettingsAdmin() {
                           </span>
                         </td>
                         <td className="px-3 py-2 whitespace-nowrap">
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[12px] font-medium ${
                             user.status === 'active'
                               ? 'bg-green-100 text-green-700'
                               : 'bg-red-100 text-red-700'
@@ -453,6 +456,7 @@ function SettingsAdmin() {
         )}
 
         {activeTab === 'groups' && <GroupsPanel />}
+        {activeTab === 'tenants' && <TenantsPanel />}
 
         {/* Configuration Tab — the system_configs table, read-only */}
         {activeTab === 'config' && (
@@ -511,10 +515,10 @@ function SettingsAdmin() {
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50">
                         <tr>
-                          <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Key</th>
-                          <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Value</th>
-                          <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Category</th>
-                          <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Updated</th>
+                          <th className="px-3 py-2 text-left text-[12px] font-medium text-gray-500 uppercase tracking-wider">Key</th>
+                          <th className="px-3 py-2 text-left text-[12px] font-medium text-gray-500 uppercase tracking-wider">Value</th>
+                          <th className="px-3 py-2 text-left text-[12px] font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Category</th>
+                          <th className="px-3 py-2 text-left text-[12px] font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Updated</th>
                           <th className="px-3 py-2"></th>
                         </tr>
                       </thead>
@@ -527,7 +531,7 @@ function SettingsAdmin() {
                             </td>
                             <td className="px-3 py-2 align-top max-w-md">
                               {c.isSecret ? (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-amber-100 text-amber-700 border border-amber-200">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[12px] font-medium bg-amber-100 text-amber-700 border border-amber-200">
                                   Secret
                                 </span>
                               ) : (
@@ -616,19 +620,19 @@ function SettingsAdmin() {
               
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-[11px] text-gray-500 mb-0.5">Provider</p>
+                  <p className="text-[12px] text-gray-500 mb-0.5">Provider</p>
                   <p className="text-sm font-medium text-gray-900">{systemInfo.database.provider ?? '—'}</p>
                 </div>
                 <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-[11px] text-gray-500 mb-0.5">Host</p>
+                  <p className="text-[12px] text-gray-500 mb-0.5">Host</p>
                   <p className="text-sm font-medium text-gray-900">{systemInfo.database.host ?? '—'}</p>
                 </div>
                 <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-[11px] text-gray-500 mb-0.5">Port</p>
+                  <p className="text-[12px] text-gray-500 mb-0.5">Port</p>
                   <p className="text-sm font-medium text-gray-900">{systemInfo.database.port ?? '—'}</p>
                 </div>
                 <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-[11px] text-gray-500 mb-0.5">Database</p>
+                  <p className="text-[12px] text-gray-500 mb-0.5">Database</p>
                   <p className="text-sm font-medium text-gray-900">{systemInfo.database.name ?? '—'}</p>
                 </div>
               </div>
@@ -645,12 +649,12 @@ function SettingsAdmin() {
               
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-[11px] text-gray-500 mb-0.5">Version</p>
+                  <p className="text-[12px] text-gray-500 mb-0.5">Version</p>
                   <p className="text-sm font-medium text-gray-900">{__APP_VERSION__}</p>
                 </div>
                 <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-[11px] text-gray-500 mb-0.5">Environment</p>
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium ${
+                  <p className="text-[12px] text-gray-500 mb-0.5">Environment</p>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-[12px] font-medium ${
                     systemInfo.application.environment === 'production'
                       ? 'bg-green-100 text-green-700'
                       : 'bg-yellow-100 text-yellow-700'
@@ -659,11 +663,11 @@ function SettingsAdmin() {
                   </span>
                 </div>
                 <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-[11px] text-gray-500 mb-0.5">Base Path</p>
+                  <p className="text-[12px] text-gray-500 mb-0.5">Base Path</p>
                   <p className="text-sm font-medium text-gray-900 font-mono">{systemInfo.application.basePath}</p>
                 </div>
                 <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-[11px] text-gray-500 mb-0.5">Node.js</p>
+                  <p className="text-[12px] text-gray-500 mb-0.5">Node.js</p>
                   <p className="text-sm font-medium text-gray-900 font-mono">{systemInfo.application.nodeVersion}</p>
                 </div>
               </div>
@@ -680,19 +684,19 @@ function SettingsAdmin() {
               
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-[11px] text-gray-500 mb-0.5">Host</p>
+                  <p className="text-[12px] text-gray-500 mb-0.5">Host</p>
                   <p className="text-sm font-medium text-gray-900 font-mono truncate" title={systemInfo.server.hostname}>{systemInfo.server.hostname}</p>
                 </div>
                 <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-[11px] text-gray-500 mb-0.5">Platform</p>
+                  <p className="text-[12px] text-gray-500 mb-0.5">Platform</p>
                   <p className="text-sm font-medium text-gray-900">{systemInfo.server.platform}</p>
                 </div>
                 <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-[11px] text-gray-500 mb-0.5">Uptime</p>
+                  <p className="text-[12px] text-gray-500 mb-0.5">Uptime</p>
                   <p className="text-sm font-medium text-gray-900">{formatUptime(systemInfo.server.uptimeSeconds)}</p>
                 </div>
                 <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-[11px] text-gray-500 mb-0.5">Timezone</p>
+                  <p className="text-[12px] text-gray-500 mb-0.5">Timezone</p>
                   <p className="text-sm font-medium text-gray-900">{systemInfo.server.timezone}</p>
                 </div>
               </div>
@@ -722,7 +726,7 @@ function SettingsAdmin() {
             </div>
             <form onSubmit={editingUser ? handleUpdateUser : handleAddUser} className="space-y-3">
               <div>
-                <label className="block text-[11px] font-medium text-gray-700 mb-1">Full Name</label>
+                <label className="block text-[12px] font-medium text-gray-700 mb-1">Full Name</label>
                 <input
                   type="text"
                   value={formData.name}
@@ -732,7 +736,7 @@ function SettingsAdmin() {
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-medium text-gray-700 mb-1">Email</label>
+                <label className="block text-[12px] font-medium text-gray-700 mb-1">Email</label>
                 <input
                   type="email"
                   value={formData.email}
@@ -742,7 +746,7 @@ function SettingsAdmin() {
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-medium text-gray-700 mb-1">
+                <label className="block text-[12px] font-medium text-gray-700 mb-1">
                   Password {editingUser && '(leave blank)'}
                 </label>
                 <input
@@ -755,7 +759,7 @@ function SettingsAdmin() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-medium text-gray-700 mb-1">Role</label>
+                  <label className="block text-[12px] font-medium text-gray-700 mb-1">Role</label>
                   <select
                     value={formData.role}
                     onChange={(e) => setFormData({ ...formData, role: e.target.value as 'admin' | 'user' })}
@@ -766,7 +770,7 @@ function SettingsAdmin() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-medium text-gray-700 mb-1">Status</label>
+                  <label className="block text-[12px] font-medium text-gray-700 mb-1">Status</label>
                   <select
                     value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value as 'active' | 'inactive' })}

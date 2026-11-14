@@ -514,7 +514,7 @@ export default function XlsxViewer() {
         <div className="border-b border-[#e0e0e0] p-1.5 flex gap-1">
           <button
             onClick={() => { setSortCol(ci); setSortDir('asc'); setFilterDropdown(null); refetchWithSortFilter(ci, 'asc'); }}
-            className={`flex-1 px-2 py-1 text-[11px] rounded flex items-center gap-1.5 ${
+            className={`flex-1 px-2 py-1 text-[12px] rounded flex items-center gap-1.5 ${
               sortCol === ci && sortDir === 'asc' ? 'bg-[#d6e4f0] text-[#217346] font-medium' : 'hover:bg-gray-100 text-gray-700'
             }`}
           >
@@ -523,7 +523,7 @@ export default function XlsxViewer() {
           </button>
           <button
             onClick={() => { setSortCol(ci); setSortDir('desc'); setFilterDropdown(null); refetchWithSortFilter(ci, 'desc'); }}
-            className={`flex-1 px-2 py-1 text-[11px] rounded flex items-center gap-1.5 ${
+            className={`flex-1 px-2 py-1 text-[12px] rounded flex items-center gap-1.5 ${
               sortCol === ci && sortDir === 'desc' ? 'bg-[#d6e4f0] text-[#217346] font-medium' : 'hover:bg-gray-100 text-gray-700'
             }`}
           >
@@ -538,7 +538,7 @@ export default function XlsxViewer() {
             placeholder="Search..."
             value={filterSearch}
             onChange={e => setFilterSearch(e.target.value)}
-            className="w-full px-2 py-1 text-[11px] border border-[#c0c0c0] rounded outline-none focus:border-[#217346]"
+            className="w-full px-2 py-1 text-[12px] border border-[#c0c0c0] rounded outline-none focus:border-[#217346]"
             autoFocus
           />
         </div>
@@ -546,7 +546,7 @@ export default function XlsxViewer() {
         <div className="border-b border-[#e0e0e0]">
           <label className="flex items-center gap-2 px-2 h-7 hover:bg-gray-50 cursor-pointer whitespace-nowrap">
             <input type="checkbox" checked={isAllSelected} onChange={() => handleFilterSelectAll(ci)} className="w-3 h-3 accent-[#217346]" />
-            <span className="text-[11px] font-medium text-gray-700">(Select All)</span>
+            <span className="text-[12px] font-medium text-gray-700">(Select All)</span>
           </label>
         </div>
 
@@ -556,10 +556,10 @@ export default function XlsxViewer() {
             return (
               <label key={idx} className="flex items-center gap-2 px-2 h-7 hover:bg-gray-50 cursor-pointer group whitespace-nowrap">
                 <input type="checkbox" checked={checked} onChange={() => handleFilterToggleValue(ci, val)} className="w-3 h-3 accent-[#217346]" />
-                <span className="text-[11px] text-gray-700 truncate flex-1">{val || '(Blank)'}</span>
+                <span className="text-[12px] text-gray-700 truncate flex-1">{val || '(Blank)'}</span>
                 <button
                   onClick={(e) => { e.preventDefault(); handleFilterSelectOnly(ci, val); }}
-                  className="hidden group-hover:block text-[9px] text-[#217346] hover:underline flex-shrink-0"
+                  className="hidden group-hover:block text-[12px] text-[#217346] hover:underline flex-shrink-0"
                 >
                   Only
                 </button>
@@ -567,12 +567,12 @@ export default function XlsxViewer() {
             );
           })}
           {filteredValues.length === 0 && (
-            <div className="px-2 py-2 text-[11px] text-gray-400 text-center">No matches</div>
+            <div className="px-2 py-2 text-[12px] text-gray-400 text-center">No matches</div>
           )}
         </div>
 
         <div className="border-t border-[#e0e0e0] p-1.5 flex justify-between">
-          <button onClick={() => handleFilterSelectAll(ci)} className="px-2 py-0.5 text-[11px] text-gray-600 hover:text-gray-900">Clear Filter</button>
+          <button onClick={() => handleFilterSelectAll(ci)} className="px-2 py-0.5 text-[12px] text-gray-600 hover:text-gray-900">Clear Filter</button>
           <button onClick={handleFilterApply} className="inline-flex items-center justify-center px-3 h-8 text-[13px] bg-[#217346] text-white rounded hover:bg-[#1a5c38] whitespace-nowrap">OK</button>
         </div>
       </div>
@@ -666,11 +666,11 @@ export default function XlsxViewer() {
             </colgroup>
             <thead>
               <tr>
-                <th className="bg-[#e6e6e6] border-r border-b border-[#c0c0c0] text-[10px] text-gray-500" style={{ height: 24 }} />
+                <th className="bg-[#e6e6e6] border-r border-b border-[#c0c0c0] text-[12px] text-gray-500" style={{ height: 24 }} />
                 {headers.map((_, ci) => (
                   <th
                     key={ci}
-                    className={`px-1 py-0.5 text-[10px] font-normal text-center border-r border-b select-none cursor-pointer relative ${
+                    className={`px-1 py-0.5 text-[12px] font-normal text-center border-r border-b select-none cursor-pointer relative ${
                       selectedCell?.col === ci ? 'bg-[#d6e4f0] border-[#5b9bd5] text-[#217346] font-semibold' : 'bg-[#e6e6e6] border-[#c0c0c0] text-gray-600'
                     }`}
                     onClick={() => handleCellClick(-1, ci)}
@@ -685,11 +685,11 @@ export default function XlsxViewer() {
                 ))}
               </tr>
               <tr>
-                <th className="bg-[#e6e6e6] border-r border-b border-[#c0c0c0] text-[10px] text-gray-500 font-normal" style={{ height: 28 }}>1</th>
+                <th className="bg-[#e6e6e6] border-r border-b border-[#c0c0c0] text-[12px] text-gray-500 font-normal" style={{ height: 28 }}>1</th>
                 {headers.map((h, ci) => (
                   <th
                     key={ci}
-                    className={`px-2 py-1 text-left text-[11px] font-bold border-r border-b cursor-pointer relative overflow-visible ${
+                    className={`px-2 py-1 text-left text-[12px] font-bold border-r border-b cursor-pointer relative overflow-visible ${
                       selectedCell?.row === -1 && selectedCell?.col === ci ? 'bg-[#d6e4f0] border-[#5b9bd5]' : 'bg-[#e2efda] border-[#a9d08e]'
                     } text-[#375623]`}
                     onClick={() => handleSort(ci)}
@@ -697,7 +697,7 @@ export default function XlsxViewer() {
                   >
                     <span className="block truncate pr-5">{h}</span>
                     {sortCol === ci && sortDir && (
-                      <span className="absolute right-5 top-1/2 -translate-y-1/2 text-[9px] text-[#217346]">
+                      <span className="absolute right-5 top-1/2 -translate-y-1/2 text-[12px] text-[#217346]">
                         {sortDir === 'asc' ? '\u25B2' : '\u25BC'}
                       </span>
                     )}
@@ -732,7 +732,7 @@ export default function XlsxViewer() {
               >
                 {/* Row number */}
                 <div
-                  className={`flex-shrink-0 text-center text-[10px] border-r border-b leading-[${ROW_HEIGHT}px] ${
+                  className={`flex-shrink-0 text-center text-[12px] border-r border-b leading-[${ROW_HEIGHT}px] ${
                     selectedCell?.row === rowIndex ? 'bg-[#d6e4f0] border-[#5b9bd5] text-[#217346] font-semibold' : 'bg-[#e6e6e6] border-[#c0c0c0] text-gray-500'
                   }`}
                   style={{ width: 50, height: ROW_HEIGHT, lineHeight: `${ROW_HEIGHT}px` }}
@@ -743,7 +743,7 @@ export default function XlsxViewer() {
                 {row.map((cell, ci) => (
                   <div
                     key={ci}
-                    className={`flex-shrink-0 px-2 text-[11px] border-r border-b overflow-hidden cursor-cell truncate ${
+                    className={`flex-shrink-0 px-2 text-[12px] border-r border-b overflow-hidden cursor-cell truncate ${
                       selectedCell?.row === rowIndex && selectedCell?.col === ci
                         ? 'outline outline-2 outline-[#217346] outline-offset-[-1px] bg-[#e2efda]/30'
                         : 'border-[#e0e0e0]'
@@ -775,7 +775,7 @@ export default function XlsxViewer() {
             <button
               key={idx}
               onClick={() => { setActiveSheet(idx); setSelectedCell(null); setCellAddress(''); setCellValue(''); }}
-              className={`px-4 py-1 text-[11px] border transition-colors whitespace-nowrap ${
+              className={`px-4 py-1 text-[12px] border transition-colors whitespace-nowrap ${
                 idx === activeSheet
                   ? 'bg-white border-[#c0c0c0] border-b-white text-[#217346] font-medium -mb-px z-10'
                   : 'bg-[#e6e6e6] border-transparent text-gray-600 hover:bg-[#d9d9d9]'
@@ -785,7 +785,7 @@ export default function XlsxViewer() {
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-4 px-3 py-1 text-[10px] text-gray-500 border-l border-[#c0c0c0]">
+        <div className="flex items-center gap-4 px-3 py-1 text-[12px] text-gray-500 border-l border-[#c0c0c0]">
           {selectedCell && selectedCell.row >= 0 && <span>Cell: {cellAddress}</span>}
           <span>Rows: {totalRows.toLocaleString()}</span>
           {filteredCount !== totalRows && (

@@ -278,13 +278,13 @@ function VarRow({ v, editing, onEdit, onChange, onRemove }: {
     <div className={`rounded-md border ${editing ? 'border-blue-300 bg-blue-50/30' : 'border-gray-200 bg-white'} px-3 py-2`}>
       {/* Header */}
       <div className="flex items-center gap-2">
-        <code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[11px] text-slate-700">{`{{${v.name || '?'}}}`}</code>
+        <code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[12px] text-slate-700">{`{{${v.name || '?'}}}`}</code>
         {v.label && <span className="text-sm text-gray-700">{v.label}</span>}
-        <span className="inline-flex items-center gap-1 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600">
+        <span className="inline-flex items-center gap-1 rounded bg-gray-100 px-1.5 py-0.5 text-[12px] font-medium text-gray-600">
           {v.type === 'dropdown' && <ChevronDown className="h-2.5 w-2.5" />}
           {v.type}
         </span>
-        {v.required && <span className="rounded bg-rose-50 ring-1 ring-rose-200/60 px-1.5 py-0.5 text-[10px] font-medium text-rose-700">required</span>}
+        {v.required && <span className="rounded bg-rose-50 ring-1 ring-rose-200/60 px-1.5 py-0.5 text-[12px] font-medium text-rose-700">required</span>}
         {v.default && <span className="text-[10.5px] text-gray-500">default: <code className="rounded bg-gray-50 px-1 font-mono">{v.default}</code></span>}
         {v.type === 'dropdown' && v.options && (
           <span className="text-[10.5px] text-gray-500">{v.options.length} options</span>
@@ -336,7 +336,7 @@ function VarRow({ v, editing, onEdit, onChange, onRemove }: {
             <label className="block text-[10.5px] uppercase tracking-wide text-gray-500 font-medium mb-0.5">
               Default Value
               {v.type === 'dropdown' && (!v.options || v.options.length === 0) && (
-                <span className="ml-1 text-[10px] normal-case text-gray-400">(add options first)</span>
+                <span className="ml-1 text-[12px] normal-case text-gray-400">(add options first)</span>
               )}
             </label>
             {v.type === 'dropdown' && v.options && v.options.length > 0 ? (
@@ -404,7 +404,7 @@ function VarRow({ v, editing, onEdit, onChange, onRemove }: {
                 <label className="text-[10.5px] uppercase tracking-wide text-gray-500 font-medium">Options *</label>
                 <button
                   onClick={() => onChange({ options: [...(v.options || []), { value: '', label: '' }] })}
-                  className="inline-flex items-center gap-0.5 text-[11px] text-blue-600 hover:text-blue-700"
+                  className="inline-flex items-center gap-0.5 text-[12px] text-blue-600 hover:text-blue-700"
                 >
                   <Plus className="h-3 w-3" /> Add option
                 </button>

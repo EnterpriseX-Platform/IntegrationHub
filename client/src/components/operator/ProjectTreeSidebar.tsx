@@ -299,7 +299,7 @@ function MobileProjectPicker({ tree, projects, selected, totalCount, onSelect }:
             )}
             {groups.map((g) => (
               <div key={g.name}>
-                <div className="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">{g.name}</div>
+                <div className="px-4 pt-3 pb-1 text-[12px] font-semibold uppercase tracking-wide text-slate-400">{g.name}</div>
                 {g.items.map((p) => (
                   <PickerRow
                     key={p.id}
@@ -336,7 +336,7 @@ function PickerRow({ label, count, dot, active, onClick }: {
       {dot ? <span className={`h-2 w-2 shrink-0 rounded-full ${dot}`} /> : <span className="h-2 w-2 shrink-0" />}
       <span className="flex-1 min-w-0 truncate">{label}</span>
       {count !== undefined && (
-        <span className={`min-w-[1.5rem] px-1.5 rounded-full text-center text-[11px] tabular-nums ${active ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>
+        <span className={`min-w-[1.5rem] px-1.5 rounded-full text-center text-[12px] tabular-nums ${active ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>
           {count}
         </span>
       )}

@@ -196,7 +196,7 @@ const TagInput = ({ label, tags, onChange, placeholder }: TagInputProps) => {
         {tags.map((tag) => (
           <span
             key={tag}
-            className="inline-flex items-center gap-0.5 text-[10px] px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full border border-blue-200"
+            className="inline-flex items-center gap-0.5 text-[12px] px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full border border-blue-200"
           >
             {tag}
             <button
@@ -226,7 +226,7 @@ const TagInput = ({ label, tags, onChange, placeholder }: TagInputProps) => {
           placeholder={tags.length === 0 ? placeholder : ""}
         />
       </div>
-      <p className="text-[10px] text-gray-400 mt-1">Press Enter or comma to add multiple tags</p>
+      <p className="text-[12px] text-gray-400 mt-1">Press Enter or comma to add multiple tags</p>
     </div>
   );
 };
@@ -311,7 +311,7 @@ export const CreateFlowModal = ({ isOpen, onClose, onCreate, onUpdate, projectId
             </div>
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-900">{selectedTypeInfo.label}</p>
-              <p className="text-[10px] text-gray-500">{selectedTypeInfo.desc}</p>
+              <p className="text-[12px] text-gray-500">{selectedTypeInfo.desc}</p>
             </div>
             <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isTypeDropdownOpen ? 'rotate-180' : ''}`} />
           </button>
@@ -336,7 +336,7 @@ export const CreateFlowModal = ({ isOpen, onClose, onCreate, onUpdate, projectId
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-medium text-gray-900">{type.label}</p>
-                      <p className="text-[10px] text-gray-500">{type.desc}</p>
+                      <p className="text-[12px] text-gray-500">{type.desc}</p>
                     </div>
                   </button>
                 );

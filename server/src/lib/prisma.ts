@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { tenantScope } from './tenantScope';
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
@@ -6,9 +7,11 @@ const logLevels = process.env.LOG_LEVEL === 'debug'
   ? ['query', 'info', 'warn', 'error'] as const
   : ['error', 'warn'] as const;
 
-export const prisma = globalForPrisma.prisma || new PrismaClient({
+// The tenant extension filters tenant-owned models by the request's tenant
+// (see lib/tenantScope.ts). Cast back to PrismaClient so every caller keeps its types.
+export const prisma: PrismaClient = globalForPrisma.prisma || (new PrismaClient({
   log: logLevels.map(level => ({ emit: 'stdout', level })),
-});
+}).$extends(tenantScope) as unknown as PrismaClient);
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 

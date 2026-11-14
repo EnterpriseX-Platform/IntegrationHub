@@ -388,7 +388,7 @@ export default function SftpBrowserModal({ connectionId, connectionName, onClose
           >
             <table className="w-full text-sm table-fixed">
               <thead className="sticky top-0 z-10 bg-white">
-                <tr className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 border-b border-gray-200">
+                <tr className="text-[12px] font-semibold uppercase tracking-wide text-gray-500 border-b border-gray-200">
                   <th className="text-left font-semibold px-3 sm:px-4 py-2.5">Name</th>
                   <th className="text-right font-semibold px-3 py-2.5 w-20 sm:w-24">Size</th>
                   <th className={`text-left font-semibold px-3 py-2.5 w-40 hidden md:table-cell ${preview ? 'lg:hidden' : ''}`}>Modified</th>

@@ -708,7 +708,7 @@ export const OpenApiSpecEditor = ({ spec, onChange, requireApiKey }: OpenApiSpec
                     : 'hover:bg-white text-gray-700'
                 }`}
               >
-                <span className={`px-1.5 py-0.5 text-[10px] font-bold text-white rounded ${METHOD_COLORS[op.method]}`}>
+                <span className={`px-1.5 py-0.5 text-[12px] font-bold text-white rounded ${METHOD_COLORS[op.method]}`}>
                   {op.method}
                 </span>
                 <span className="flex-1 truncate font-mono text-xs">{op.path}</span>

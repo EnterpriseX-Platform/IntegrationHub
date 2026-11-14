@@ -240,7 +240,7 @@ function CustomSelect({
               {opt.icon}
               <div className="flex-1 min-w-0">
                 <div className="truncate">{opt.label}</div>
-                {opt.description && <div className="text-[10px] text-gray-400">{opt.description}</div>}
+                {opt.description && <div className="text-[12px] text-gray-400">{opt.description}</div>}
               </div>
               {value === opt.value && <Check size={13} className="text-teal-500 flex-shrink-0" />}
             </button>
@@ -402,20 +402,20 @@ function ConnectionsSection() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-medium text-gray-900 truncate">{c.name}</span>
-                      <span className={`text-[10px] px-1.5 py-px rounded font-medium leading-tight ${CONNECTION_TYPE_COLORS[c.type]}`}>
+                      <span className={`text-[12px] px-1.5 py-px rounded font-medium leading-tight ${CONNECTION_TYPE_COLORS[c.type]}`}>
                         {CONNECTION_TYPE_LABELS[c.type]}
                       </span>
-                      <span className={`text-[10px] px-1.5 py-px rounded font-medium leading-tight ${STATUS_COLORS[c.status]}`}>
+                      <span className={`text-[12px] px-1.5 py-px rounded font-medium leading-tight ${STATUS_COLORS[c.status]}`}>
                         {c.status}
                       </span>
                       {testResults[c.id] && (
-                        <span className={`text-[10px] px-1.5 py-px rounded font-medium leading-tight ${testResults[c.id].ok ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                        <span className={`text-[12px] px-1.5 py-px rounded font-medium leading-tight ${testResults[c.id].ok ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
                           {testResults[c.id].ok ? <Check size={10} className="inline mr-0.5" /> : <AlertCircle size={10} className="inline mr-0.5" />}
                           {testResults[c.id].msg}
                         </span>
                       )}
                     </div>
-                    <p className="text-[11px] text-gray-400 truncate mt-0.5">
+                    <p className="text-[12px] text-gray-400 truncate mt-0.5">
                       {c.config.username}@{c.config.host}:{c.config.port}/{c.config.database}
                     </p>
                   </div>
@@ -1001,7 +1001,7 @@ function FilterSelect({ spec, value, options, loading, error, onChange }: {
 
   return (
     <div ref={ref} className="relative min-w-0">
-      <label className="block text-[11px] font-medium text-gray-600 mb-1 truncate" title={spec.column}>
+      <label className="block text-[12px] font-medium text-gray-600 mb-1 truncate" title={spec.column}>
         {spec.label}
       </label>
       <button
@@ -1052,14 +1052,14 @@ function FilterSelect({ spec, value, options, loading, error, onChange }: {
             >
               All
             </button>
-            {error && <div className="px-3 py-3 text-[11px] text-red-500">{error}</div>}
+            {error && <div className="px-3 py-3 text-[12px] text-red-500">{error}</div>}
             {!error && loading && options.length === 0 && (
-              <div className="px-3 py-3 text-[11px] text-gray-400 flex items-center gap-1.5">
+              <div className="px-3 py-3 text-[12px] text-gray-400 flex items-center gap-1.5">
                 <Loader2 size={11} className="animate-spin" /> Loading options…
               </div>
             )}
             {!error && !loading && options.length === 0 && (
-              <div className="px-3 py-3 text-[11px] text-gray-400">No options</div>
+              <div className="px-3 py-3 text-[12px] text-gray-400">No options</div>
             )}
             {shown.map(o => (
               <button
@@ -1070,13 +1070,13 @@ function FilterSelect({ spec, value, options, loading, error, onChange }: {
                   value === o.value ? 'bg-teal-50 text-teal-700' : 'text-gray-700 hover:bg-gray-50'
                 }`}
               >
-                <span className="font-mono text-[11px] text-gray-500 shrink-0">{o.value}</span>
+                <span className="font-mono text-[12px] text-gray-500 shrink-0">{o.value}</span>
                 {o.label && o.label !== o.value && <span className="truncate">{o.label}</span>}
                 {value === o.value && <Check size={12} className="text-teal-500 ml-auto shrink-0" />}
               </button>
             ))}
             {matches.length > shown.length && (
-              <div className="px-3 py-1.5 text-[10px] text-gray-400 border-t border-gray-100">
+              <div className="px-3 py-1.5 text-[12px] text-gray-400 border-t border-gray-100">
                 showing {shown.length} of {matches.length} — narrow the search
               </div>
             )}
@@ -1178,20 +1178,20 @@ function ColumnFilterMenu({ column, options, loading, truncated, filter, default
                 onChange={e => setSearch(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && search.trim()) applyContains(search.trim()); if (e.key === 'Escape') setOpen(false); }}
                 placeholder="Search values…"
-                className="w-full pl-6 pr-2 py-1 text-[11px] border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-teal-400"
+                className="w-full pl-6 pr-2 py-1 text-[12px] border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-teal-400"
               />
             </div>
             {search.trim() && (
               <button
                 onClick={() => applyContains(search.trim())}
-                className="mt-1.5 w-full text-left text-[11px] px-2 py-1 rounded bg-sky-50 text-sky-700 hover:bg-sky-100 truncate"
+                className="mt-1.5 w-full text-left text-[12px] px-2 py-1 rounded bg-sky-50 text-sky-700 hover:bg-sky-100 truncate"
                 title={`Keep every row whose ${column} contains "${search.trim()}"`}
               >
                 Contains “{search.trim()}”
               </button>
             )}
             {filter.contains.trim() && !search.trim() && (
-              <div className="mt-1.5 flex items-center gap-1 text-[11px] px-2 py-1 rounded bg-sky-50 text-sky-700">
+              <div className="mt-1.5 flex items-center gap-1 text-[12px] px-2 py-1 rounded bg-sky-50 text-sky-700">
                 <span className="truncate">Contains “{filter.contains}”</span>
                 <button onClick={() => onApply({ values: filter.values, contains: '' })} className="ml-auto text-sky-400 hover:text-red-500" title="Remove">
                   <X size={10} />
@@ -1202,14 +1202,14 @@ function ColumnFilterMenu({ column, options, loading, truncated, filter, default
 
           <div className="max-h-56 overflow-y-auto py-1">
             {loading && options.length === 0 ? (
-              <div className="px-3 py-4 text-[11px] text-gray-400 flex items-center gap-1.5">
+              <div className="px-3 py-4 text-[12px] text-gray-400 flex items-center gap-1.5">
                 <Loader2 size={11} className="animate-spin" /> Loading values…
               </div>
             ) : options.length === 0 ? (
-              <div className="px-3 py-4 text-[11px] text-gray-400">No values</div>
+              <div className="px-3 py-4 text-[12px] text-gray-400">No values</div>
             ) : (
               <>
-                <label className="flex items-center gap-2 px-3 h-7 text-[11px] text-gray-700 hover:bg-gray-50 cursor-pointer font-medium whitespace-nowrap">
+                <label className="flex items-center gap-2 px-3 h-7 text-[12px] text-gray-700 hover:bg-gray-50 cursor-pointer font-medium whitespace-nowrap">
                   <input
                     type="checkbox"
                     checked={allShownChecked}
@@ -1224,19 +1224,19 @@ function ColumnFilterMenu({ column, options, loading, truncated, filter, default
                   (Select all{needle ? ' matching' : ''})
                 </label>
                 {shown.map(o => (
-                  <label key={o.value} className="flex items-center gap-2 px-3 h-7 text-[11px] text-gray-700 hover:bg-gray-50 cursor-pointer whitespace-nowrap">
+                  <label key={o.value} className="flex items-center gap-2 px-3 h-7 text-[12px] text-gray-700 hover:bg-gray-50 cursor-pointer whitespace-nowrap">
                     <input type="checkbox" checked={checked.has(o.value)} onChange={() => toggle(o.value)} className="accent-teal-600" />
                     <span className="font-mono shrink-0">{o.value}</span>
                     {o.label && o.label !== o.value && <span className="text-gray-400 truncate">{o.label}</span>}
                   </label>
                 ))}
-                {shown.length === 0 && <div className="px-3 py-3 text-[11px] text-gray-400">Nothing matches</div>}
+                {shown.length === 0 && <div className="px-3 py-3 text-[12px] text-gray-400">Nothing matches</div>}
               </>
             )}
           </div>
 
           {truncated && (
-            <div className="px-3 py-1 text-[10px] text-amber-600 bg-amber-50 border-t border-amber-100">
+            <div className="px-3 py-1 text-[12px] text-amber-600 bg-amber-50 border-t border-amber-100">
               First {options.length} values only — use “Contains” to reach the rest.
             </div>
           )}
@@ -1245,7 +1245,7 @@ function ColumnFilterMenu({ column, options, loading, truncated, filter, default
               this — without it the first query runs unfiltered. */}
           <div className="px-2 py-1.5 border-t border-gray-100 bg-gray-50/60">
             {defaultValue ? (
-              <div className="flex items-center gap-1.5 text-[10px] text-teal-700">
+              <div className="flex items-center gap-1.5 text-[12px] text-teal-700">
                 <Star size={10} className="text-teal-500 shrink-0" fill="currentColor" />
                 <span className="truncate">เปิดจอมากรอง <span className="font-mono">{defaultValue}</span> ให้เลย</span>
                 <button
@@ -1260,7 +1260,7 @@ function ColumnFilterMenu({ column, options, loading, truncated, filter, default
               <button
                 onClick={() => tickedOne && onSetDefault(tickedOne)}
                 disabled={!tickedOne || savingDefault}
-                className="w-full flex items-center gap-1.5 text-[10px] px-1.5 py-1 rounded text-gray-600 hover:bg-gray-200/70 disabled:opacity-40 disabled:hover:bg-transparent"
+                className="w-full flex items-center gap-1.5 text-[12px] px-1.5 py-1 rounded text-gray-600 hover:bg-gray-200/70 disabled:opacity-40 disabled:hover:bg-transparent"
                 title={tickedOne ? `เปิดจอนี้ครั้งต่อไปให้กรอง ${column} = ${tickedOne} ไว้ก่อน` : 'ติ๊กค่าเดียวก่อน แล้วจึงตั้งเป็นค่าตั้งต้นได้'}
               >
                 {savingDefault ? <Loader2 size={10} className="animate-spin" /> : <Star size={10} />}
@@ -1275,12 +1275,12 @@ function ColumnFilterMenu({ column, options, loading, truncated, filter, default
             <button
               onClick={() => { onApply({ values: [], contains: '' }); setOpen(false); }}
               disabled={!active}
-              className="text-[11px] px-2 py-1 rounded text-gray-500 hover:bg-gray-100 disabled:opacity-40"
+              className="text-[12px] px-2 py-1 rounded text-gray-500 hover:bg-gray-100 disabled:opacity-40"
             >
               Clear
             </button>
             <div className="flex items-center gap-1.5">
-              <button onClick={() => setOpen(false)} className="text-[11px] px-2 py-1 rounded border border-gray-200 text-gray-600 hover:bg-gray-50">
+              <button onClick={() => setOpen(false)} className="text-[12px] px-2 py-1 rounded border border-gray-200 text-gray-600 hover:bg-gray-50">
                 Cancel
               </button>
               <button onClick={apply} className="inline-flex items-center justify-center text-[13px] px-3 h-8 rounded whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700">
@@ -1699,7 +1699,7 @@ function TableDataSection({ table, onRegistryChange, reloadKey }: {
             return (
               <span
                 key={`col-${col}`}
-                className={`inline-flex items-center gap-1 max-w-[300px] pl-2 pr-1 py-0.5 rounded-md border text-[11px] ${
+                className={`inline-flex items-center gap-1 max-w-[300px] pl-2 pr-1 py-0.5 rounded-md border text-[12px] ${
                   isDefault ? 'bg-teal-50 border-teal-200 text-teal-800' : 'bg-sky-50 border-sky-200 text-sky-800'
                 }`}
                 title={`${col}: ${f.values.join(', ')}${f.contains ? ` contains "${f.contains}"` : ''}${isDefault ? ' (default)' : ''}`}
@@ -1707,7 +1707,7 @@ function TableDataSection({ table, onRegistryChange, reloadKey }: {
                 <Filter size={9} className={isDefault ? 'text-teal-400' : 'text-sky-400'} />
                 <span className={isDefault ? 'text-teal-500' : 'text-sky-500'}>{sp?.label || col}:</span>
                 <span className="truncate">{chipLabel(col, f)}</span>
-                {isDefault && <span className="text-[9px] text-teal-500 shrink-0">ค่าตั้งต้น</span>}
+                {isDefault && <span className="text-[12px] text-teal-500 shrink-0">ค่าตั้งต้น</span>}
                 <button
                   onClick={() => applyColFilter(col, EMPTY_COL_FILTER)}
                   className={`p-0.5 hover:text-red-500 ${isDefault ? 'text-teal-400' : 'text-sky-400'}`}
@@ -1719,7 +1719,7 @@ function TableDataSection({ table, onRegistryChange, reloadKey }: {
             );
           })}
           {activeCount > 1 && (
-            <button onClick={clearFilters} className="text-[11px] text-gray-400 hover:text-red-500 underline underline-offset-2">
+            <button onClick={clearFilters} className="text-[12px] text-gray-400 hover:text-red-500 underline underline-offset-2">
               Clear all
             </button>
           )}
@@ -1738,7 +1738,7 @@ function TableDataSection({ table, onRegistryChange, reloadKey }: {
               <Filter size={13} />
               Filters
               {activeCount > 0 && (
-                <span className="ml-0.5 px-1.5 rounded bg-teal-600 text-white text-[10px] leading-4">{activeCount}</span>
+                <span className="ml-0.5 px-1.5 rounded bg-teal-600 text-white text-[12px] leading-4">{activeCount}</span>
               )}
             </button>
           )}
@@ -1814,7 +1814,7 @@ function TableDataSection({ table, onRegistryChange, reloadKey }: {
             ))}
           </div>
           <div className="flex items-center justify-between px-3 py-2 border-t border-gray-100">
-            <span className="text-[10px] text-gray-400">
+            <span className="text-[12px] text-gray-400">
               {activeCount > 0
                 ? `${activeCount} filter(s) applied — exports follow them too`
                 : 'No filter applied'}
@@ -1851,7 +1851,7 @@ function TableDataSection({ table, onRegistryChange, reloadKey }: {
               <tr className="bg-gray-50 border-b border-gray-200">
                 <th className="w-[52px] px-1 py-1.5 border-r border-gray-200 select-none sticky left-0 bg-gray-50 z-10">
                   <div className="flex items-center justify-center gap-1">
-                    <span className="text-[10px] font-semibold text-gray-400">#</span>
+                    <span className="text-[12px] font-semibold text-gray-400">#</span>
                     {activeColFilters.length > 0 && (
                       <button
                         onClick={() => activeColFilters.forEach(([c]) => applyColFilter(c, EMPTY_COL_FILTER))}
@@ -1867,7 +1867,7 @@ function TableDataSection({ table, onRegistryChange, reloadKey }: {
                   <th key={col.name} className="px-2 py-1.5 text-left border-r border-gray-200 whitespace-nowrap min-w-[110px]">
                     <div className="flex items-center gap-1.5 min-w-0">
                       <span className="text-xs font-semibold text-gray-700 truncate" title={col.name}>{col.name}</span>
-                      <span className="text-[9px] font-normal text-gray-300 uppercase shrink-0">{col.type}</span>
+                      <span className="text-[12px] font-normal text-gray-300 uppercase shrink-0">{col.type}</span>
                       <div className="ml-auto pl-1">
                         <ColumnFilterMenu
                           column={col.name}
@@ -1897,8 +1897,8 @@ function TableDataSection({ table, onRegistryChange, reloadKey }: {
                 <tr className="bg-teal-50 border-b border-teal-100">
                   <td className="px-1 py-1.5 sticky left-0 bg-teal-50 z-10 border-r border-teal-100 w-[52px]">
                     <div className="flex items-center justify-center gap-0.5 relative">
-                      {newError && <span className="text-[10px] text-red-500 absolute -top-4 left-0 whitespace-nowrap">{newError}</span>}
-                      <span className="text-teal-400 font-bold text-[10px]">+</span>
+                      {newError && <span className="text-[12px] text-red-500 absolute -top-4 left-0 whitespace-nowrap">{newError}</span>}
+                      <span className="text-teal-400 font-bold text-[12px]">+</span>
                       <button onClick={insertRow} disabled={savingNew} className="p-1 text-teal-600 hover:text-teal-800 disabled:opacity-50" title="Save">
                         {savingNew ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
                       </button>
@@ -1958,7 +1958,7 @@ function TableDataSection({ table, onRegistryChange, reloadKey }: {
                       ) : (
                         <div className="flex items-center justify-between gap-0.5">
                           {/* Row number always visible; kebab fades in on hover beside it */}
-                          <span className="text-[10px] text-gray-400 tabular-nums pl-0.5">{startRow + i}</span>
+                          <span className="text-[12px] text-gray-400 tabular-nums pl-0.5">{startRow + i}</span>
                           <button
                             onClick={e => { e.stopPropagation(); setMenuOpenRid(menuOpenRid === row._rid ? null : row._rid); }}
                             className="p-0.5 text-gray-400 hover:text-gray-700 rounded hover:bg-gray-200/60 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -2279,7 +2279,7 @@ function LeftTreePanel({
         <GripVertical size={10} className="text-gray-300 opacity-0 group-hover:opacity-100 cursor-grab flex-shrink-0" />
         <Table2 size={11} className={selectedTable?.id === t.id ? 'text-teal-500' : 'text-gray-400'} />
         <span className="flex-1 min-w-0 text-xs font-medium truncate">{t.name}</span>
-        {t.rowCount > 0 && <span className="text-[10px] text-gray-400 shrink-0">{t.rowCount.toLocaleString()}</span>}
+        {t.rowCount > 0 && <span className="text-[12px] text-gray-400 shrink-0">{t.rowCount.toLocaleString()}</span>}
         <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
           t.syncStatus === 'error' ? 'bg-red-400' :
           t.syncStatus === 'syncing' ? 'bg-teal-400 animate-pulse' :
@@ -2347,7 +2347,7 @@ function LeftTreePanel({
               title="Double-click to rename"
             >{folder.name}</span>
           )}
-          <span className="text-[10px] text-gray-400">{folderTables.length}</span>
+          <span className="text-[12px] text-gray-400">{folderTables.length}</span>
           <button
             onClick={e => { e.stopPropagation(); onDeleteFolder(folder); }}
             className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 p-0.5"
@@ -2456,7 +2456,7 @@ function LeftTreePanel({
         {/* Section 1 — tables */}
         <button
           onClick={() => setTablesOpen(o => !o)}
-          className="w-full flex items-center gap-1.5 px-2 py-1 text-[11px] font-semibold text-gray-500 hover:bg-gray-50"
+          className="w-full flex items-center gap-1.5 px-2 py-1 text-[12px] font-semibold text-gray-500 hover:bg-gray-50"
         >
           {tablesOpen ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
           <Table2 size={11} className="text-teal-500" />
@@ -2480,7 +2480,7 @@ function LeftTreePanel({
             )}
             {/* Drop zone hint at bottom when dragging */}
             {dragItem && (
-              <div className="mx-2 mt-2 py-3 text-center text-[10px] text-teal-500 border-2 border-dashed border-teal-300 rounded-lg bg-teal-50/50 transition-all">
+              <div className="mx-2 mt-2 py-3 text-center text-[12px] text-teal-500 border-2 border-dashed border-teal-300 rounded-lg bg-teal-50/50 transition-all">
                 Drop here to move to root
               </div>
             )}
@@ -2493,7 +2493,7 @@ function LeftTreePanel({
           <div className="mt-1 border-t border-gray-100 pt-1">
             <button
               onClick={() => setSavedOpen(o => !o)}
-              className="w-full flex items-center gap-1.5 px-2 py-1 text-[11px] font-semibold text-gray-500 hover:bg-gray-50"
+              className="w-full flex items-center gap-1.5 px-2 py-1 text-[12px] font-semibold text-gray-500 hover:bg-gray-50"
             >
               {savedOpen ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
               <Terminal size={11} className="text-teal-500" />
@@ -2502,7 +2502,7 @@ function LeftTreePanel({
             </button>
             {savedOpen && (
               savedQueries.length === 0 ? (
-                <div className="px-3 py-3 text-[10px] text-gray-400">
+                <div className="px-3 py-3 text-[12px] text-gray-400">
                   ยังไม่มี — เขียนใน SQL Editor แล้วกด Save
                 </div>
               ) : (
@@ -2566,7 +2566,7 @@ function LeftTreePanel({
           className="fixed z-[100] bg-white border border-gray-200 rounded-lg shadow-xl py-1 min-w-[160px]"
           style={{ left: contextMenu.x, top: contextMenu.y }}
         >
-          <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-100 mb-0.5">
+          <div className="px-3 py-1.5 text-[12px] font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-100 mb-0.5">
             {contextMenu.tableName}
           </div>
           {folders.length > 0 && (
@@ -3006,7 +3006,7 @@ function SqlEditorPanel({ connections, saved, onSavedChanged, openRequest, onOpe
           </button>
           {showHistory && history.length > 0 && (
             <div className="absolute top-full left-0 mt-1 w-96 max-h-72 overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-xl z-50">
-              <div className="px-3 py-2 border-b border-gray-100 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Recent Queries</div>
+              <div className="px-3 py-2 border-b border-gray-100 text-[12px] font-semibold text-gray-400 uppercase tracking-wider">Recent Queries</div>
               {history.map((h, i) => (
                 <button
                   key={i}
@@ -3014,8 +3014,8 @@ function SqlEditorPanel({ connections, saved, onSavedChanged, openRequest, onOpe
                   className="w-full text-left px-3 py-2 hover:bg-gray-50 border-b border-gray-50 transition-colors"
                 >
                   <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-[10px] text-gray-400">{h.time}</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">{h.connName}</span>
+                    <span className="text-[12px] text-gray-400">{h.time}</span>
+                    <span className="text-[12px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">{h.connName}</span>
                   </div>
                   <div className="text-xs font-mono text-gray-700 truncate">{h.sql}</div>
                 </button>
@@ -3067,16 +3067,16 @@ function SqlEditorPanel({ connections, saved, onSavedChanged, openRequest, onOpe
         <div className="flex-1" />
         {activeTab.result && !activeTab.result.error && activeTab.result.columns.length > 0 && (
           <div className="flex items-center gap-1">
-            <button onClick={exportCsv} className="flex items-center gap-1 h-7 px-2 rounded-lg text-[11px] font-medium text-gray-500 hover:bg-gray-100 transition-colors" title="Export CSV">
+            <button onClick={exportCsv} className="flex items-center gap-1 h-7 px-2 rounded-lg text-[12px] font-medium text-gray-500 hover:bg-gray-100 transition-colors" title="Export CSV">
               <Download size={11} /> CSV
             </button>
-            <button onClick={exportXlsx} className="flex items-center gap-1 h-7 px-2 rounded-lg text-[11px] font-medium text-gray-500 hover:bg-gray-100 transition-colors" title="Export XLSX">
+            <button onClick={exportXlsx} className="flex items-center gap-1 h-7 px-2 rounded-lg text-[12px] font-medium text-gray-500 hover:bg-gray-100 transition-colors" title="Export XLSX">
               <Download size={11} /> XLSX
             </button>
           </div>
         )}
         {activeTab.result?.time != null && (
-          <span className="text-[10px] text-gray-400 ml-1">{activeTab.result.time}ms</span>
+          <span className="text-[12px] text-gray-400 ml-1">{activeTab.result.time}ms</span>
         )}
       </div>
 
@@ -3087,7 +3087,7 @@ function SqlEditorPanel({ connections, saved, onSavedChanged, openRequest, onOpe
           <div
             key={tab.id}
             onClick={() => setActiveTabId(tab.id)}
-            className={`group flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium cursor-pointer border-b-2 transition-colors whitespace-nowrap ${
+            className={`group flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium cursor-pointer border-b-2 transition-colors whitespace-nowrap ${
               activeTabId === tab.id
                 ? 'border-teal-500 text-teal-700 bg-white'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100'
@@ -3118,14 +3118,14 @@ function SqlEditorPanel({ connections, saved, onSavedChanged, openRequest, onOpe
         {showSchema && (
           <div className="w-56 flex-shrink-0 bg-white border-r border-gray-200 flex flex-col overflow-hidden">
             {!connId ? (
-              <div className="px-3 py-6 text-center text-[11px] text-gray-400">เลือก Connection ก่อน</div>
+              <div className="px-3 py-6 text-center text-[12px] text-gray-400">เลือก Connection ก่อน</div>
             ) : (
               <>
             <div className="px-2 py-2 border-b border-gray-100">
               <div className="relative">
                 <Search size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
-                  className="w-full pl-7 pr-2 py-1 text-[11px] border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-teal-500 bg-gray-50"
+                  className="w-full pl-7 pr-2 py-1 text-[12px] border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-teal-500 bg-gray-50"
                   placeholder="Filter tables..."
                   value={schemaSearch}
                   onChange={e => setSchemaSearch(e.target.value)}
@@ -3138,7 +3138,7 @@ function SqlEditorPanel({ connections, saved, onSavedChanged, openRequest, onOpe
                   <Loader2 size={14} className="animate-spin text-teal-400" />
                 </div>
               ) : filteredSchema.length === 0 ? (
-                <div className="text-center py-6 text-[11px] text-gray-400">No tables found</div>
+                <div className="text-center py-6 text-[12px] text-gray-400">No tables found</div>
               ) : (
                 filteredSchema.map(tbl => (
                   <div key={tbl.name}>
@@ -3152,7 +3152,7 @@ function SqlEditorPanel({ connections, saved, onSavedChanged, openRequest, onOpe
                         {tbl.expanded ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
                       </span>
                       <Table2 size={10} className="text-blue-400 flex-shrink-0" />
-                      <span className="flex-1 text-[11px] font-mono text-gray-700 truncate">{tbl.name}</span>
+                      <span className="flex-1 text-[12px] font-mono text-gray-700 truncate">{tbl.name}</span>
                       <button
                         onClick={e => { e.stopPropagation(); insertTableName(tbl.name); }}
                         className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-teal-600 p-0.5 transition-opacity"
@@ -3162,30 +3162,30 @@ function SqlEditorPanel({ connections, saved, onSavedChanged, openRequest, onOpe
                       </button>
                     </div>
                     {tbl.expanded && tbl.loading && (
-                      <div className="ml-5 border-l border-gray-100 px-2 py-1 text-[10px] text-gray-400 flex items-center gap-1">
+                      <div className="ml-5 border-l border-gray-100 px-2 py-1 text-[12px] text-gray-400 flex items-center gap-1">
                         <Loader2 size={9} className="animate-spin" /> reading columns…
                       </div>
                     )}
                     {tbl.expanded && tbl.error && (
-                      <div className="ml-5 border-l border-gray-100 px-2 py-1 text-[10px] text-red-500" title={tbl.error}>
+                      <div className="ml-5 border-l border-gray-100 px-2 py-1 text-[12px] text-red-500" title={tbl.error}>
                         {tbl.error}
                       </div>
                     )}
                     {tbl.expanded && tbl.columns && (
                       <div className="ml-5 border-l border-gray-100">
                         {tbl.columns.length === 0 && (
-                          <div className="px-2 py-1 text-[10px] text-gray-400">no columns</div>
+                          <div className="px-2 py-1 text-[12px] text-gray-400">no columns</div>
                         )}
                         {tbl.columns.map(col => (
                           <div
                             key={col.name}
-                            className="flex items-center gap-1.5 px-2 py-0.5 text-[10px] hover:bg-gray-50 cursor-pointer transition-colors"
+                            className="flex items-center gap-1.5 px-2 py-0.5 text-[12px] hover:bg-gray-50 cursor-pointer transition-colors"
                             onClick={() => insertTableName(col.name)}
                             title={`${col.type} - Click to insert`}
                           >
                             <Hash size={8} className="text-gray-300 flex-shrink-0" />
                             <span className="text-gray-600 font-mono truncate">{col.name}</span>
-                            <span className="text-gray-400 text-[9px] ml-auto flex-shrink-0">{col.type}</span>
+                            <span className="text-gray-400 text-[12px] ml-auto flex-shrink-0">{col.type}</span>
                           </div>
                         ))}
                       </div>
@@ -3207,7 +3207,7 @@ function SqlEditorPanel({ connections, saved, onSavedChanged, openRequest, onOpe
               {/* Line numbers gutter */}
               <div className="flex-shrink-0 w-10 bg-gray-800 text-right pr-2 pt-3 pb-3 overflow-hidden select-none">
                 {Array.from({ length: Math.max(lineCount, 10) }, (_, i) => (
-                  <div key={i} className="text-[11px] leading-[1.375rem] text-gray-600 font-mono">{i + 1}</div>
+                  <div key={i} className="text-[12px] leading-[1.375rem] text-gray-600 font-mono">{i + 1}</div>
                 ))}
               </div>
               {/* Textarea */}
@@ -3229,19 +3229,19 @@ function SqlEditorPanel({ connections, saved, onSavedChanged, openRequest, onOpe
             <div className="flex-shrink-0 flex items-center gap-0 px-3 border-b border-gray-200 bg-gray-50">
               <button
                 onClick={() => updateTab(activeTab.id, { resultTab: 'results' })}
-                className={`px-3 py-1.5 text-[11px] font-medium border-b-2 transition-colors ${
+                className={`px-3 py-1.5 text-[12px] font-medium border-b-2 transition-colors ${
                   activeTab.resultTab === 'results' ? 'border-teal-500 text-teal-700' : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
                 <Table2 size={10} className="inline mr-1 -mt-0.5" />
                 Results
                 {activeTab.result && !activeTab.result.error && (
-                  <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded bg-gray-200 text-gray-600">{activeTab.result.rowCount ?? 0}</span>
+                  <span className="ml-1.5 text-[12px] px-1.5 py-0.5 rounded bg-gray-200 text-gray-600">{activeTab.result.rowCount ?? 0}</span>
                 )}
               </button>
               <button
                 onClick={() => updateTab(activeTab.id, { resultTab: 'messages' })}
-                className={`px-3 py-1.5 text-[11px] font-medium border-b-2 transition-colors ${
+                className={`px-3 py-1.5 text-[12px] font-medium border-b-2 transition-colors ${
                   activeTab.resultTab === 'messages' ? 'border-teal-500 text-teal-700' : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
@@ -3253,7 +3253,7 @@ function SqlEditorPanel({ connections, saved, onSavedChanged, openRequest, onOpe
               </button>
               <div className="flex-1" />
               {activeTab.result?.time != null && (
-                <span className="text-[10px] text-gray-400">
+                <span className="text-[12px] text-gray-400">
                   <Clock size={9} className="inline mr-0.5 -mt-0.5" />
                   {activeTab.result.time}ms &middot; {activeTab.result.rowCount ?? 0} rows
                 </span>
@@ -3289,18 +3289,18 @@ function SqlEditorPanel({ connections, saved, onSavedChanged, openRequest, onOpe
                 <table className="w-full text-xs border-collapse">
                   <thead className="sticky top-0 bg-gray-50 z-10">
                     <tr>
-                      <th className="px-3 py-2 text-left font-medium text-gray-400 border-b border-gray-200 w-10 text-[10px]">#</th>
+                      <th className="px-3 py-2 text-left font-medium text-gray-400 border-b border-gray-200 w-10 text-[12px]">#</th>
                       {activeTab.result.columns.map(col => (
-                        <th key={col.name} className="px-3 py-2 text-left font-medium text-gray-600 border-b border-gray-200 whitespace-nowrap text-[11px]">{col.name}</th>
+                        <th key={col.name} className="px-3 py-2 text-left font-medium text-gray-600 border-b border-gray-200 whitespace-nowrap text-[12px]">{col.name}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {activeTab.result.rows.map((row, i) => (
                       <tr key={i} className={`border-b border-gray-100 hover:bg-blue-50/30 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}>
-                        <td className="px-3 py-1.5 text-[10px] text-gray-400">{i + 1}</td>
+                        <td className="px-3 py-1.5 text-[12px] text-gray-400">{i + 1}</td>
                         {activeTab.result!.columns.map(col => (
-                          <td key={col.name} className="px-3 py-1.5 text-gray-700 whitespace-nowrap max-w-[300px] truncate font-mono text-[11px]">
+                          <td key={col.name} className="px-3 py-1.5 text-gray-700 whitespace-nowrap max-w-[300px] truncate font-mono text-[12px]">
                             {row[col.name] === null ? <span className="text-gray-300 italic">NULL</span> : String(row[col.name])}
                           </td>
                         ))}
@@ -3312,7 +3312,7 @@ function SqlEditorPanel({ connections, saved, onSavedChanged, openRequest, onOpe
                 <div className="flex flex-col items-center justify-center py-16 text-gray-400">
                   <Database size={28} className="mb-2 opacity-20" />
                   <p className="text-xs font-medium">Run a query to see results</p>
-                  <p className="text-[10px] text-gray-300 mt-1.5">Ctrl+Enter to execute &middot; Ctrl+Shift+Enter for selection</p>
+                  <p className="text-[12px] text-gray-300 mt-1.5">Ctrl+Enter to execute &middot; Ctrl+Shift+Enter for selection</p>
                 </div>
               )}
             </div>
@@ -3563,7 +3563,7 @@ function ImportMappingModal(props: ImportMappingModalProps) {
                       key={c.name}
                       type="button"
                       onClick={() => toggleMergeKey(c.name)}
-                      className={`text-[11px] px-2 py-0.5 rounded border ${
+                      className={`text-[12px] px-2 py-0.5 rounded border ${
                         sel
                           ? mode === 'merge'
                             ? 'bg-emerald-100 border-emerald-400 text-emerald-800 font-medium'
@@ -3608,7 +3608,7 @@ function ImportMappingModal(props: ImportMappingModalProps) {
               <span className="font-semibold text-amber-900">
                 {ignoredFileCols.length} file column{ignoredFileCols.length === 1 ? '' : 's'} not in DB
               </span>
-              <span className="text-amber-700 text-[11px]">— default is Ignore; pick a type to auto-create the destination column.</span>
+              <span className="text-amber-700 text-[12px]">— default is Ignore; pick a type to auto-create the destination column.</span>
             </div>
             <div className="grid grid-cols-[1fr_180px] gap-x-3 gap-y-1 max-h-32 overflow-y-auto">
               {ignoredFileCols.map(fc => {
@@ -3634,7 +3634,7 @@ function ImportMappingModal(props: ImportMappingModalProps) {
                         });
                         setMapping(prev => ({ ...prev, [colName]: { source: 'file', fileCol: fc } }));
                       }}
-                      className={`text-[11px] border rounded px-2 py-0.5 ${pending ? 'bg-emerald-50 border-emerald-300 text-emerald-800' : 'bg-white border-amber-200 text-amber-700'}`}
+                      className={`text-[12px] border rounded px-2 py-0.5 ${pending ? 'bg-emerald-50 border-emerald-300 text-emerald-800' : 'bg-white border-amber-200 text-amber-700'}`}
                       title={pending ? `Will ALTER TABLE ADD ${colName} ${pending.type}` : 'File column will be dropped silently'}
                     >
                       <option value="__ignore__">Ignore (drop)</option>
@@ -3695,7 +3695,7 @@ function ImportMappingModal(props: ImportMappingModalProps) {
             >
               Add
             </button>
-            <span className="text-[11px] text-gray-500 italic">Server will <code className="bg-white px-1 rounded">ALTER TABLE ADD</code> before insert. Duplicates are skipped.</span>
+            <span className="text-[12px] text-gray-500 italic">Server will <code className="bg-white px-1 rounded">ALTER TABLE ADD</code> before insert. Duplicates are skipped.</span>
           </form>
         </div>
 
@@ -3727,7 +3727,7 @@ function ImportMappingModal(props: ImportMappingModalProps) {
                           {db.name}
                           {isNew && (
                             <>
-                              <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-emerald-600 text-white">NEW</span>
+                              <span className="text-[12px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-emerald-600 text-white">NEW</span>
                               <button
                                 onClick={() => removeNewCol(db.name)}
                                 className="ml-auto text-gray-300 hover:text-red-600 p-0.5"
@@ -3738,7 +3738,7 @@ function ImportMappingModal(props: ImportMappingModalProps) {
                             </>
                           )}
                         </div>
-                        <div className="text-[11px] text-gray-400 font-mono">{db.type}</div>
+                        <div className="text-[12px] text-gray-400 font-mono">{db.type}</div>
                       </td>
                       <td className="px-2 py-1.5 align-middle">
                         <select
@@ -3959,7 +3959,7 @@ function ClearByKeyModal(props: ClearByKeyModalProps) {
           {/* SQL preview */}
           {canSubmit && (
             <div className="bg-red-50 border border-red-200 rounded-md px-3 py-2.5">
-              <div className="text-[11px] text-red-700 font-medium mb-1">⚠ จะลบทุก row ที่ตรงเงื่อนไขทั้งหมด:</div>
+              <div className="text-[12px] text-red-700 font-medium mb-1">⚠ จะลบทุก row ที่ตรงเงื่อนไขทั้งหมด:</div>
               <code className="block text-xs text-red-800 font-mono leading-5">
                 DELETE WHERE
                 {validConditions.map((c, i) => (
@@ -3970,7 +3970,7 @@ function ClearByKeyModal(props: ClearByKeyModalProps) {
                   </span>
                 ))}
               </code>
-              <div className="text-[11px] text-red-700/70 mt-1.5"><strong>ลบจริง — ไม่สามารถกู้คืนได้</strong></div>
+              <div className="text-[12px] text-red-700/70 mt-1.5"><strong>ลบจริง — ไม่สามารถกู้คืนได้</strong></div>
             </div>
           )}
         </div>
@@ -4047,7 +4047,7 @@ function ConditionCard({
       {/* Card header */}
       <div className="px-3 py-2 bg-gray-50 border-b flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-orange-100 text-orange-700 text-[11px] font-bold">
+          <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-orange-100 text-orange-700 text-[12px] font-bold">
             {index + 1}
           </span>
           <span className="text-xs font-medium text-gray-700">
@@ -4071,7 +4071,7 @@ function ConditionCard({
       <div className="p-3 grid grid-cols-12 gap-3">
         {/* Column dropdown */}
         <div className="col-span-4">
-          <label className="block text-[11px] font-medium text-gray-600 mb-1">Column</label>
+          <label className="block text-[12px] font-medium text-gray-600 mb-1">Column</label>
           <select
             value={condition.column}
             onChange={e => onChange({ column: e.target.value, valuesText: '' })}
@@ -4083,7 +4083,7 @@ function ConditionCard({
             ))}
           </select>
           {condition.column && (
-            <div className="text-[10px] text-gray-400 mt-1 truncate" title={dbColumns.find(d => d.name === condition.column)?.type || ''}>
+            <div className="text-[12px] text-gray-400 mt-1 truncate" title={dbColumns.find(d => d.name === condition.column)?.type || ''}>
               {dbColumns.find(d => d.name === condition.column)?.type || ''}
             </div>
           )}
@@ -4091,7 +4091,7 @@ function ConditionCard({
 
         {/* Values */}
         <div className="col-span-8">
-          <label className="block text-[11px] font-medium text-gray-600 mb-1">
+          <label className="block text-[12px] font-medium text-gray-600 mb-1">
             ค่า (IN — 1 ค่าต่อบรรทัด)
             {currentValues.length > 0 && <span className="text-orange-600 ml-1.5">· {currentValues.length} ค่า</span>}
           </label>
@@ -4108,16 +4108,16 @@ function ConditionCard({
           {condition.column && (
             <div className="mt-1.5">
               {distinctLoading && distinctValues.length === 0 && (
-                <div className="text-[10px] text-gray-400 italic flex items-center gap-1">
+                <div className="text-[12px] text-gray-400 italic flex items-center gap-1">
                   <Loader2 size={10} className="animate-spin" /> กำลังโหลดค่าที่มีอยู่…
                 </div>
               )}
               {!distinctLoading && distinctValues.length === 0 && (
-                <div className="text-[10px] text-gray-400 italic">ไม่พบค่าใน column นี้ — พิมพ์ค่าเอง</div>
+                <div className="text-[12px] text-gray-400 italic">ไม่พบค่าใน column นี้ — พิมพ์ค่าเอง</div>
               )}
               {distinctValues.length > 0 && (
                 <>
-                  <div className="text-[10px] text-gray-500 mb-1 flex items-center justify-between">
+                  <div className="text-[12px] text-gray-500 mb-1 flex items-center justify-between">
                     <span>คลิกเพื่อเพิ่ม:</span>
                     <span className="text-gray-400">
                       {distinctTruncated ? `200/${distinctTotal.toLocaleString()}` : `${distinctValues.length}`}
@@ -4132,7 +4132,7 @@ function ConditionCard({
                           type="button"
                           onClick={() => addValue(v)}
                           disabled={alreadyIn}
-                          className={`text-[11px] px-1.5 py-0.5 rounded border transition-colors max-w-[200px] truncate ${
+                          className={`text-[12px] px-1.5 py-0.5 rounded border transition-colors max-w-[200px] truncate ${
                             alreadyIn
                               ? 'bg-red-100 border-red-300 text-red-700 cursor-default'
                               : 'bg-white border-gray-300 text-gray-700 hover:border-orange-400 hover:bg-orange-50'
@@ -4208,7 +4208,7 @@ function FilterRegistryEditor({ table, columns, onSaved }: {
 
   const field = (label: string, hint: string, value: string, onChange: (v: string) => void, opts?: { list?: string; placeholder?: string }) => (
     <div className="min-w-0">
-      <label className="block text-[10px] font-medium text-gray-500 mb-0.5" title={hint}>{label}</label>
+      <label className="block text-[12px] font-medium text-gray-500 mb-0.5" title={hint}>{label}</label>
       <input
         list={opts?.list}
         value={value}
@@ -4229,14 +4229,14 @@ function FilterRegistryEditor({ table, columns, onSaved }: {
         <div className="flex items-center gap-2">
           <ListFilter size={13} className="text-teal-500" />
           <span className="text-xs font-semibold text-gray-700">Filters on the Data tab</span>
-          <span className="text-[10px] text-gray-400">{draft.length} column(s)</span>
+          <span className="text-[12px] text-gray-400">{draft.length} column(s)</span>
         </div>
         <div className="flex items-center gap-2">
-          {error && <span className="text-[11px] text-red-500">{error}</span>}
-          {saved && !dirty && <span className="text-[11px] text-teal-600 flex items-center gap-1"><Check size={11} /> Saved</span>}
+          {error && <span className="text-[12px] text-red-500">{error}</span>}
+          {saved && !dirty && <span className="text-[12px] text-teal-600 flex items-center gap-1"><Check size={11} /> Saved</span>}
           <button
             onClick={() => setDraft(d => [...d, { column: '', label: '' }])}
-            className="text-[11px] px-2 py-1 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 flex items-center gap-1"
+            className="text-[12px] px-2 py-1 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 flex items-center gap-1"
           >
             <Plus size={11} /> Add filter
           </button>
@@ -4253,7 +4253,7 @@ function FilterRegistryEditor({ table, columns, onSaved }: {
       {draft.length === 0 ? (
         <div className="px-4 py-6 text-center text-xs text-gray-400">
           No filter on this table — the Data tab loads every row.
-          <div className="mt-1 text-[11px]">Add one (with a default) for big tables.</div>
+          <div className="mt-1 text-[12px]">Add one (with a default) for big tables.</div>
         </div>
       ) : (
         <div className="p-3 space-y-2">
@@ -4275,13 +4275,13 @@ function FilterRegistryEditor({ table, columns, onSaved }: {
                   v => update(i, { defaultValue: v }),
                   { placeholder: '2569 หรือ {{fy2}}' }
                 )}
-                <div className="lg:col-span-4 text-[10px] text-gray-400 truncate font-mono pb-1" title={serializeFilterSpecs([sp])}>
+                <div className="lg:col-span-4 text-[12px] text-gray-400 truncate font-mono pb-1" title={serializeFilterSpecs([sp])}>
                   {serializeFilterSpecs([sp])}
                 </div>
                 <div className="flex justify-end pb-0.5">
                   <button
                     onClick={() => { setDraft(d => d.filter((_, idx) => idx !== i)); setSaved(false); }}
-                    className="text-[11px] px-2 py-1 rounded-md text-red-500 hover:bg-red-50 flex items-center gap-1"
+                    className="text-[12px] px-2 py-1 rounded-md text-red-500 hover:bg-red-50 flex items-center gap-1"
                   >
                     <Trash2 size={11} /> Remove
                   </button>
@@ -4294,7 +4294,7 @@ function FilterRegistryEditor({ table, columns, onSaved }: {
 
       {serialized && (
         <div className="px-4 py-2 border-t border-gray-100 bg-gray-50/60 rounded-b-xl">
-          <div className="font-mono text-[10px] text-gray-500 break-all">{serialized}</div>
+          <div className="font-mono text-[12px] text-gray-500 break-all">{serialized}</div>
         </div>
       )}
     </div>
@@ -4902,7 +4902,7 @@ export default function DataRepository() {
                     <Table2 size={14} className="text-teal-500 shrink-0" />
                     <span className="text-sm font-semibold text-gray-900 truncate">{selectedTable.name}</span>
                     {selectedTable.rowCount > 0 && (
-                      <span className="text-[11px] text-gray-500 px-1.5 py-0.5 rounded bg-gray-100 shrink-0">
+                      <span className="text-[12px] text-gray-500 px-1.5 py-0.5 rounded bg-gray-100 shrink-0">
                         {selectedTable.rowCount.toLocaleString()} rows
                       </span>
                     )}
@@ -5017,10 +5017,10 @@ export default function DataRepository() {
                   <div className="flex items-center gap-2 mb-2">
                     <Table2 size={14} className="text-teal-500" />
                     <span className="text-sm font-semibold text-gray-900">{selectedTable.name}</span>
-                    {structureEngine && <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 font-medium">{structureEngine}</span>}
+                    {structureEngine && <span className="text-[12px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 font-medium">{structureEngine}</span>}
                   </div>
                   {selectedTable.description && <p className="text-xs text-gray-500">{selectedTable.description}</p>}
-                  <div className="flex items-center gap-4 mt-2 text-[11px] text-gray-400">
+                  <div className="flex items-center gap-4 mt-2 text-[12px] text-gray-400">
                     <span>Connection: <span className="text-gray-600">{connections.find(c => c.id === selectedTable.connectionId)?.name ?? 'None'}</span></span>
                     <span>Columns: <span className="text-gray-600">{structureCols.length}</span></span>
                   </div>

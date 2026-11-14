@@ -537,14 +537,14 @@ export const ProjectFlows = ({ project }: { project: Project }) => {
                             
                             {/* Description */}
                             {flow.description && (
-                              <p className="text-[11px] text-gray-500 mt-1 line-clamp-1">{flow.description}</p>
+                              <p className="text-[12px] text-gray-500 mt-1 line-clamp-1">{flow.description}</p>
                             )}
                           </div>
                           
                           {/* Footer - Type • Tags • Date */}
                           <div className="px-2.5 py-1 bg-gray-50 border-t border-gray-100 flex items-center justify-between mt-auto">
                             <div className="flex items-center gap-2 min-w-0 flex-1">
-                              <span className={`text-[10px] font-medium flex-shrink-0 ${typeText}`}>
+                              <span className={`text-[12px] font-medium flex-shrink-0 ${typeText}`}>
                                 {isApi ? 'REST API' : 'Triggers'}
                               </span>
                               {(() => {
@@ -557,14 +557,14 @@ export const ProjectFlows = ({ project }: { project: Project }) => {
                                     {tags.slice(0, 3).map((tag: string) => (
                                       <span
                                         key={tag}
-                                        className="text-[9px] px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded truncate max-w-[50px]"
+                                        className="text-[12px] px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded truncate max-w-[50px]"
                                         title={tag}
                                       >
                                         {tag}
                                       </span>
                                     ))}
                                     {tags.length > 3 && (
-                                      <span className="text-[9px] text-gray-400 flex-shrink-0">
+                                      <span className="text-[12px] text-gray-400 flex-shrink-0">
                                         +{tags.length - 3}
                                       </span>
                                     )}
@@ -572,7 +572,7 @@ export const ProjectFlows = ({ project }: { project: Project }) => {
                                 );
                               })()}
                             </div>
-                            <span className="text-[10px] text-gray-400 flex items-center gap-0.5 flex-shrink-0 ml-2">
+                            <span className="text-[12px] text-gray-400 flex items-center gap-0.5 flex-shrink-0 ml-2">
                               <Calendar className="h-2.5 w-2.5" />
                               {new Date(flow.createdAt).toLocaleString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}
                             </span>

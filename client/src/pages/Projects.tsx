@@ -48,7 +48,11 @@ const colorMap: Record<string, { bg: string; icon: string; border: string; text:
   neutral: { bg: 'bg-neutral-500', icon: 'text-neutral-500', border: 'border-neutral-200', text: 'text-neutral-700', light: 'bg-neutral-50', hex: '#737373' },
 };
 
-const availableColors = Object.entries(colorMap).map(([key, value]) => ({ 
+// Carbon palette: several Tailwind families render as the same Carbon colour
+// (rose = red, violet = purple, sky = blue, every grey…), so the picker offers
+// one swatch per distinct colour. Projects saved with an older key still render.
+const PICKER_COLORS = ['red', 'pink', 'purple', 'blue', 'cyan', 'teal', 'green', 'yellow', 'orange', 'gray'];
+const availableColors = Object.entries(colorMap).filter(([key]) => PICKER_COLORS.includes(key)).map(([key, value]) => ({ 
   key, 
   label: key.charAt(0).toUpperCase() + key.slice(1),
   hex: value.hex 
@@ -201,7 +205,7 @@ const ProjectCard = ({
 
       {/* Content - Description */}
       <div className="px-2.5 pb-1.5 flex-1">
-        <p className="text-[11px] text-gray-500 line-clamp-1" title={project.description || ''}>
+        <p className="text-[12px] text-gray-500 line-clamp-1" title={project.description || ''}>
           {project.description || '\u00A0'}
         </p>
       </div>
@@ -209,7 +213,7 @@ const ProjectCard = ({
       {/* Footer - Stats & Tags */}
       <div className="px-2.5 py-1 bg-gray-50 border-t border-gray-100 flex items-center justify-between mt-auto">
         <div className="flex items-center gap-2 min-w-0 flex-1">
-          <span className="text-[10px] font-medium text-gray-600 flex-shrink-0">
+          <span className="text-[12px] font-medium text-gray-600 flex-shrink-0">
             {(project.flowCount ?? 0)} flow{project.flowCount !== 1 ? 's' : ''}
           </span>
           {project.tags && project.tags.length > 0 && (
@@ -217,21 +221,21 @@ const ProjectCard = ({
               {project.tags.slice(0, 3).map((tag) => (
                 <span 
                   key={tag} 
-                  className="text-[9px] px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded truncate max-w-[60px]"
+                  className="text-[12px] px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded truncate max-w-[60px]"
                   title={tag}
                 >
                   {tag}
                 </span>
               ))}
               {project.tags.length > 3 && (
-                <span className="text-[9px] text-gray-400 flex-shrink-0">
+                <span className="text-[12px] text-gray-400 flex-shrink-0">
                   +{project.tags.length - 3}
                 </span>
               )}
             </div>
           )}
         </div>
-        <span className="text-[10px] text-gray-400 flex-shrink-0 ml-2">
+        <span className="text-[12px] text-gray-400 flex-shrink-0 ml-2">
           {formatRelativeTime(project.lastActivity || project.updatedAt)}
         </span>
       </div>
@@ -311,8 +315,8 @@ const ImageUpload = ({ value, onChange, color }: ImageUploadProps) => {
             <div className={`p-1.5 rounded-full ${colors.bg} bg-opacity-10 mb-1`}>
               <Plus className={`${colors.icon} h-4 w-4`} />
             </div>
-            <p className="text-[10px] text-gray-600 text-center px-1">Click to upload</p>
-            <p className="text-[9px] text-gray-400">PNG, JPG</p>
+            <p className="text-[12px] text-gray-600 text-center px-1">Click to upload</p>
+            <p className="text-[12px] text-gray-400">PNG, JPG</p>
           </div>
         )}
       </div>
@@ -617,7 +621,7 @@ const ProjectModal = ({
             {formData.tags.map((tag) => (
               <span
                 key={tag}
-                className="inline-flex items-center gap-0.5 text-[10px] px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full border border-blue-200"
+                className="inline-flex items-center gap-0.5 text-[12px] px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full border border-blue-200"
               >
                 {tag}
                 <button
@@ -672,7 +676,7 @@ const ProjectModal = ({
               onClick={(e) => e.stopPropagation()}
             />
           </div>
-          <p className="text-[10px] text-gray-400 mt-1">Type and press Enter or comma (,) to add tags. Backspace to remove last.</p>
+          <p className="text-[12px] text-gray-400 mt-1">Type and press Enter or comma (,) to add tags. Backspace to remove last.</p>
         </div>
 
         {/* Theme Color - Compact Grid */}
@@ -725,7 +729,7 @@ const ProjectModal = ({
                   title={label}
                 >
                   {formData.color === key && (
-                    <span className="absolute inset-0 flex items-center justify-center text-white text-[10px]">
+                    <span className="absolute inset-0 flex items-center justify-center text-white text-[12px]">
                       <i className="fas fa-check"></i>
                     </span>
                   )}

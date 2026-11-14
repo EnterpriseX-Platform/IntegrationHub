@@ -196,6 +196,13 @@ router.post('/users', async (req: Request, res: Response) => {
       }
     });
 
+    // New users join the tenant the admin is working in
+    if ((req as any).tenantId) {
+      await prisma.tenantMember.create({
+        data: { tenantId: (req as any).tenantId, userId: user.id, role: role === 'admin' ? 'tenant-admin' : 'member' },
+      }).catch(() => undefined);
+    }
+
     return res.json({
       success: true,
       data: user
@@ -273,6 +280,108 @@ router.delete('/users/:id', async (req: Request, res: Response) => {
       success: false,
       error: 'Internal server error'
     });
+  }
+});
+
+// ─── Tenants (super-admin; this router is admin-only) ───────────────────────
+
+const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/;
+
+// GET /admin/tenants - every tenant with member/project counts
+router.get('/tenants', async (_req: Request, res: Response) => {
+  try {
+    const tenants = await prisma.tenant.findMany({
+      orderBy: { createdAt: 'asc' },
+      include: { members: { include: { user: { select: { id: true, email: true, name: true } } } } },
+    });
+    const counts = await prisma.$queryRaw<{ tenantId: string | null; n: bigint }[]>`
+      SELECT "tenantId", COUNT(*) AS n FROM projects GROUP BY "tenantId"`;
+    const byTenant = new Map(counts.map((c) => [c.tenantId, Number(c.n)]));
+    return res.json({
+      success: true,
+      data: tenants.map((t) => ({
+        ...t,
+        projectCount: byTenant.get(t.id) || 0,
+        members: t.members.map((m) => ({ id: m.id, role: m.role, user: m.user })),
+      })),
+    });
+  } catch (error) {
+    console.error('List tenants error:', error);
+    return res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// POST /admin/tenants { slug, name } - the creator becomes its tenant-admin
+router.post('/tenants', async (req: Request, res: Response) => {
+  try {
+    const slug = String(req.body?.slug || '').trim().toLowerCase();
+    const name = String(req.body?.name || '').trim();
+    if (!SLUG_RE.test(slug)) return res.status(400).json({ success: false, error: 'Slug: 3-40 chars, a-z 0-9 and -' });
+    if (!name) return res.status(400).json({ success: false, error: 'Name is required' });
+    const userId = (req as any).user?.id;
+    const tenant = await prisma.tenant.create({
+      data: { slug, name, members: userId ? { create: { userId, role: 'tenant-admin' } } : undefined },
+    });
+    return res.json({ success: true, data: tenant });
+  } catch (error: any) {
+    if (error.code === 'P2002') return res.status(400).json({ success: false, error: 'Slug already exists' });
+    console.error('Create tenant error:', error);
+    return res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// PUT /admin/tenants/:id { name?, status?, branding? }
+router.put('/tenants/:id', async (req: Request, res: Response) => {
+  try {
+    const { name, status, branding } = req.body || {};
+    const tenant = await prisma.tenant.findUnique({ where: { id: req.params.id } });
+    if (!tenant) return res.status(404).json({ success: false, error: 'Tenant not found' });
+    if (status && !['active', 'suspended'].includes(status)) return res.status(400).json({ success: false, error: 'Invalid status' });
+    if (status === 'suspended' && tenant.slug === 'default') return res.status(400).json({ success: false, error: 'The default tenant cannot be suspended' });
+    const updated = await prisma.tenant.update({
+      where: { id: tenant.id },
+      data: {
+        ...(name ? { name: String(name) } : {}),
+        ...(status ? { status } : {}),
+        ...(branding !== undefined ? { branding: JSON.stringify(branding || {}) } : {}),
+      },
+    });
+    return res.json({ success: true, data: updated });
+  } catch (error) {
+    console.error('Update tenant error:', error);
+    return res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// POST /admin/tenants/:id/members { email, role } - add or change a member
+router.post('/tenants/:id/members', async (req: Request, res: Response) => {
+  try {
+    const email = String(req.body?.email || '').trim();
+    const role = req.body?.role === 'tenant-admin' ? 'tenant-admin' : 'member';
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) return res.status(404).json({ success: false, error: 'No user with that email' });
+    const tenant = await prisma.tenant.findUnique({ where: { id: req.params.id } });
+    if (!tenant) return res.status(404).json({ success: false, error: 'Tenant not found' });
+    const member = await prisma.tenantMember.upsert({
+      where: { tenantId_userId: { tenantId: tenant.id, userId: user.id } },
+      update: { role },
+      create: { tenantId: tenant.id, userId: user.id, role },
+    });
+    return res.json({ success: true, data: member });
+  } catch (error) {
+    console.error('Add tenant member error:', error);
+    return res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// DELETE /admin/tenants/:id/members/:memberId
+router.delete('/tenants/:id/members/:memberId', async (req: Request, res: Response) => {
+  try {
+    await prisma.tenantMember.deleteMany({ where: { id: req.params.memberId, tenantId: req.params.id } });
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('Remove tenant member error:', error);
+    return res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 

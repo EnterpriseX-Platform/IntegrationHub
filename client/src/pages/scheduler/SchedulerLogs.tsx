@@ -448,7 +448,7 @@ export default function SchedulerLogs() {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-lg font-bold text-gray-900">{scheduler?.flowName}</h1>
-                  <span className="px-1.5 py-0.5 bg-blue-50 text-blue-600 text-[10px] rounded font-medium">
+                  <span className="px-1.5 py-0.5 bg-blue-50 text-blue-600 text-[12px] rounded font-medium">
                     Scheduler
                   </span>
                 </div>
@@ -673,16 +673,16 @@ export default function SchedulerLogs() {
                         <Icon className={`h-3 w-3 ${config.color.split(' ')[0]}`} />
                         <span className="text-xs font-mono text-gray-600">{exec.id.slice(0, 8)}</span>
                         {isForceRun && (
-                          <span className="text-[9px] px-1 py-0 bg-amber-100 text-amber-600 rounded">Force</span>
+                          <span className="text-[12px] px-1 py-0 bg-amber-100 text-amber-600 rounded">Force</span>
                         )}
                       </div>
-                      <span className={`text-[9px] px-1.5 py-0.5 rounded border ${config.color}`}>
+                      <span className={`text-[12px] px-1.5 py-0.5 rounded border ${config.color}`}>
                         {config.label}
                       </span>
                     </div>
                     
                     {/* Row 2: Time + Duration */}
-                    <div className="flex items-center justify-between mt-1 text-[10px] text-gray-500">
+                    <div className="flex items-center justify-between mt-1 text-[12px] text-gray-500">
                       <span>{new Date(exec.startedAt).toLocaleTimeString()}</span>
                       <span className="font-mono">{formatDuration(exec.duration)}</span>
                     </div>
@@ -740,7 +740,7 @@ export default function SchedulerLogs() {
                       <span className="font-medium text-gray-900 whitespace-nowrap">Execution Logs</span>
                       <span className="text-xs text-gray-400 font-mono truncate">{selectedExecution.id.slice(0, 16)}</span>
                       {selectedExecution.status === 'running' && (
-                        <span className="flex items-center gap-1 text-[10px] text-emerald-600">
+                        <span className="flex items-center gap-1 text-[12px] text-emerald-600">
                           <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
                           Live
                         </span>
@@ -754,7 +754,7 @@ export default function SchedulerLogs() {
                           <button
                             key={level}
                             onClick={() => setLogLevelFilter(level)}
-                            className={`px-2 py-1 rounded text-[10px] font-medium transition-colors ${
+                            className={`px-2 py-1 rounded text-[12px] font-medium transition-colors ${
                               logLevelFilter === level 
                                 ? 'bg-gray-900 text-white' 
                                 : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
@@ -836,7 +836,7 @@ export default function SchedulerLogs() {
                                 {new Date(log.timestamp).toLocaleTimeString()}
                               </span>
                               
-                              <span className={`flex-shrink-0 self-start w-16 text-center px-1.5 rounded text-[10px] font-semibold leading-5 ${
+                              <span className={`flex-shrink-0 self-start w-16 text-center px-1.5 rounded text-[12px] font-semibold leading-5 ${
                                 log.level === 'error' ? 'text-red-700 bg-red-50' :
                                 log.level === 'warning' ? 'text-amber-700 bg-amber-50' :
                                 log.level === 'debug' ? 'text-purple-700 bg-purple-50' :

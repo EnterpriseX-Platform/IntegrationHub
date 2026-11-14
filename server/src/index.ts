@@ -33,6 +33,7 @@ import projectTagsRouter from './routes/projectTags';
 // Import services
 import { apiService } from './services/apiService';
 import { schedulerService } from './services/scheduler';
+import { ensureDefaultTenant } from './services/tenantBootstrap';
 import { sweepStaleExecutions, EXECUTION_STALE_HOURS } from './lib/execution-progress';
 
 // Load environment variables
@@ -252,6 +253,8 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
 
 // Start server
 const server = app.listen(PORT, HOST, async () => {
+  // Multi-tenancy phase 1: back-fill existing data into the "default" tenant
+  ensureDefaultTenant().catch((err) => console.error('[tenant] default tenant bootstrap failed:', err));
   console.log('='.repeat(70));
   console.log('🚀 DEH API Server');
   console.log('='.repeat(70));

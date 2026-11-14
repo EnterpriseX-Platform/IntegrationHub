@@ -239,14 +239,14 @@ export const ProjectExecutions = ({ project }: { project: Project }) => {
   const getFlowTypeBadge = (type: string) => {
     if (type === 'API_SPEC') {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-100">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[12px] font-medium bg-blue-50 text-blue-700 border border-blue-100">
           <Zap className="h-3 w-3" />
           API Flow
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-purple-50 text-purple-700 border border-purple-100">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[12px] font-medium bg-purple-50 text-purple-700 border border-purple-100">
         <Activity className="h-3 w-3" />
         Triggers
       </span>
@@ -536,9 +536,9 @@ export const ProjectExecutions = ({ project }: { project: Project }) => {
               >
                 <span className="truncate flex-1">{flow.name}</span>
                 {flow.type === 'API_SPEC' ? (
-                  <span className="text-[10px] px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">API</span>
+                  <span className="text-[12px] px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">API</span>
                 ) : (
-                  <span className="text-[10px] px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded">Triggers</span>
+                  <span className="text-[12px] px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded">Triggers</span>
                 )}
               </button>
             ))}
@@ -593,7 +593,7 @@ export const ProjectExecutions = ({ project }: { project: Project }) => {
                       )}
                       <span>•</span>
                       <span
-                        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[12px] font-medium ${
                           execution.triggerType === 'api'
                             ? 'bg-blue-50 text-blue-600'
                             : execution.triggerType === 'schedule'
@@ -826,11 +826,11 @@ export const ProjectExecutions = ({ project }: { project: Project }) => {
                                   <span className="text-xs text-gray-400 flex-shrink-0 font-mono w-16">
                                     {new Date(log.timestamp).toLocaleTimeString('en-GB', { hour12: false })}
                                   </span>
-                                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded flex-shrink-0 ${levelBadge}`}>
+                                  <span className={`text-[12px] font-medium px-1.5 py-0.5 rounded flex-shrink-0 ${levelBadge}`}>
                                     {log.level.toUpperCase()}
                                   </span>
                                   {log.nodeName && (
-                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-50 text-cyan-700 flex-shrink-0 font-medium">
+                                    <span className="text-[12px] px-1.5 py-0.5 rounded bg-cyan-50 text-cyan-700 flex-shrink-0 font-medium">
                                       {log.nodeName}
                                     </span>
                                   )}

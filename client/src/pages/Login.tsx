@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Lock, User } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { DehLogo } from '../components/ui/DehLogo';
+import { APP_NAME, APP_TAGLINE } from '../config/brand';
 import { API_URL } from '../config/api';
 
 declare const __APP_VERSION__: string;
@@ -54,10 +55,10 @@ export default function Login() {
       <div className="bg-white rounded-xl border border-gray-200 w-full px-8 py-9">
         {/* Logo */}
         <div className="flex items-center gap-3 mb-8">
-          <DehLogo size={40} className="shrink-0" />
+          <DehLogo size={40} className="shrink-0 text-gray-900" />
           <div className="leading-tight">
-            <h1 className="text-[18px] font-semibold text-gray-900">DEH</h1>
-            <p className="text-[13px] text-gray-500">Data Exchange Hub</p>
+            <h1 className="text-[18px] font-semibold text-gray-900">{APP_NAME}</h1>
+            {APP_TAGLINE && <p className="text-[13px] text-gray-500">{APP_TAGLINE}</p>}
           </div>
         </div>
         <h2 className="text-[16px] font-medium text-gray-900 mb-5">Sign in</h2>

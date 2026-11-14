@@ -523,40 +523,40 @@ export default function Executions() {
         <div className="bg-white rounded-lg border border-gray-200 px-2.5 py-2 sm:p-3 min-w-0">
           <div className="flex items-center gap-1.5 text-gray-500 mb-1 min-w-0">
             <Zap className="h-3.5 w-3.5 shrink-0" />
-            <span className="text-[11px] sm:text-xs font-medium truncate">Throughput</span>
+            <span className="text-[12px] sm:text-xs font-medium truncate">Throughput</span>
           </div>
           <div className="text-lg sm:text-xl font-bold leading-tight text-gray-900">
             {overallStats.throughput.toFixed(1)}
           </div>
-          <div className="text-[11px] text-gray-500 truncate">req/hour</div>
+          <div className="text-[12px] text-gray-500 truncate">req/hour</div>
         </div>
 
         <div className="bg-white rounded-lg border border-gray-200 px-2.5 py-2 sm:p-3 min-w-0">
           <div className="flex items-center gap-1.5 text-gray-500 mb-1 min-w-0">
             <Clock className="h-3.5 w-3.5 shrink-0" />
-            <span className="text-[11px] sm:text-xs font-medium truncate">Avg Response</span>
+            <span className="text-[12px] sm:text-xs font-medium truncate">Avg Response</span>
           </div>
           <div className="text-lg sm:text-xl font-bold leading-tight text-gray-900">
             {formatDuration(overallStats.avgDuration)}
           </div>
-          <div className="text-[11px] text-gray-500 truncate">p95: {formatDuration(overallStats.p95Duration)}</div>
+          <div className="text-[12px] text-gray-500 truncate">p95: {formatDuration(overallStats.p95Duration)}</div>
         </div>
 
         <div className="bg-white rounded-lg border border-gray-200 px-2.5 py-2 sm:p-3 min-w-0">
           <div className="flex items-center gap-1.5 text-gray-500 mb-1 min-w-0">
             <TrendingUp className="h-3.5 w-3.5 shrink-0" />
-            <span className="text-[11px] sm:text-xs font-medium truncate">Success Rate</span>
+            <span className="text-[12px] sm:text-xs font-medium truncate">Success Rate</span>
           </div>
           <div className="text-lg sm:text-xl font-bold leading-tight text-gray-900">
             {overallStats.successRate.toFixed(1)}%
           </div>
-          <div className="text-[11px] text-gray-500 truncate">{overallStats.success} / {overallStats.total}</div>
+          <div className="text-[12px] text-gray-500 truncate">{overallStats.success} / {overallStats.total}</div>
         </div>
 
         <div className={`rounded-lg border px-2.5 py-2 sm:p-3 min-w-0 ${overallStats.errorRate > 5 ? 'bg-red-50 border-red-200' : 'bg-white border-gray-200'}`}>
           <div className={`flex items-center gap-2 mb-2 ${overallStats.errorRate > 5 ? 'text-red-600' : 'text-gray-500'}`}>
             <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-            <span className="text-[11px] sm:text-xs font-medium truncate">Error Rate</span>
+            <span className="text-[12px] sm:text-xs font-medium truncate">Error Rate</span>
           </div>
           <div className={`text-lg sm:text-xl font-bold leading-tight ${overallStats.errorRate > 5 ? 'text-red-700' : 'text-gray-900'}`}>
             {overallStats.errorRate.toFixed(1)}%
@@ -569,23 +569,23 @@ export default function Executions() {
         <div className="bg-white rounded-lg border border-gray-200 px-2.5 py-2 sm:p-3 min-w-0">
           <div className="flex items-center gap-1.5 text-gray-500 mb-1 min-w-0">
             <Activity className="h-3.5 w-3.5 shrink-0" />
-            <span className="text-[11px] sm:text-xs font-medium truncate">Active</span>
+            <span className="text-[12px] sm:text-xs font-medium truncate">Active</span>
           </div>
           <div className="text-lg sm:text-xl font-bold leading-tight text-blue-600">
             {overallStats.running}
           </div>
-          <div className="text-[11px] text-gray-500 truncate">running now</div>
+          <div className="text-[12px] text-gray-500 truncate">running now</div>
         </div>
 
         <div className="bg-white rounded-lg border border-gray-200 px-2.5 py-2 sm:p-3 min-w-0">
           <div className="flex items-center gap-1.5 text-gray-500 mb-1 min-w-0">
             <Layers className="h-3.5 w-3.5 shrink-0" />
-            <span className="text-[11px] sm:text-xs font-medium truncate">Total</span>
+            <span className="text-[12px] sm:text-xs font-medium truncate">Total</span>
           </div>
           <div className="text-lg sm:text-xl font-bold leading-tight text-gray-900">
             {overallStats.total}
           </div>
-          <div className="text-[11px] text-gray-500 truncate">executions</div>
+          <div className="text-[12px] text-gray-500 truncate">executions</div>
         </div>
       </div>
 

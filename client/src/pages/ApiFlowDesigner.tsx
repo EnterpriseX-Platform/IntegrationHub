@@ -284,7 +284,7 @@ export const ApiFlowDesigner = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
+    <div className="h-full flex flex-col bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b px-4 py-3">
         <div className="flex items-center justify-between">
@@ -297,10 +297,10 @@ export const ApiFlowDesigner = () => {
                 <Globe className="h-5 w-5 text-blue-600" />
               </div>
               <div>
-                <h1 className="font-semibold text-gray-900">{flowName || 'Untitled API'}</h1>
+                <h1 className="font-semibold text-gray-900 whitespace-nowrap">{flowName || 'Untitled API'}</h1>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">REST API</span>
-                  <span className="text-xs text-gray-500">{apiSpec.operations.length} operations</span>
+                  <span className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full whitespace-nowrap">REST API</span>
+                  <span className="text-xs text-gray-500 whitespace-nowrap">{apiSpec.operations.length} operations</span>
                 </div>
               </div>
             </div>

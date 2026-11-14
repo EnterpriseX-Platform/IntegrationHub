@@ -102,7 +102,7 @@ function formatDateTime(iso?: string): { date: string; time: string } {
 
 function HistoryBars({ executions }: { executions: Execution[] }) {
   const recent = executions.slice(0, 10).reverse();
-  if (recent.length === 0) return <span className="text-[10px] tabular-nums text-slate-300">— no runs</span>;
+  if (recent.length === 0) return <span className="text-[12px] tabular-nums text-slate-300">— no runs</span>;
   const maxDur = Math.max(...recent.map(e => e.durationMs || 100), 1);
   return (
     <div className="flex items-end gap-[3px] h-5">
@@ -224,7 +224,7 @@ function RunFlowModal({ flow, isOpen, onClose, onSubmitted }: {
         <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-4">
           <span className={`h-2.5 w-2.5 rounded-full ${colors.dot} shrink-0`} />
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 text-[10px] uppercase tracking-wide">
+            <div className="flex items-center gap-2 text-[12px] uppercase tracking-wide">
               {flow.project?.name && <span className={`${colors.chipText} font-medium`}>{flow.project.name}</span>}
               {flow.type && <><span className="text-slate-300">·</span><span className="text-slate-500">{flow.type}</span></>}
             </div>
@@ -240,14 +240,14 @@ function RunFlowModal({ flow, isOpen, onClose, onSubmitted }: {
             </div>
           ) : declared.length > 0 ? (
             <div>
-              <label className="mb-2 block text-[11px] font-semibold uppercase tracking-wide text-slate-500">Flow Variables</label>
+              <label className="mb-2 block text-[12px] font-semibold uppercase tracking-wide text-slate-500">Flow Variables</label>
               <div className="space-y-2.5">
                 {declared.map((v) => (
                   <div key={v.name}>
                     <div className="mb-1 flex items-baseline gap-1.5">
                       <span className="text-xs font-medium text-slate-700">{v.label || v.name}</span>
-                      <code className="rounded bg-slate-100 px-1 font-mono text-[10px] text-slate-500">{`{{${v.name}}}`}</code>
-                      {v.required && <span className="text-[10px] text-rose-600">*</span>}
+                      <code className="rounded bg-slate-100 px-1 font-mono text-[12px] text-slate-500">{`{{${v.name}}}`}</code>
+                      {v.required && <span className="text-[12px] text-rose-600">*</span>}
                     </div>
                     {v.type === 'dropdown' && v.options?.length ? (
                       <select
@@ -279,7 +279,7 @@ function RunFlowModal({ flow, isOpen, onClose, onSubmitted }: {
           {/* Extra free-form parameters */}
           <div>
             <div className="mb-2 flex items-center justify-between">
-              <label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              <label className="text-[12px] font-semibold uppercase tracking-wide text-slate-500">
                 {declared.length > 0 ? 'Extra Parameters' : 'Parameters'}
               </label>
               <button onClick={() => setParams([...params, { name: '', value: '' }])} className="inline-flex items-center gap-1 text-xs text-slate-700 hover:text-slate-900">
@@ -303,10 +303,10 @@ function RunFlowModal({ flow, isOpen, onClose, onSubmitted }: {
                 ))}
               </div>
             )}
-            <div className="mt-2 flex items-start gap-1.5 rounded-md bg-slate-50 ring-1 ring-inset ring-slate-200/60 px-2.5 py-2 text-[11px] text-slate-600">
+            <div className="mt-2 flex items-start gap-1.5 rounded-md bg-slate-50 ring-1 ring-inset ring-slate-200/60 px-2.5 py-2 text-[12px] text-slate-600">
               <Info className="mt-0.5 h-3 w-3 flex-shrink-0 text-slate-400" />
               <div>
-                <span className="font-medium text-slate-700">Templates:</span> {TEMPLATE_HINTS.map((t, i) => <span key={t}><code className="rounded bg-white px-1 font-mono text-[10px] ring-1 ring-inset ring-slate-200/60">{t}</code>{i < TEMPLATE_HINTS.length - 1 ? ' ' : ''}</span>)}
+                <span className="font-medium text-slate-700">Templates:</span> {TEMPLATE_HINTS.map((t, i) => <span key={t}><code className="rounded bg-white px-1 font-mono text-[12px] ring-1 ring-inset ring-slate-200/60">{t}</code>{i < TEMPLATE_HINTS.length - 1 ? ' ' : ''}</span>)}
               </div>
             </div>
           </div>
@@ -763,7 +763,7 @@ export default function Tasks() {
               <div className="min-w-0">
                 <div className="flex items-baseline gap-2">
                   <h1 className="text-[17px] font-semibold tracking-tight text-slate-900">Run Flow</h1>
-                  <span className="text-[11px] tabular-nums text-slate-400">
+                  <span className="text-[12px] tabular-nums text-slate-400">
                     {filter.label} · {finalList.length} flows
                   </span>
                 </div>
@@ -870,7 +870,7 @@ export default function Tasks() {
                               {vars.map(v => (
                                 <span
                                   key={v.name}
-                                  className="inline-flex items-center gap-0.5 rounded bg-slate-100 ring-1 ring-inset ring-slate-200/60 px-1.5 py-0.5 text-[10px] font-medium text-slate-600"
+                                  className="inline-flex items-center gap-0.5 rounded bg-slate-100 ring-1 ring-inset ring-slate-200/60 px-1.5 py-0.5 text-[12px] font-medium text-slate-600"
                                   title={v.label ? `${v.label} ({{${v.name}}})` : `{{${v.name}}}`}
                                 >
                                   {v.type === 'dropdown' && <ChevronDown className="h-2.5 w-2.5 text-slate-400" />}
@@ -887,7 +887,7 @@ export default function Tasks() {
                       {/* Stats: Last run, History — fixed widths align across rows */}
                       <div className="hidden md:flex shrink-0 items-stretch divide-x divide-slate-200/70 text-right">
                         <div className="px-3 w-[150px]">
-                          <div className="text-[9px] uppercase tracking-wide text-slate-400 font-medium leading-none">Last run</div>
+                          <div className="text-[12px] uppercase tracking-wide text-slate-400 font-medium leading-none">Last run</div>
                           <div className="mt-1 flex items-center justify-end gap-1 leading-none">
                             {lastExec ? (
                               <>
@@ -904,7 +904,7 @@ export default function Tasks() {
                           </div>
                           {lastExec && (lastExec.status || '').toLowerCase() === 'failed' && lastExec.error && (
                             <div
-                              className="mt-1 text-[10px] text-rose-600 truncate cursor-help"
+                              className="mt-1 text-[12px] text-rose-600 truncate cursor-help"
                               title={lastExec.error}
                             >
                               {lastExec.error}
@@ -912,7 +912,7 @@ export default function Tasks() {
                           )}
                         </div>
                         <div className="px-3 w-[110px]">
-                          <div className="text-[9px] uppercase tracking-wide text-slate-400 font-medium leading-none">History</div>
+                          <div className="text-[12px] uppercase tracking-wide text-slate-400 font-medium leading-none">History</div>
                           <div className="mt-1 flex justify-end leading-none">
                             <HistoryBars executions={flowExecs} />
                           </div>
@@ -931,7 +931,7 @@ export default function Tasks() {
                         {(lastExec?.status || '').toLowerCase() === 'running' ? (
                           <button
                             onClick={() => { setKillTarget(f); setKillError(null); }}
-                            className="inline-flex items-center gap-1 rounded-md bg-rose-600 text-white px-2.5 py-1 text-[11px] font-medium hover:bg-rose-700 transition-colors ml-1"
+                            className="inline-flex items-center gap-1 rounded-md bg-rose-600 text-white px-2.5 py-1 text-[12px] font-medium hover:bg-rose-700 transition-colors ml-1"
                           >
                             <Square className="h-3 w-3 fill-current" /> Kill
                           </button>
@@ -985,7 +985,7 @@ export default function Tasks() {
                             ) : (
                               <button
                                 onClick={() => { setAddingTagFor(proj.id); setNewTagName(''); }}
-                                className="inline-flex items-center gap-1 rounded-md ring-1 ring-slate-200 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                                className="inline-flex items-center gap-1 rounded-md ring-1 ring-slate-200 bg-white px-2 py-0.5 text-[12px] font-medium text-slate-600 hover:bg-slate-50 transition-colors"
                                 title={`Add a tag group under ${proj.name}`}
                               >
                                 <Plus className="h-3 w-3" /> Tag
@@ -1034,7 +1034,7 @@ export default function Tasks() {
                                       </button>
                                     )}
                                   </header>
-                                  <ul className={`space-y-1.5 min-h-[8px] ${isEmpty ? `rounded-md border-2 border-dashed ${isDropTargetEmpty ? 'border-blue-400 bg-blue-50/40' : 'border-slate-200 bg-slate-50/40'} px-3 py-3 text-center text-[11px] text-slate-400` : ''}`}>
+                                  <ul className={`space-y-1.5 min-h-[8px] ${isEmpty ? `rounded-md border-2 border-dashed ${isDropTargetEmpty ? 'border-blue-400 bg-blue-50/40' : 'border-slate-200 bg-slate-50/40'} px-3 py-3 text-center text-[12px] text-slate-400` : ''}`}>
                                     {tg.items.length > 0
                                       ? tg.items.map(f => renderRow(f, compositeId))
                                       : <li className="select-none">Drag a flow from this project here to add the "{tg.name}" tag</li>}

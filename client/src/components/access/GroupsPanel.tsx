@@ -23,7 +23,7 @@ interface RepoFolderT { id: string; name: string; parentId: string | null }
 interface Grant { id: string; role: Role; project?: Target; table?: Target; folder?: Target }
 interface Targets { projects: Target[]; tables: Target[]; repoFolders: RepoFolderT[]; folders: Target[] }
 
-const th = 'px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider';
+const th = 'px-3 py-2 text-left text-[12px] font-medium text-gray-500 uppercase tracking-wider';
 
 /** Settings → Groups: user groups that projects and repository tables can be shared with. */
 export function GroupsPanel() {

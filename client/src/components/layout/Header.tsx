@@ -1,10 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, Link, useParams, useNavigate } from 'react-router-dom';
 import { 
-  ChevronRight, 
-  Bell, 
-  Home, 
-  PanelLeft,
+  Bell, Sun, Moon, Menu, 
   User, 
   Settings, 
   LogOut,
@@ -14,6 +11,9 @@ import {
 } from 'lucide-react';
 
 import { useCurrentUser } from '../../lib/currentUser';
+import { TenantSwitcher } from '../tenant/TenantSwitcher';
+import { DehLogo } from '../ui/DehLogo';
+import { APP_NAME } from '../../config/brand';
 import { API_URL, BASE_PATH } from '../../config/api';
 
 interface BreadcrumbItem {
@@ -111,6 +111,20 @@ const getBreadcrumbs = (pathname: string, projectName: string): BreadcrumbItem[]
     crumbs.push({ label: 'Data Admin' });
   } else if (pathname === '/apispecs') {
     crumbs.push({ label: 'API Specs' });
+  } else if (pathname === '/tasks') {
+    crumbs.push({ label: 'Run Flow' });
+  } else if (pathname.startsWith('/file-explorer')) {
+    crumbs.push({ label: 'File Explorer' });
+  } else if (pathname.startsWith('/data-repository')) {
+    crumbs.push({ label: 'Repository' });
+  } else if (pathname.startsWith('/analytics-workbench')) {
+    crumbs.push({ label: 'Analytics Workbench' });
+  } else if (pathname.startsWith('/executions/')) {
+    crumbs.push({ label: 'Executions' });
+  } else if (pathname.startsWith('/schedulers/')) {
+    crumbs.push({ label: 'Scheduler Logs' });
+  } else if (pathname.startsWith('/event-flows/')) {
+    crumbs.push({ label: 'Flow Designer' });
   }
 
   return crumbs;
@@ -131,6 +145,13 @@ export const Header: React.FC<HeaderProps> = ({
   const navigate = useNavigate();
   const params = useParams();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [theme, setTheme] = useState<string>(() => document.documentElement.dataset.theme || 'dark');
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = next;
+    try { localStorage.setItem('theme', next); } catch { /* ignore */ }
+    setTheme(next);
+  };
   const dropdownRef = useRef<HTMLDivElement>(null);
   
   // Get project ID from URL params
@@ -165,54 +186,44 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="h-14 shrink-0 bg-gray-50 flex items-center justify-between gap-2 px-2 sm:px-4">
-      {/* Left side: Collapse Button + Breadcrumb Navigation */}
-      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-        {/* Collapse Button */}
+    <header className="h-12 shrink-0 bg-black text-[#f4f4f4] border-b border-[#262626] flex items-center justify-between gap-2 relative z-30">
+      {/* Left: menu · product · tenant · page title (Carbon UI shell, RunLoop style) */}
+      <div className="flex items-center min-w-0 flex-1 h-full">
         <button
           onClick={onToggleSidebar}
-          title={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          className="shrink-0 w-9 h-9 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+          title={isSidebarCollapsed ? 'Expand menu' : 'Collapse menu'}
+          className="shrink-0 w-12 h-12 flex items-center justify-center text-[#f4f4f4] hover:bg-[#262626] transition-colors"
         >
-          <PanelLeft className={`w-[18px] h-[18px] transition-transform duration-300 ${isSidebarCollapsed ? 'rotate-180' : ''}`} />
+          <Menu className="w-5 h-5" />
         </button>
-
-        {/* Breadcrumb — on phones only Home and the current page */}
-        <div className="flex items-center gap-1.5 sm:gap-2 text-sm min-w-0 overflow-hidden">
-          <Link
-            to="/dashboard"
-            className="shrink-0 text-gray-500 hover:text-gray-700 flex items-center gap-1 transition-colors"
-          >
-            <Home className="w-4 h-4" />
-            <span className="hidden sm:inline">Home</span>
-          </Link>
-          {breadcrumbs.map((crumb, index) => (
-            <span key={index} className={`${index < breadcrumbs.length - 1 ? 'hidden sm:flex' : 'flex'} items-center gap-1.5 sm:gap-2 min-w-0`}>
-              <ChevronRight className="w-4 h-4 shrink-0 text-gray-400" />
-              {crumb.path ? (
-                <Link
-                  to={crumb.path}
-                  className="text-gray-500 hover:text-gray-700 transition-colors"
-                >
-                  <span className="truncate max-w-[100px] sm:max-w-[150px]">{crumb.label}</span>
-                </Link>
-              ) : (
-                <span className="text-gray-900 font-medium truncate max-w-[160px] sm:max-w-[200px]">
-                  {crumb.label}
-                </span>
-              )}
-            </span>
-          ))}
-        </div>
+        <Link to="/dashboard" className="shrink-0 flex items-center gap-2 pl-1 pr-4 h-full hover:bg-[#262626]">
+          <DehLogo size={22} className="text-[#f4f4f4]" />
+          <span className="text-[14px] font-semibold tracking-tight hidden sm:inline">{APP_NAME}</span>
+        </Link>
+        <span className="w-px h-6 bg-[#393939] hidden sm:block" />
+        <TenantSwitcher />
+        <span className="w-px h-6 bg-[#393939] hidden sm:block" />
+        <span className="px-4 text-[14px] font-semibold text-white truncate">
+          {breadcrumbs.length ? breadcrumbs[breadcrumbs.length - 1].label : 'Dashboard'}
+        </span>
       </div>
 
       {/* Right side actions */}
-      <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+      <div className="flex items-center shrink-0">
+        {/* Carbon theme toggle (g100 dark / g10 light) */}
+        <button
+          onClick={toggleTheme}
+          title={theme === 'dark' ? 'Light theme' : 'Dark theme'}
+          className="w-12 h-12 flex items-center justify-center text-[#f4f4f4] hover:bg-[#262626] transition-colors"
+        >
+          {theme === 'dark' ? <Sun className="w-[18px] h-[18px]" /> : <Moon className="w-[18px] h-[18px]" />}
+        </button>
+
         {/* Notification Bell */}
-        <button className="relative w-9 h-9 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+        <button className="relative w-12 h-12 flex items-center justify-center text-[#f4f4f4] hover:bg-[#262626] transition-colors">
           <Bell className="w-[18px] h-[18px]" />
           {notificationCount > 0 && (
-            <span className="absolute top-1 right-1 min-w-4 h-4 px-1 bg-red-500 text-white text-[10px] ring-2 ring-white rounded-full flex items-center justify-center font-medium">
+            <span className="absolute top-1 right-1 min-w-4 h-4 px-1 bg-red-500 text-white text-[12px] ring-2 ring-black rounded-full flex items-center justify-center font-medium">
               {notificationCount > 9 ? '9+' : notificationCount}
             </span>
           )}
@@ -222,21 +233,21 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setIsProfileOpen(!isProfileOpen)}
-            className="flex items-center gap-2 h-9 pl-1 pr-1 md:pr-2 rounded-lg hover:bg-gray-100 transition-colors"
+            className="flex items-center gap-2 h-12 px-2 md:px-3 hover:bg-[#262626] transition-colors"
           >
-            <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-semibold">
+            <div className="w-7 h-7 rounded-full bg-[#4589ff] flex items-center justify-center text-white text-xs font-semibold">
               {userInitial}
             </div>
-            <div className="hidden md:block text-left max-w-[180px]">
-              <p className="text-[13px] font-medium text-gray-900 leading-tight truncate">{userName}</p>
-              <p className="text-[11px] text-gray-500 leading-tight truncate">{userEmail}</p>
+            <div className="hidden text-left max-w-[180px]">
+              <p className="text-[13px] font-medium text-[#f4f4f4] leading-tight truncate">{userName}</p>
+              <p className="text-[12px] text-[#a8a8a8] leading-tight truncate">{userEmail}</p>
             </div>
-            <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform hidden md:block ${isProfileOpen ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform hidden ${isProfileOpen ? 'rotate-180' : ''}`} />
           </button>
 
           {/* Dropdown Menu */}
           {isProfileOpen && (
-            <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+            <div className="absolute right-0 top-full mt-0 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
               {/* User Info Header */}
               <div className="px-4 py-3 border-b border-gray-100">
                 <div className="flex items-center gap-3">

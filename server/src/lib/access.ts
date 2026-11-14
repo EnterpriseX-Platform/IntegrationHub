@@ -12,15 +12,20 @@ export const MEMBER_ROLES: MemberRole[] = ['viewer', 'editor', 'owner'];
 
 interface CurrentUser { id: string | null; isAdmin: boolean }
 
-/** The logged-in user, cached on the request. With REQUIRE_LOGIN=false there is no user and nothing is restricted. */
+/** The logged-in user, cached on the request. isAdmin = super-admin or tenant-admin of the request's tenant.
+ *  With REQUIRE_LOGIN=false there is no user and nothing is restricted. */
 export async function currentUser(req: Request): Promise<CurrentUser> {
   const r = req as any;
   if (r._currentUser) return r._currentUser;
   const userId: string | undefined = r.userId;
-  let user: CurrentUser = { id: null, isAdmin: true };
+  // No user: only REQUIRE_LOGIN=false leaves everything open. Any other route that
+  // reaches here without a session gets no admin rights.
+  let user: CurrentUser = { id: null, isAdmin: process.env.REQUIRE_LOGIN === 'false' };
   if (userId) {
     const u = await prisma.user.findUnique({ where: { id: userId }, select: { role: true, status: true } });
-    user = { id: userId, isAdmin: u?.role === 'admin' && u?.status !== 'inactive' };
+    const active = u?.status !== 'inactive';
+    // Super-admin (role admin), or tenant-admin of the tenant this request works in
+    user = { id: userId, isAdmin: active && (u?.role === 'admin' || r.tenantRole === 'tenant-admin') };
   }
   r._currentUser = user;
   return user;

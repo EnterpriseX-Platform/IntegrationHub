@@ -40,6 +40,13 @@ export const EventFlowDesigner = () => {
   const navigate = useNavigate();
   
   const [activeTab, setActiveTab] = useState<'designer' | 'test' | 'deploy'>('designer');
+  // Toast for Save / Run Now results (both used to give no feedback at all)
+  const [notice, setNotice] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  const [running, setRunning] = useState(false);
+  const flash = (kind: 'ok' | 'error', text: string) => {
+    setNotice({ kind, text });
+    window.setTimeout(() => setNotice((n) => (n && n.text === text ? null : n)), 4000);
+  };
   const [flowName, setFlowName] = useState('');
   const [flowStatus, setFlowStatus] = useState<'Draft' | 'Active' | 'Inactive'>('Draft');
   const [nodes, setNodes] = useState<FlowNode[]>([]);
@@ -168,7 +175,7 @@ export const EventFlowDesigner = () => {
     setEdges(newFlow.edges);
   };
 
-  const saveFlow = async () => {
+  const saveFlow = async (quiet = false): Promise<boolean> => {
     try {
       const connections = edges.map((edge, idx) => ({
         id: edge.id || `edge-${idx}`,
@@ -179,7 +186,7 @@ export const EventFlowDesigner = () => {
         targetPort: edge.targetPort,
       }));
       
-      await apiFetch(`${API_URL}/flows/${flowId}`, {
+      const res = await apiFetch(`${API_URL}/flows/${flowId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -188,15 +195,52 @@ export const EventFlowDesigner = () => {
           connections: JSON.stringify(connections),
         }),
       });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.success === false) throw new Error(data.error || `HTTP ${res.status}`);
+      if (!quiet) flash('ok', 'Flow saved');
+      return true;
     } catch (e) {
       console.error('Error saving flow:', e);
+      flash('error', `Save failed: ${e instanceof Error ? e.message : 'unknown error'}`);
+      return false;
+    }
+  };
+
+  // Run Now: save the current canvas first, then start an async execution (202)
+  const runNow = async () => {
+    if (running) return;
+    setRunning(true);
+    try {
+      if (!(await saveFlow(true))) return;
+      const res = await apiFetch(`${API_URL}/flows/${flowId}/execute`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.success === false) throw new Error(data.error || `HTTP ${res.status}`);
+      flash('ok', 'Run started — see Executions for the result');
+    } catch (e) {
+      flash('error', `Run failed: ${e instanceof Error ? e.message : 'unknown error'}`);
+    } finally {
+      setRunning(false);
     }
   };
 
   const currentFlow = { nodes, edges };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
+    <div className="h-full flex flex-col bg-gray-50 relative">
+      {notice && (
+        <div
+          role="status"
+          className={`fixed bottom-4 right-4 z-[60] max-w-sm px-4 py-3 text-sm shadow-lg border-l-4 bg-white text-gray-900 ${
+            notice.kind === 'ok' ? 'border-green-600' : 'border-red-600'
+          }`}
+        >
+          {notice.text}
+        </div>
+      )}
       {loading && (
         <div className="absolute inset-0 bg-white/80 z-50 flex items-center justify-center">
           <div className="text-gray-600">Loading Triggers Designer...</div>
@@ -234,7 +278,7 @@ export const EventFlowDesigner = () => {
                       className="text-xs px-2 py-0.5 rounded-full flex items-center gap-1.5 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors"
                       title={linkedSchedulers.map(s => `${s.name || s.schedule} ${s.enabled ? '(Active)' : '(Paused)'}`).join('\n')}
                     >
-                      <i className="fas fa-clock text-[10px]"></i>
+                      <i className="fas fa-clock text-[12px]"></i>
                       {linkedSchedulers.length} scheduler{linkedSchedulers.length !== 1 ? 's' : ''}
                       {linkedSchedulers.some(s => s.enabled) && (
                         <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
@@ -270,11 +314,11 @@ export const EventFlowDesigner = () => {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            <Button variant="secondary" size="sm" onClick={saveFlow} title="Save">
+            <Button variant="secondary" size="sm" onClick={() => saveFlow()} title="Save">
               <i className="fas fa-save sm:mr-2"></i><span className="hidden sm:inline">Save</span>
             </Button>
-            <Button size="sm" title="Run Now">
-              <i className="fas fa-play sm:mr-2"></i><span className="hidden sm:inline whitespace-nowrap">Run Now</span>
+            <Button size="sm" title="Run Now" onClick={runNow} disabled={running}>
+              <i className={`fas ${running ? 'fa-spinner fa-spin' : 'fa-play'} sm:mr-2`}></i><span className="hidden sm:inline whitespace-nowrap">Run Now</span>
             </Button>
           </div>
         </div>

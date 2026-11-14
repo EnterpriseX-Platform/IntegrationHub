@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react';
 import { API_URL } from '../config/api';
 
-export interface CurrentUser { id?: string; email?: string; name?: string | null; role?: string }
+export interface TenantSummary { id: string; slug: string; name: string; role: string; branding?: Record<string, unknown> }
+export interface CurrentUser {
+  id?: string; email?: string; name?: string | null; role?: string;
+  /** Active tenant of this login and the user's role in it */
+  tenantId?: string; tenantRole?: string; tenants?: TenantSummary[];
+}
 
 const EVENT = 'current-user-changed';
 
@@ -12,6 +17,11 @@ export function storedUser(): CurrentUser | null {
 
 /** Unknown role counts as not admin; the server checks again on every call. */
 export function isAdminUser(u: CurrentUser | null = storedUser()): boolean {
+  return u?.role === 'admin' || u?.tenantRole === 'tenant-admin';
+}
+
+/** Platform super-admin (manages tenants, users and system settings). */
+export function isSuperAdmin(u: CurrentUser | null = storedUser()): boolean {
   return u?.role === 'admin';
 }
 

@@ -95,36 +95,22 @@ const Layout: React.FC = () => {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Backdrop for mobile drawer */}
-      {isMobile && isMobileDrawerOpen && (
-        <div
-          className="fixed inset-0 z-30 bg-slate-900/40 backdrop-blur-sm md:hidden"
-          onClick={() => setIsMobileDrawerOpen(false)}
-        />
-      )}
-
-      {/* Sidebar — push-style on desktop, overlay drawer on mobile */}
-      <Sidebar
-        isCollapsed={!isMobile && isSidebarCollapsed}
-        isMobile={isMobile}
-        isMobileOpen={isMobileDrawerOpen}
+    <div className="flex flex-col h-screen bg-gray-50">
+      {/* Carbon UI shell: full-width header on top, side nav + content below */}
+      <Header
+        isSidebarCollapsed={isMobile ? !isMobileDrawerOpen : isSidebarCollapsed}
+        onToggleSidebar={toggleSidebar}
       />
-
-      {/* Main Content Area — no left margin on mobile (sidebar is overlay) */}
-      <div
-        className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${
-          isMobile ? 'ml-0' : (isSidebarCollapsed ? 'ml-16' : 'ml-60')
-        }`}
-      >
-        {/* Header with collapse button */}
-        <Header
-          isSidebarCollapsed={isMobile ? !isMobileDrawerOpen : isSidebarCollapsed}
-          onToggleSidebar={toggleSidebar}
+      <div className="flex flex-1 min-h-0">
+        {isMobile && isMobileDrawerOpen && (
+          <div className="fixed inset-0 top-12 z-30 bg-black/50 md:hidden" onClick={() => setIsMobileDrawerOpen(false)} />
+        )}
+        <Sidebar
+          isCollapsed={!isMobile && isSidebarCollapsed}
+          isMobile={isMobile}
+          isMobileOpen={isMobileDrawerOpen}
         />
-
-        {/* Page Content */}
-        <main className="flex-1 min-h-0 flex flex-col overflow-auto">
+        <main className="flex-1 min-w-0 min-h-0 flex flex-col overflow-auto">
           <Outlet />
         </main>
       </div>

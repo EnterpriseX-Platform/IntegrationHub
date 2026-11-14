@@ -95,6 +95,7 @@ export default function Connections() {
   const fetchConnections = async () => {
     if (!projectId) {
       console.warn('[Connections] No projectId provided');
+      setLoading(false);
       return;
     }
     

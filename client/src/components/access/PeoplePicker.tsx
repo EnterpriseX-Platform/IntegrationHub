@@ -15,7 +15,7 @@ function initials(text: string): string {
 }
 
 export function Avatar({ text, kind = 'user', size = 'md' }: { text: string; kind?: 'user' | 'group'; size?: 'sm' | 'md' }) {
-  const box = size === 'sm' ? 'h-6 w-6 text-[10px]' : 'h-7 w-7 text-xs';
+  const box = size === 'sm' ? 'h-6 w-6 text-[12px]' : 'h-7 w-7 text-xs';
   return (
     <div className={`${box} flex-shrink-0 rounded-md bg-blue-50 text-blue-700 font-medium flex items-center justify-center`}>
       {kind === 'group' ? <Users className="w-3.5 h-3.5" /> : initials(text)}
