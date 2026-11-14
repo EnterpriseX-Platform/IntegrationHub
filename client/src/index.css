@@ -322,3 +322,9 @@ main h1.text-2xl, main h1.text-xl {
 .text-sm { font-size: 13px; line-height: 18px; }
 main table th, main table td { padding-top: 8px; padding-bottom: 8px; }
 main table th { font-size: 12px; }
+
+/* Responsive: page titles scale down on phones; primary buttons never wrap */
+@media (max-width: 639px) {
+  main h1.text-2xl, main h1.text-xl { font-size: 1.625rem; line-height: 2rem; }
+}
+main button.bg-blue-600, main a.bg-blue-600 { white-space: nowrap; }

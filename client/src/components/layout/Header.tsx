@@ -203,7 +203,7 @@ export const Header: React.FC<HeaderProps> = ({
         <span className="w-px h-6 bg-[#393939] hidden sm:block" />
         <TenantSwitcher />
         <span className="w-px h-6 bg-[#393939] hidden sm:block" />
-        <span className="px-4 text-[14px] font-semibold text-white truncate">
+        <span className="hidden sm:block px-4 text-[14px] font-semibold text-white truncate">
           {breadcrumbs.length ? breadcrumbs[breadcrumbs.length - 1].label : 'Dashboard'}
         </span>
       </div>

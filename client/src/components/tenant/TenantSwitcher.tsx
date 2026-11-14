@@ -49,7 +49,7 @@ export function TenantSwitcher() {
         className="h-12 flex items-center gap-2 px-4 text-[#f4f4f4] hover:bg-[#262626]"
       >
         <span className="w-2.5 h-2.5 bg-[#08bdba]" />
-        <span className="text-[13px] max-w-[140px] truncate">{active.name}</span>
+        <span className="hidden sm:inline text-[13px] max-w-[140px] truncate">{active.name}</span>
         <ChevronDown className={`w-4 h-4 text-[#a8a8a8] transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (

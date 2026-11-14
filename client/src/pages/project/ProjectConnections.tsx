@@ -346,7 +346,7 @@ export const ProjectConnections = ({ project }: { project: Project }) => {
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, connection)}
                   onDragEnd={handleDragEnd}
-                  className={`bg-white rounded-lg border px-4 py-2.5 cursor-move transition-all duration-200 group flex items-center gap-4 relative
+                  className={`bg-white rounded-lg border px-4 py-2.5 cursor-move transition-all duration-200 group flex flex-wrap items-center gap-x-4 gap-y-2 relative
                     ${dragOverConnectionId === connection.id && draggedConnection?.id !== connection.id 
                       ? 'opacity-30 scale-[0.98] border-purple-400' 
                       : 'hover:shadow-md hover:border-purple-200 border-gray-200'}
@@ -367,7 +367,7 @@ export const ProjectConnections = ({ project }: { project: Project }) => {
                   />
                   
                   {/* Name & Type */}
-                  <div className="w-36 sm:w-52 lg:w-72 min-w-0 shrink-0">
+                  <div className="flex-1 sm:flex-none sm:w-52 lg:w-72 min-w-[9rem] shrink-0">
                     <h3 className="font-medium text-sm text-gray-900 truncate" title={connection.name}>{connection.name}</h3>
                     <p className="text-[12px] text-gray-500">
                       {getConnectionTypeLabel(subtype || connection.type)}
@@ -398,7 +398,7 @@ export const ProjectConnections = ({ project }: { project: Project }) => {
                   </div>
                   
                   {/* Actions */}
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 ml-auto">
                     <ActionButtons
                       connectionId={connection.id}
                       isTesting={isTesting}

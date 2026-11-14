@@ -6,12 +6,16 @@ import { API_URL } from '../../config/api';
 import { refreshCurrentUser } from '../../lib/currentUser';
 
 const MOBILE_BREAKPOINT = 768; // tailwind md
+const RAIL_BREAKPOINT = 1024;  // tailwind lg: below this the side nav starts as an icon rail
 
 const Layout: React.FC = () => {
   const [isMobile, setIsMobile] = useState(() =>
     typeof window !== 'undefined' && window.innerWidth < MOBILE_BREAKPOINT
   );
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);   // desktop only
+  // Tablets / small laptops: start as the 64px icon rail so pages keep their width
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() =>
+    typeof window !== 'undefined' && window.innerWidth < RAIL_BREAKPOINT
+  );   // desktop only
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);   // mobile only
   const [authChecked, setAuthChecked] = useState(false);
   const navigate = useNavigate();
@@ -19,7 +23,13 @@ const Layout: React.FC = () => {
 
   // Listen to viewport changes
   useEffect(() => {
-    const onResize = () => setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
+    let wasNarrow = window.innerWidth < RAIL_BREAKPOINT;
+    const onResize = () => {
+      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
+      // Crossing 1024px collapses/expands the nav; in between, the user's toggle wins
+      const narrow = window.innerWidth < RAIL_BREAKPOINT;
+      if (narrow !== wasNarrow) { setIsSidebarCollapsed(narrow); wasNarrow = narrow; }
+    };
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
