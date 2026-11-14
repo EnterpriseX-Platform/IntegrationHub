@@ -26,6 +26,8 @@ const gray = v('gray');
 
 export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+  // Flow node tiles build these from the node colour at runtime (FlowDesigner tileOf)
+  safelist: [{ pattern: /^(bg|text)-(red|rose|pink|fuchsia|purple|violet|indigo|blue|sky|cyan|teal|emerald|green|lime|yellow|amber|orange|gray|slate)-(100|600)$/ }],
   theme: {
     extend: {
       fontFamily: {

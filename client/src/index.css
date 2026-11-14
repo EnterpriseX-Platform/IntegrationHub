@@ -306,9 +306,9 @@ main h1.text-2xl, main h1.text-xl {
 
 /* Fewer outlines (Carbon): a surface that already has its own background
    needs no border. Inputs, selects, buttons and dividers (border-b/t/l/r) keep theirs. */
-.bg-white.border[class*="border-gray-"]:not(input):not(select):not(textarea):not(button),
-.bg-white.border[class*="border-slate-"]:not(input):not(select):not(textarea):not(button),
-.bg-white.border:not([class*="border-"]):not(input):not(select):not(textarea):not(button) {
+.bg-white.border[class*="border-gray-"]:not(input):not(select):not(textarea):not(button):not(:has(input, textarea, select)),
+.bg-white.border[class*="border-slate-"]:not(input):not(select):not(textarea):not(button):not(:has(input, textarea, select)),
+.bg-white.border:not([class*="border-"]):not(input):not(select):not(textarea):not(button):not(:has(input, textarea, select)) {
   border-color: transparent;
 }
 /* Dividers that remain are softer */

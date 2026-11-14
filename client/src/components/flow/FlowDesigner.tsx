@@ -53,6 +53,14 @@ const templateVariableHighlight = (): Extension => [templateVariablePlugin];
 import { API_URL } from '../../config/api';
 
 // Node card size (Robot Factory style). Edge anchors are computed from these.
+import dagre from '@dagrejs/dagre';
+
+/** Robot Factory-style tile: a soft tint of the node colour with the icon in that colour
+ *  ("bg-blue-500" -> "bg-blue-100 text-blue-600"). Classes are safelisted in tailwind.config.js. */
+const tileOf = (color?: string) => {
+  const m = /^bg-([a-z]+)-\d+$/.exec(color || '');
+  return m ? `bg-${m[1]}-100 text-${m[1]}-600` : 'bg-gray-100 text-gray-600';
+};
 const NODE_WIDTH = 176;
 const NODE_HEIGHT = 64;
 
@@ -1026,6 +1034,30 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
     if (selectedNode === nodeId) setSelectedNode(null);
   };
 
+  // Tidy up: lay the flow out left to right (dagre, as in Robot Factory).
+  // Plain edges become right → left; branch edges (true/false, body/done) keep their ports.
+  const tidyUp = () => {
+    if (!flow.nodes.length) return;
+    const g = new dagre.graphlib.Graph();
+    g.setGraph({ rankdir: 'LR', nodesep: 32, ranksep: 64, marginx: 24, marginy: 24 });
+    g.setDefaultEdgeLabel(() => ({}));
+    flow.nodes.forEach(n => g.setNode(n.id, { width: NODE_WIDTH, height: NODE_HEIGHT }));
+    flow.edges.forEach(e => g.setEdge(e.source, e.target));
+    dagre.layout(g);
+    const nodes = flow.nodes.map(n => {
+      const p = g.node(n.id);
+      return p ? { ...n, x: snap(p.x - NODE_WIDTH / 2), y: snap(p.y - NODE_HEIGHT / 2) } : n;
+    });
+    const edges = flow.edges.map(e => (e.label ? e : { ...e, sourcePort: 'right' as const, targetPort: 'left' as const }));
+    onChange({ ...flow, nodes, edges });
+    // Fit the whole graph in view (never zoom in past 100%)
+    const gw = g.graph().width || 1, gh = g.graph().height || 1;
+    const cw = canvasRef.current?.clientWidth || 800, ch = canvasRef.current?.clientHeight || 600;
+    const fit = Math.max(0.3, Math.min(1, (cw - 40) / gw, (ch - 100) / gh));
+    setScale(fit);
+    setPan({ x: (cw - gw * fit) / 2, y: Math.max(20, (ch - 60 - gh * fit) / 2) });
+  };
+
   const deleteEdge = (edgeId: string) => {
     onChange({ ...flow, edges: flow.edges.filter(e => e.id !== edgeId) });
   };
@@ -1132,8 +1164,8 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                     onDragStart={(e) => handleDragStart(e, node.type)}
                     className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-gray-100 text-left transition-colors group/node"
                   >
-                    <div className={`w-7 h-7 ${node.color} rounded-[7px] flex items-center justify-center flex-shrink-0`}>
-                      <i className={`fas ${node.icon} text-white text-[12px]`}></i>
+                    <div className={`w-7 h-7 ${tileOf(node.color)} rounded-[7px] flex items-center justify-center flex-shrink-0`}>
+                      <i className={`fas ${node.icon} text-[12px]`}></i>
                     </div>
                     <div className="min-w-0">
                       <span className="text-[13px] font-medium text-gray-800 block truncate">{node.label}</span>
@@ -1164,8 +1196,8 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                     onDragStart={(e) => handleDragStart(e, node.type)}
                     className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-gray-100 text-left transition-colors group/node"
                   >
-                    <div className={`w-7 h-7 ${node.color} rounded-[7px] flex items-center justify-center flex-shrink-0`}>
-                      <i className={`fas ${node.icon} text-white text-[12px]`}></i>
+                    <div className={`w-7 h-7 ${tileOf(node.color)} rounded-[7px] flex items-center justify-center flex-shrink-0`}>
+                      <i className={`fas ${node.icon} text-[12px]`}></i>
                     </div>
                     <div className="min-w-0">
                       <span className="text-[13px] font-medium text-gray-800 block truncate">{node.label}</span>
@@ -1196,8 +1228,8 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                     onDragStart={(e) => handleDragStart(e, node.type)}
                     className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-gray-100 text-left transition-colors group/node"
                   >
-                    <div className={`w-7 h-7 ${node.color} rounded-[7px] flex items-center justify-center flex-shrink-0`}>
-                      <i className={`fas ${node.icon} text-white text-[12px]`}></i>
+                    <div className={`w-7 h-7 ${tileOf(node.color)} rounded-[7px] flex items-center justify-center flex-shrink-0`}>
+                      <i className={`fas ${node.icon} text-[12px]`}></i>
                     </div>
                     <div className="min-w-0">
                       <span className="text-[13px] font-medium text-gray-800 block truncate">{node.label}</span>
@@ -1228,8 +1260,8 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                     onDragStart={(e) => handleDragStart(e, node.type)}
                     className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-gray-100 text-left transition-colors group/node"
                   >
-                    <div className={`w-7 h-7 ${node.color} rounded-[7px] flex items-center justify-center flex-shrink-0`}>
-                      <i className={`fas ${node.icon} text-white text-[12px]`}></i>
+                    <div className={`w-7 h-7 ${tileOf(node.color)} rounded-[7px] flex items-center justify-center flex-shrink-0`}>
+                      <i className={`fas ${node.icon} text-[12px]`}></i>
                     </div>
                     <div className="min-w-0">
                       <span className="text-[13px] font-medium text-gray-800 block truncate">{node.label}</span>
@@ -1260,8 +1292,8 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                     onDragStart={(e) => handleDragStart(e, node.type)}
                     className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded hover:bg-gray-100 text-left transition-colors group/node"
                   >
-                    <div className={`w-7 h-7 ${node.color} rounded-[7px] flex items-center justify-center flex-shrink-0`}>
-                      <i className={`fas ${node.icon} text-white text-[12px]`}></i>
+                    <div className={`w-7 h-7 ${tileOf(node.color)} rounded-[7px] flex items-center justify-center flex-shrink-0`}>
+                      <i className={`fas ${node.icon} text-[12px]`}></i>
                     </div>
                     <div className="min-w-0">
                       <span className="text-[13px] font-medium text-gray-800 block truncate">{node.label}</span>
@@ -1295,8 +1327,8 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                     onDragStart={(e) => handleDragStart(e, node.type)}
                     className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-gray-100 text-left transition-colors group/node"
                   >
-                    <div className={`w-7 h-7 ${node.color} rounded-[7px] flex items-center justify-center flex-shrink-0`}>
-                      <i className={`fas ${node.icon} text-white text-[12px]`}></i>
+                    <div className={`w-7 h-7 ${tileOf(node.color)} rounded-[7px] flex items-center justify-center flex-shrink-0`}>
+                      <i className={`fas ${node.icon} text-[12px]`}></i>
                     </div>
                     <div className="min-w-0">
                       <span className="text-[13px] font-medium text-gray-800 block truncate">{node.label}</span>
@@ -1327,8 +1359,8 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                     onDragStart={(e) => handleDragStart(e, node.type)}
                     className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-gray-100 text-left transition-colors group/node"
                   >
-                    <div className={`w-7 h-7 ${node.color} rounded-[7px] flex items-center justify-center flex-shrink-0`}>
-                      <i className={`fas ${node.icon} text-white text-[12px]`}></i>
+                    <div className={`w-7 h-7 ${tileOf(node.color)} rounded-[7px] flex items-center justify-center flex-shrink-0`}>
+                      <i className={`fas ${node.icon} text-[12px]`}></i>
                     </div>
                     <div className="min-w-0">
                       <span className="text-[13px] font-medium text-gray-800 block truncate">{node.label}</span>
@@ -1359,8 +1391,8 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                     onDragStart={(e) => handleDragStart(e, node.type)}
                     className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-gray-100 text-left transition-colors group/node"
                   >
-                    <div className={`w-7 h-7 ${node.color} rounded-[7px] flex items-center justify-center flex-shrink-0`}>
-                      <i className={`fas ${node.icon} text-white text-[12px]`}></i>
+                    <div className={`w-7 h-7 ${tileOf(node.color)} rounded-[7px] flex items-center justify-center flex-shrink-0`}>
+                      <i className={`fas ${node.icon} text-[12px]`}></i>
                     </div>
                     <div className="min-w-0">
                       <span className="text-[13px] font-medium text-gray-800 block truncate">{node.label}</span>
@@ -1404,7 +1436,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
       </div>
 
       {/* Canvas */}
-      <div className="flex-1 min-w-0 relative overflow-hidden bg-gray-50">
+      <div className="flex-1 min-w-0 relative overflow-clip bg-gray-50">
         <button
           type="button"
           onClick={() => setShowPalette(true)}
@@ -1433,10 +1465,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
-              backgroundImage: `
-                linear-gradient(to right, var(--canvas-grid) 1px, transparent 1px),
-                linear-gradient(to bottom, var(--canvas-grid) 1px, transparent 1px)
-              `,
+              backgroundImage: 'radial-gradient(circle, var(--canvas-dot) 1.2px, transparent 1.4px)',
               backgroundSize: `${GRID_SIZE * scale}px ${GRID_SIZE * scale}px`,
               backgroundPosition: `${pan.x}px ${pan.y}px`,
               width: '100%',
@@ -1480,9 +1509,9 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                 
                 // Node centers - adjusted to match HTML dot positions
                 const centerX1 = source.x + NODE_WIDTH / 2;
-                const centerY1 = source.y + 30.5; // Adjusted: HTML dot moved down 1px
+                const centerY1 = source.y + NODE_HEIGHT / 2;
                 const centerX2 = target.x + NODE_WIDTH / 2;
-                const centerY2 = target.y + 30.5; // Adjusted: HTML dot moved down 1px
+                const centerY2 = target.y + NODE_HEIGHT / 2;
                 
                 // Calculate direction to determine which connection dots to use
                 const dx = centerX2 - centerX1;
@@ -1496,9 +1525,9 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                 const getDotPos = (node: FlowNode, port: 'top' | 'right' | 'bottom' | 'left' | undefined, centerX: number, centerY: number) => {
                   switch (port) {
                     case 'top': return { x: centerX, y: node.y - DOT_OFFSET + 1.5 };
-                    case 'right': return { x: node.x + NODE_WIDTH + DOT_OFFSET, y: centerY + 1.5 };
+                    case 'right': return { x: node.x + NODE_WIDTH + DOT_OFFSET, y: centerY };
                     case 'bottom': return { x: centerX, y: node.y + NODE_HEIGHT + DOT_OFFSET - 1.5 };
-                    case 'left': return { x: node.x - DOT_OFFSET, y: centerY + 1.5 };
+                    case 'left': return { x: node.x - DOT_OFFSET, y: centerY };
                     default: return null;
                   }
                 };
@@ -1550,14 +1579,16 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                 
                 // Path goes directly to HTML connection dot centers
                 // Arrow marker (refX=6) will point exactly at the dot center
-                let path;
-                if (isHorizontal) {
-                  const mx = sx + (tx - sx) * 0.5;
-                  path = `M ${sx} ${sy} C ${mx} ${sy}, ${mx} ${ty}, ${tx} ${ty}`;
-                } else {
-                  const my = sy + (ty - sy) * 0.5;
-                  path = `M ${sx} ${sy} C ${sx} ${my}, ${tx} ${my}, ${tx} ${ty}`;
-                }
+                // Curve leaves and enters along the port's side (right → left reads left to right)
+                const sideOf = (port: string | undefined, fromX: number, fromY: number, toX: number, toY: number) =>
+                  port || (Math.abs(toX - fromX) > Math.abs(toY - fromY) ? (toX > fromX ? 'right' : 'left') : (toY > fromY ? 'bottom' : 'top'));
+                const DIR: Record<string, [number, number]> = { right: [1, 0], left: [-1, 0], top: [0, -1], bottom: [0, 1] };
+                const sSide = sideOf(edge.sourcePort, sx, sy, tx, ty);
+                const tSide = sideOf(edge.targetPort, tx, ty, sx, sy);
+                const reach = Math.max(36, Math.min(140, Math.hypot(tx - sx, ty - sy) / 2));
+                const [sdx, sdy] = DIR[sSide];
+                const [tdx, tdy] = DIR[tSide];
+                const path = `M ${sx} ${sy} C ${sx + sdx * reach} ${sy + sdy * reach}, ${tx + tdx * reach} ${ty + tdy * reach}, ${tx} ${ty}`;
 
                 const isSelected = selectedEdge === edge.id;
                 const isHighlighted = highlightedEdge === edge.id;
@@ -1644,8 +1675,8 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                       );
                     })()}
                     
-                    {/* Edge label: only a real branch label (true/false, body/done); "A → B" only while selected */}
-                    {(edge.label || isSelected) && (
+                    {/* Edge text only while selected; branch names (true/false, body/done) sit at the node ports */}
+                    {isSelected && (
                       <text
                         x={(sx + tx) / 2}
                         y={(sy + ty) / 2 - 8}
@@ -1800,8 +1831,8 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                     }`}
                     onMouseDown={(e) => handleMouseDown(e, 'node', node.id)}
                   >
-                    <span className={`grid place-items-center w-9 h-9 rounded-[9px] ${def?.color || 'bg-gray-500'}`}>
-                      <i className={`fas ${def?.icon || 'fa-cube'} text-white text-[15px]`}></i>
+                    <span className={`grid place-items-center w-9 h-9 rounded-[9px] ${tileOf(def?.color)}`}>
+                      <i className={`fas ${def?.icon || 'fa-cube'} text-[15px]`}></i>
                     </span>
                     <span className="grid gap-px min-w-0 leading-tight">
                       <small className="text-[11px] font-semibold uppercase tracking-[0.02em] text-[var(--canvas-node-muted)] truncate">
@@ -1847,25 +1878,26 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
           </div>
         </div>
 
-        {/* Controls */}
-        <div className="absolute bottom-4 left-4 flex flex-col gap-2">
-          <div className="bg-white rounded-lg shadow-lg border p-1">
-            <button onClick={() => setScale(s => Math.min(3, s * 1.2))} className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded">
-              <i className="fas fa-plus text-gray-600 text-xs"></i>
-            </button>
-            <div className="w-8 h-8 flex items-center justify-center text-xs font-medium">{Math.round(scale * 100)}%</div>
-            <button onClick={() => setScale(s => Math.max(0.3, s * 0.8))} className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded">
-              <i className="fas fa-minus text-gray-600 text-xs"></i>
-            </button>
-          </div>
-          <button onClick={() => { setPan({ x: 0, y: 0 }); setScale(1); }} className="w-10 h-10 bg-white rounded-lg shadow-lg border flex items-center justify-center hover:bg-gray-100">
-            <i className="fas fa-compress text-gray-600 text-xs"></i>
+        {/* Controls: one bar, bottom-left (Robot Factory style) */}
+        <div className="absolute bottom-4 left-4 flex items-center h-9 bg-white shadow-[0_2px_6px_rgb(0_0_0/0.15)] text-gray-700">
+          <button onClick={() => setScale(s => Math.max(0.3, s * 0.8))} title="Zoom out" className="w-9 h-9 flex items-center justify-center hover:bg-gray-100">
+            <i className="fas fa-minus text-xs"></i>
+          </button>
+          <div className="w-12 text-center text-[12px] font-medium tabular-nums">{Math.round(scale * 100)}%</div>
+          <button onClick={() => setScale(s => Math.min(3, s * 1.2))} title="Zoom in" className="w-9 h-9 flex items-center justify-center hover:bg-gray-100">
+            <i className="fas fa-plus text-xs"></i>
+          </button>
+          <button onClick={() => { setPan({ x: 0, y: 0 }); setScale(1); }} title="Reset view" className="w-9 h-9 flex items-center justify-center hover:bg-gray-100 border-l border-gray-200">
+            <i className="fas fa-expand text-xs"></i>
+          </button>
+          <button onClick={tidyUp} title="Tidy up: arrange left to right" className="h-9 px-3 flex items-center gap-2 hover:bg-gray-100 border-l border-gray-200 text-[12px] font-medium">
+            <i className="fas fa-sitemap text-xs -rotate-90"></i> Tidy up
           </button>
         </div>
       </div>
 
       {/* Right Panel - Properties (below lg: slides over the canvas only while a node is selected) */}
-      <div className={`${selectedNodeData ? 'flex absolute inset-y-0 right-0 z-30 shadow-xl max-w-full' : 'hidden'} lg:static lg:z-auto lg:shadow-none lg:flex w-80 lg:w-72 bg-white border-l flex-col h-full min-h-0`}>
+      <div className={`${selectedNodeData ? 'flex absolute inset-y-0 right-0 z-30 shadow-xl max-w-full lg:flex' : 'hidden'} lg:static lg:z-auto lg:shadow-none w-80 bg-white border-l flex-col h-full min-h-0`}>
         <div className="p-3 border-b flex items-center">
           <h3 className="font-medium text-sm">Properties</h3>
           <button type="button" onClick={() => setSelectedNode(null)} className="lg:hidden ml-auto h-7 w-7 inline-flex items-center justify-center rounded text-gray-500 hover:bg-gray-100" title="Close">
@@ -1878,8 +1910,8 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
             {/* Node Info */}
             <div className="p-3 rounded-[10px] bg-[var(--canvas-node)] shadow-[inset_0_0_0_1px_var(--canvas-node-line)]">
               <div className="flex items-center gap-2.5">
-                <div className={`w-9 h-9 ${selectedNodeDef?.color || 'bg-gray-500'} rounded-[9px] flex items-center justify-center`}>
-                  <i className={`fas ${selectedNodeDef?.icon || 'fa-cube'} text-white text-xs`}></i>
+                <div className={`w-9 h-9 ${tileOf(selectedNodeDef?.color)} rounded-[9px] flex items-center justify-center`}>
+                  <i className={`fas ${selectedNodeDef?.icon || 'fa-cube'} text-sm`}></i>
                 </div>
                 <div>
                   <p className="text-sm font-medium">{selectedNodeDef?.label || selectedNodeData.type}</p>
