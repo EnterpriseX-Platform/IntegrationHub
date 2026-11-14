@@ -1069,14 +1069,14 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
       {showPalette && <div className="lg:hidden absolute inset-0 z-20 bg-gray-900/20" onClick={() => setShowPalette(false)} />}
       <div className={`${showPalette ? 'flex absolute inset-y-0 left-0 z-30 shadow-xl' : 'hidden'} lg:static lg:z-auto lg:shadow-none lg:flex w-56 bg-white border-r flex-col h-full min-h-0`}>
         {/* Quick Add */}
-        <div className="p-3 border-b bg-gray-50">
-          <span className="text-[12px] text-gray-500 block mb-2">Quick Add</span>
+        <div className="p-3 border-b">
+          <span className="text-[12px] font-semibold uppercase tracking-[0.04em] text-gray-500 block mb-2">Quick add</span>
           <div className="flex gap-1">
             {safeNodeTypes.slice(0, 4).map(node => (
               <button
                 key={node.type}
                 onClick={() => addNode(node.type)}
-                className={`w-8 h-8 ${node.color} rounded flex items-center justify-center hover:opacity-80`}
+                className={`w-8 h-8 ${node.color} rounded-[8px] flex items-center justify-center hover:opacity-85 transition-opacity`}
                 title={node.label}
               >
                 <i className={`fas ${node.icon} text-white text-xs`}></i>
@@ -1084,7 +1084,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
             ))}
             <button
               onClick={() => addNode(safeNodeTypes[4]?.type || 'transform')}
-              className="w-8 h-8 bg-gray-200 rounded flex items-center justify-center hover:bg-gray-300"
+              className="w-8 h-8 bg-gray-100 rounded-[8px] flex items-center justify-center hover:bg-gray-200 shadow-[inset_0_0_0_1px_var(--canvas-node-line)]"
               title="More nodes"
             >
               <i className="fas fa-plus text-gray-600 text-xs"></i>
@@ -1114,10 +1114,10 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
             {/* Trigger Nodes */}
             <button 
               onClick={() => toggleGroup('trigger')}
-              className="w-full p-2 bg-orange-50 border-b border-orange-100 flex items-center justify-between hover:bg-orange-100 transition-colors"
+              className="w-full px-3 h-9 border-b border-gray-200 flex items-center justify-between text-gray-500 hover:bg-gray-100 transition-colors"
             >
-              <h3 className="font-medium text-xs text-orange-600 flex items-center gap-1">
-                <i className="fas fa-bolt text-[12px]"></i> Triggers
+              <h3 className="font-semibold text-[12px] uppercase tracking-[0.04em] text-gray-700 flex items-center gap-2">
+                <i className="fas fa-bolt text-[12px] text-orange-500"></i> Triggers
                 <span className="text-[12px] opacity-60">({safeNodeTypes.filter(n => n.category === 'trigger').length})</span>
               </h3>
               {expandedGroups.trigger ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
@@ -1130,13 +1130,13 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                     onClick={() => addNode(node.type)}
                     draggable
                     onDragStart={(e) => handleDragStart(e, node.type)}
-                    className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded hover:bg-orange-50 text-left transition-colors group/node"
+                    className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-gray-100 text-left transition-colors group/node"
                   >
-                    <div className={`w-6 h-6 ${node.color} rounded flex items-center justify-center flex-shrink-0 group-hover/node:scale-110 transition-transform`}>
+                    <div className={`w-7 h-7 ${node.color} rounded-[7px] flex items-center justify-center flex-shrink-0`}>
                       <i className={`fas ${node.icon} text-white text-[12px]`}></i>
                     </div>
                     <div className="min-w-0">
-                      <span className="text-xs font-medium block truncate">{node.label}</span>
+                      <span className="text-[13px] font-medium text-gray-800 block truncate">{node.label}</span>
                     </div>
                   </button>
                 ))}
@@ -1146,10 +1146,10 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
             {/* Integration Nodes */}
             <button 
               onClick={() => toggleGroup('integration')}
-              className="w-full p-2 bg-indigo-50 border-b border-indigo-100 flex items-center justify-between hover:bg-indigo-100 transition-colors"
+              className="w-full px-3 h-9 border-b border-gray-200 flex items-center justify-between text-gray-500 hover:bg-gray-100 transition-colors"
             >
-              <h3 className="font-medium text-xs text-indigo-600 flex items-center gap-1">
-                <i className="fas fa-plug text-[12px]"></i> Integration
+              <h3 className="font-semibold text-[12px] uppercase tracking-[0.04em] text-gray-700 flex items-center gap-2">
+                <i className="fas fa-plug text-[12px] text-indigo-500"></i> Integration
                 <span className="text-[12px] opacity-60">({safeNodeTypes.filter(n => n.category === 'integration').length})</span>
               </h3>
               {expandedGroups.integration ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
@@ -1162,13 +1162,13 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                     onClick={() => addNode(node.type)}
                     draggable
                     onDragStart={(e) => handleDragStart(e, node.type)}
-                    className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded hover:bg-indigo-50 text-left transition-colors group/node"
+                    className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-gray-100 text-left transition-colors group/node"
                   >
-                    <div className={`w-6 h-6 ${node.color} rounded flex items-center justify-center flex-shrink-0 group-hover/node:scale-110 transition-transform`}>
+                    <div className={`w-7 h-7 ${node.color} rounded-[7px] flex items-center justify-center flex-shrink-0`}>
                       <i className={`fas ${node.icon} text-white text-[12px]`}></i>
                     </div>
                     <div className="min-w-0">
-                      <span className="text-xs font-medium block truncate">{node.label}</span>
+                      <span className="text-[13px] font-medium text-gray-800 block truncate">{node.label}</span>
                     </div>
                   </button>
                 ))}
@@ -1178,10 +1178,10 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
             {/* Action Nodes */}
             <button 
               onClick={() => toggleGroup('action')}
-              className="w-full p-2 bg-blue-50 border-b border-blue-100 flex items-center justify-between hover:bg-blue-100 transition-colors"
+              className="w-full px-3 h-9 border-b border-gray-200 flex items-center justify-between text-gray-500 hover:bg-gray-100 transition-colors"
             >
-              <h3 className="font-medium text-xs text-blue-600 flex items-center gap-1">
-                <i className="fas fa-cogs text-[12px]"></i> Actions
+              <h3 className="font-semibold text-[12px] uppercase tracking-[0.04em] text-gray-700 flex items-center gap-2">
+                <i className="fas fa-cogs text-[12px] text-blue-500"></i> Actions
                 <span className="text-[12px] opacity-60">({safeNodeTypes.filter(n => n.category === 'action').length})</span>
               </h3>
               {expandedGroups.action ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
@@ -1194,13 +1194,13 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                     onClick={() => addNode(node.type)}
                     draggable
                     onDragStart={(e) => handleDragStart(e, node.type)}
-                    className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded hover:bg-blue-50 text-left transition-colors group/node"
+                    className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-gray-100 text-left transition-colors group/node"
                   >
-                    <div className={`w-6 h-6 ${node.color} rounded flex items-center justify-center flex-shrink-0 group-hover/node:scale-110 transition-transform`}>
+                    <div className={`w-7 h-7 ${node.color} rounded-[7px] flex items-center justify-center flex-shrink-0`}>
                       <i className={`fas ${node.icon} text-white text-[12px]`}></i>
                     </div>
                     <div className="min-w-0">
-                      <span className="text-xs font-medium block truncate">{node.label}</span>
+                      <span className="text-[13px] font-medium text-gray-800 block truncate">{node.label}</span>
                     </div>
                   </button>
                 ))}
@@ -1210,10 +1210,10 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
             {/* Aggregate Nodes (Fan-out/Fan-in) */}
             <button 
               onClick={() => toggleGroup('aggregate')}
-              className="w-full p-2 bg-purple-50 border-b border-purple-100 flex items-center justify-between hover:bg-purple-100 transition-colors"
+              className="w-full px-3 h-9 border-b border-gray-200 flex items-center justify-between text-gray-500 hover:bg-gray-100 transition-colors"
             >
-              <h3 className="font-medium text-xs text-purple-600 flex items-center gap-1">
-                <i className="fas fa-project-diagram text-[12px]"></i> Aggregate
+              <h3 className="font-semibold text-[12px] uppercase tracking-[0.04em] text-gray-700 flex items-center gap-2">
+                <i className="fas fa-project-diagram text-[12px] text-purple-500"></i> Aggregate
                 <span className="text-[12px] opacity-60">({safeNodeTypes.filter(n => n.category === 'aggregate').length})</span>
               </h3>
               {expandedGroups.aggregate ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
@@ -1226,13 +1226,13 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                     onClick={() => addNode(node.type)}
                     draggable
                     onDragStart={(e) => handleDragStart(e, node.type)}
-                    className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded hover:bg-purple-50 text-left transition-colors group/node"
+                    className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-gray-100 text-left transition-colors group/node"
                   >
-                    <div className={`w-6 h-6 ${node.color} rounded flex items-center justify-center flex-shrink-0 group-hover/node:scale-110 transition-transform`}>
+                    <div className={`w-7 h-7 ${node.color} rounded-[7px] flex items-center justify-center flex-shrink-0`}>
                       <i className={`fas ${node.icon} text-white text-[12px]`}></i>
                     </div>
                     <div className="min-w-0">
-                      <span className="text-xs font-medium block truncate">{node.label}</span>
+                      <span className="text-[13px] font-medium text-gray-800 block truncate">{node.label}</span>
                     </div>
                   </button>
                 ))}
@@ -1242,10 +1242,10 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
             {/* Processing Nodes */}
             <button 
               onClick={() => toggleGroup('processing')}
-              className="w-full p-2 bg-gray-100 border-b flex items-center justify-between hover:bg-gray-200 transition-colors"
+              className="w-full px-3 h-9 border-b border-gray-200 flex items-center justify-between text-gray-500 hover:bg-gray-100 transition-colors"
             >
-              <h3 className="font-medium text-xs text-gray-600 flex items-center gap-1">
-                <i className="fas fa-code-branch text-[12px]"></i> Processing
+              <h3 className="font-semibold text-[12px] uppercase tracking-[0.04em] text-gray-700 flex items-center gap-2">
+                <i className="fas fa-code-branch text-[12px] text-gray-500"></i> Processing
                 <span className="text-[12px] opacity-60">({safeNodeTypes.filter(n => n.category === 'processing' || !n.category).length})</span>
               </h3>
               {expandedGroups.processing ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
@@ -1260,11 +1260,11 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                     onDragStart={(e) => handleDragStart(e, node.type)}
                     className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded hover:bg-gray-100 text-left transition-colors group/node"
                   >
-                    <div className={`w-6 h-6 ${node.color} rounded flex items-center justify-center flex-shrink-0 group-hover/node:scale-110 transition-transform`}>
+                    <div className={`w-7 h-7 ${node.color} rounded-[7px] flex items-center justify-center flex-shrink-0`}>
                       <i className={`fas ${node.icon} text-white text-[12px]`}></i>
                     </div>
                     <div className="min-w-0">
-                      <span className="text-xs font-medium block truncate">{node.label}</span>
+                      <span className="text-[13px] font-medium text-gray-800 block truncate">{node.label}</span>
                     </div>
                   </button>
                 ))}
@@ -1277,10 +1277,10 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
             {/* API Nodes (Input/Output) */}
             <button 
               onClick={() => toggleGroup('api')}
-              className="w-full p-2 bg-blue-50 border-b border-blue-100 flex items-center justify-between hover:bg-blue-100 transition-colors"
+              className="w-full px-3 h-9 border-b border-gray-200 flex items-center justify-between text-gray-500 hover:bg-gray-100 transition-colors"
             >
-              <h3 className="font-medium text-xs text-blue-600 flex items-center gap-1">
-                <i className="fas fa-exchange-alt text-[12px]"></i> API
+              <h3 className="font-semibold text-[12px] uppercase tracking-[0.04em] text-gray-700 flex items-center gap-2">
+                <i className="fas fa-exchange-alt text-[12px] text-blue-500"></i> API
                 <span className="text-[12px] opacity-60">({safeNodeTypes.filter(n => n.category === 'api').length})</span>
               </h3>
               {expandedGroups.api ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
@@ -1293,13 +1293,13 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                     onClick={() => addNode(node.type)}
                     draggable
                     onDragStart={(e) => handleDragStart(e, node.type)}
-                    className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded hover:bg-blue-50 text-left transition-colors group/node"
+                    className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-gray-100 text-left transition-colors group/node"
                   >
-                    <div className={`w-6 h-6 ${node.color} rounded flex items-center justify-center flex-shrink-0 group-hover/node:scale-110 transition-transform`}>
+                    <div className={`w-7 h-7 ${node.color} rounded-[7px] flex items-center justify-center flex-shrink-0`}>
                       <i className={`fas ${node.icon} text-white text-[12px]`}></i>
                     </div>
                     <div className="min-w-0">
-                      <span className="text-xs font-medium block truncate">{node.label}</span>
+                      <span className="text-[13px] font-medium text-gray-800 block truncate">{node.label}</span>
                     </div>
                   </button>
                 ))}
@@ -1309,10 +1309,10 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
             {/* Integration Nodes */}
             <button 
               onClick={() => toggleGroup('integration')}
-              className="w-full p-2 bg-indigo-50 border-b border-indigo-100 flex items-center justify-between hover:bg-indigo-100 transition-colors"
+              className="w-full px-3 h-9 border-b border-gray-200 flex items-center justify-between text-gray-500 hover:bg-gray-100 transition-colors"
             >
-              <h3 className="font-medium text-xs text-indigo-600 flex items-center gap-1">
-                <i className="fas fa-plug text-[12px]"></i> Integration
+              <h3 className="font-semibold text-[12px] uppercase tracking-[0.04em] text-gray-700 flex items-center gap-2">
+                <i className="fas fa-plug text-[12px] text-indigo-500"></i> Integration
                 <span className="text-[12px] opacity-60">({safeNodeTypes.filter(n => n.category === 'integration').length})</span>
               </h3>
               {expandedGroups.integration ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
@@ -1325,13 +1325,13 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                     onClick={() => addNode(node.type)}
                     draggable
                     onDragStart={(e) => handleDragStart(e, node.type)}
-                    className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded hover:bg-indigo-50 text-left transition-colors group/node"
+                    className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-gray-100 text-left transition-colors group/node"
                   >
-                    <div className={`w-6 h-6 ${node.color} rounded flex items-center justify-center flex-shrink-0 group-hover/node:scale-110 transition-transform`}>
+                    <div className={`w-7 h-7 ${node.color} rounded-[7px] flex items-center justify-center flex-shrink-0`}>
                       <i className={`fas ${node.icon} text-white text-[12px]`}></i>
                     </div>
                     <div className="min-w-0">
-                      <span className="text-xs font-medium block truncate">{node.label}</span>
+                      <span className="text-[13px] font-medium text-gray-800 block truncate">{node.label}</span>
                     </div>
                   </button>
                 ))}
@@ -1341,10 +1341,10 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
             {/* Processing Nodes */}
             <button 
               onClick={() => toggleGroup('processing')}
-              className="w-full p-2 bg-cyan-50 border-b border-cyan-100 flex items-center justify-between hover:bg-cyan-100 transition-colors"
+              className="w-full px-3 h-9 border-b border-gray-200 flex items-center justify-between text-gray-500 hover:bg-gray-100 transition-colors"
             >
-              <h3 className="font-medium text-xs text-cyan-600 flex items-center gap-1">
-                <i className="fas fa-code-branch text-[12px]"></i> Processing
+              <h3 className="font-semibold text-[12px] uppercase tracking-[0.04em] text-gray-700 flex items-center gap-2">
+                <i className="fas fa-code-branch text-[12px] text-cyan-500"></i> Processing
                 <span className="text-[12px] opacity-60">({safeNodeTypes.filter(n => n.category === 'processing' || !n.category).length})</span>
               </h3>
               {expandedGroups.processing ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
@@ -1357,13 +1357,13 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                     onClick={() => addNode(node.type)}
                     draggable
                     onDragStart={(e) => handleDragStart(e, node.type)}
-                    className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded hover:bg-cyan-50 text-left transition-colors group/node"
+                    className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-gray-100 text-left transition-colors group/node"
                   >
-                    <div className={`w-6 h-6 ${node.color} rounded flex items-center justify-center flex-shrink-0 group-hover/node:scale-110 transition-transform`}>
+                    <div className={`w-7 h-7 ${node.color} rounded-[7px] flex items-center justify-center flex-shrink-0`}>
                       <i className={`fas ${node.icon} text-white text-[12px]`}></i>
                     </div>
                     <div className="min-w-0">
-                      <span className="text-xs font-medium block truncate">{node.label}</span>
+                      <span className="text-[13px] font-medium text-gray-800 block truncate">{node.label}</span>
                     </div>
                   </button>
                 ))}
@@ -1644,16 +1644,18 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                       );
                     })()}
                     
-                    {/* Label showing connection */}
-                    <text
-                      x={(sx + tx) / 2}
-                      y={(sy + ty) / 2 - 8}
-                      textAnchor="middle"
-                      fill={isSelected ? '#3b82f6' : '#9ca3af'}
-                      style={{ fontSize: '9px', pointerEvents: 'none', fontWeight: isSelected ? 'bold' : 'normal' }}
-                    >
-                      {edge.label ? `[${edge.label}] ` : ''}{sourceLabel} → {targetLabel}
-                    </text>
+                    {/* Edge label: only a real branch label (true/false, body/done); "A → B" only while selected */}
+                    {(edge.label || isSelected) && (
+                      <text
+                        x={(sx + tx) / 2}
+                        y={(sy + ty) / 2 - 8}
+                        textAnchor="middle"
+                        fill={isSelected ? '#4589ff' : 'var(--canvas-node-muted)'}
+                        style={{ fontSize: '12px', fontWeight: 600, pointerEvents: 'none' }}
+                      >
+                        {isSelected ? `${edge.label ? `${edge.label} · ` : ''}${sourceLabel} → ${targetLabel}` : edge.label}
+                      </text>
+                    )}
                     
                     {/* Delete button on edge */}
                     {isSelected && (
@@ -1846,7 +1848,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
         </div>
 
         {/* Controls */}
-        <div className="absolute bottom-4 right-4 flex flex-col gap-2">
+        <div className="absolute bottom-4 left-4 flex flex-col gap-2">
           <div className="bg-white rounded-lg shadow-lg border p-1">
             <button onClick={() => setScale(s => Math.min(3, s * 1.2))} className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded">
               <i className="fas fa-plus text-gray-600 text-xs"></i>
@@ -1874,9 +1876,9 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
         {selectedNodeData ? (
           <div className="p-4 space-y-4 overflow-y-auto flex-1 min-h-0 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             {/* Node Info */}
-            <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-              <div className="flex items-center gap-2">
-                <div className={`w-8 h-8 ${selectedNodeDef?.color || 'bg-gray-500'} rounded flex items-center justify-center`}>
+            <div className="p-3 rounded-[10px] bg-[var(--canvas-node)] shadow-[inset_0_0_0_1px_var(--canvas-node-line)]">
+              <div className="flex items-center gap-2.5">
+                <div className={`w-9 h-9 ${selectedNodeDef?.color || 'bg-gray-500'} rounded-[9px] flex items-center justify-center`}>
                   <i className={`fas ${selectedNodeDef?.icon || 'fa-cube'} text-white text-xs`}></i>
                 </div>
                 <div>

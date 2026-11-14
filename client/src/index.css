@@ -265,7 +265,7 @@ main h1.text-2xl, main h1.text-xl {
 
 /* Shell + canvas tokens (light = Carbon g10, dark = RunLoop/g100) */
 :root {
-  --nav-bg: #ffffff; --nav-border: #e0e0e0; --nav-hover: #e8e8e8; --nav-active: #e0e0e0;
+  --nav-bg: #ffffff; --nav-border: #e0e0e0; --nav-hover: #e8e8e8; --nav-active: #e0e0e0;  /* IAMX sidebar */
   --nav-bar: #0f62fe; --nav-text: #525252; --nav-text-strong: #161616; --nav-icon: #6f6f6f;
   --canvas-grid: #e0e0e0; --canvas-dot: #c6c6c6;
 }
@@ -303,3 +303,22 @@ main h1.text-2xl, main h1.text-xl {
 /* Flow canvas node cards (Robot Factory style) */
 :root { --canvas-node: #ffffff; --canvas-node-text: #161616; --canvas-node-muted: #6f6f6f; --canvas-node-line: #e0e0e0; --canvas-port: #8d8d8d; }
 :root[data-theme='dark'] { --canvas-node: #262626; --canvas-node-text: #f4f4f4; --canvas-node-muted: #a8a8a8; --canvas-node-line: #393939; --canvas-port: #8d8d8d; }
+
+/* Fewer outlines (Carbon): a surface that already has its own background
+   needs no border. Inputs, selects, buttons and dividers (border-b/t/l/r) keep theirs. */
+.bg-white.border[class*="border-gray-"]:not(input):not(select):not(textarea):not(button),
+.bg-white.border[class*="border-slate-"]:not(input):not(select):not(textarea):not(button),
+.bg-white.border:not([class*="border-"]):not(input):not(select):not(textarea):not(button) {
+  border-color: transparent;
+}
+/* Dividers that remain are softer */
+.border-gray-200, .border-gray-100, .border-slate-200, .border-slate-100 { border-color: #e8e8e8; }
+:root[data-theme='dark'] .border-gray-200,
+:root[data-theme='dark'] .border-gray-100,
+:root[data-theme='dark'] .border-slate-200,
+:root[data-theme='dark'] .border-slate-100 { border-color: #2e2e2e; }
+
+/* IAMX density (Carbon productive): 13px body text, ~36px table rows */
+.text-sm { font-size: 13px; line-height: 18px; }
+main table th, main table td { padding-top: 8px; padding-bottom: 8px; }
+main table th { font-size: 12px; }

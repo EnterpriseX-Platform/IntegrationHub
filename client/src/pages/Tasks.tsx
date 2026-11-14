@@ -746,7 +746,7 @@ export default function Tasks() {
   );
 
   return (
-    <div className="flex flex-col md:flex-row h-full bg-slate-50">
+    <div className="flex flex-col xl:flex-row h-full bg-slate-50">
       <ProjectTreeSidebar
         projects={projects.filter(p => p.count && p.count > 0)}
         selected={filter.scope}

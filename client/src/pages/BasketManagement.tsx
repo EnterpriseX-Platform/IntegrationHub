@@ -349,7 +349,7 @@ export default function BasketManagement() {
   );
 
   return (
-    <div className="flex flex-col md:flex-row h-full bg-slate-50">
+    <div className="flex flex-col xl:flex-row h-full bg-slate-50">
       {copyMessage && (
         <div className="fixed bottom-6 right-6 z-50">
           <div className="flex items-center gap-2.5 rounded-lg shadow-lg ring-1 px-4 py-2.5 bg-rose-50 ring-rose-200 text-rose-800">

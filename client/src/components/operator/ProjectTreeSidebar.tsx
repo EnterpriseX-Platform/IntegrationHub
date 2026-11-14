@@ -194,8 +194,8 @@ export default function ProjectTreeSidebar({
 
   return (
     <>
-      {/* Phones: a dropdown of the same projects, grouped like the tree */}
-      <div className="md:hidden shrink-0 px-4 py-2 bg-white border-b border-slate-200/70">
+      {/* Below xl (phones, tablets, laptops with the nav open): a dropdown instead of a 288px column */}
+      <div className="xl:hidden shrink-0 px-4 py-2 bg-white border-b border-slate-200/70">
         <MobileProjectPicker
           tree={tree}
           projects={projects}
@@ -205,7 +205,7 @@ export default function ProjectTreeSidebar({
         />
       </div>
 
-      <aside className="hidden md:flex w-72 shrink-0 border-r border-slate-200/70 bg-white flex-col h-full">
+      <aside className="hidden xl:flex w-72 shrink-0 border-r border-slate-200/70 bg-white flex-col h-full">
         {panel}
       </aside>
     </>

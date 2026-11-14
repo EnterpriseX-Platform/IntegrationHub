@@ -145,7 +145,7 @@ export const Header: React.FC<HeaderProps> = ({
   const navigate = useNavigate();
   const params = useParams();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [theme, setTheme] = useState<string>(() => document.documentElement.dataset.theme || 'dark');
+  const [theme, setTheme] = useState<string>(() => document.documentElement.dataset.theme || 'light');
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark';
     document.documentElement.dataset.theme = next;
@@ -186,7 +186,7 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="h-12 shrink-0 bg-black text-[#f4f4f4] border-b border-[#262626] flex items-center justify-between gap-2 relative z-30">
+    <header className="h-12 shrink-0 bg-[#161616] text-[#f4f4f4] border-b border-[#393939] flex items-center justify-between gap-2 relative z-30">
       {/* Left: menu · product · tenant · page title (Carbon UI shell, RunLoop style) */}
       <div className="flex items-center min-w-0 flex-1 h-full">
         <button
@@ -235,7 +235,7 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={() => setIsProfileOpen(!isProfileOpen)}
             className="flex items-center gap-2 h-12 px-2 md:px-3 hover:bg-[#262626] transition-colors"
           >
-            <div className="w-7 h-7 rounded-full bg-[#4589ff] flex items-center justify-center text-white text-xs font-semibold">
+            <div className="w-[26px] h-[26px] rounded-full bg-[#393939] flex items-center justify-center text-white text-xs font-semibold">
               {userInitial}
             </div>
             <div className="hidden text-left max-w-[180px]">

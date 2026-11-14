@@ -60,11 +60,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false, isMobile 
             <React.Fragment key={item.path}>
             {item.section && (isCollapsed
               ? <div className="mx-3 my-2 border-t border-[var(--nav-border)]" />
-              : <div className="px-4 pt-4 pb-1 text-[13px] text-[var(--nav-icon)]">{item.section}</div>)}
+              : <div className="px-4 pt-4 pb-1 text-[11px] uppercase tracking-wider font-medium text-[var(--nav-icon)]">{item.section}</div>)}
             <NavLink
               to={item.path}
               title={isCollapsed ? item.label : undefined}
-              className={`relative flex items-center h-10 text-sm border-l-[3px] transition-colors ${
+              className={`relative flex items-center h-9 text-[13px] border-l-[3px] transition-colors ${
                 isCollapsed ? 'justify-center' : 'gap-3 px-4'
               } ${
                 isActive

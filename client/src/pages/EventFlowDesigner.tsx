@@ -264,7 +264,7 @@ export const EventFlowDesigner = () => {
               </div>
               <div className="min-w-0">
                 <h1 className="font-semibold text-gray-900 truncate" title={flowName}>{flowName || 'Untitled Triggers'}</h1>
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-2 whitespace-nowrap overflow-hidden">
                   <span className="text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full">Triggers</span>
                   <span className="hidden sm:inline text-xs text-gray-500">{nodes.length} nodes</span>
                   {flowStatus === 'Active' && (
@@ -275,7 +275,7 @@ export const EventFlowDesigner = () => {
                   {linkedSchedulers.length > 0 && (
                     <button
                       onClick={() => navigate('/schedulers')}
-                      className="text-xs px-2 py-0.5 rounded-full flex items-center gap-1.5 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors"
+                      className="text-xs px-2 py-0.5 rounded-full flex items-center gap-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
                       title={linkedSchedulers.map(s => `${s.name || s.schedule} ${s.enabled ? '(Active)' : '(Paused)'}`).join('\n')}
                     >
                       <i className="fas fa-clock text-[12px]"></i>
