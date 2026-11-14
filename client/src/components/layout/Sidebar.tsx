@@ -49,7 +49,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false, isMobile 
 
   return (
     <aside
-      className={`bg-[var(--nav-bg)] border-r border-[var(--nav-border)] flex flex-col shrink-0 ${isMobile ? 'fixed left-0 top-12 bottom-0' : 'relative'} z-40 overflow-hidden ${isMobile ? 'shadow-xl' : ''} transition-all duration-300 ${widthClass} ${translateClass}`}
+      className={`bg-[var(--nav-bg)] border-r border-[var(--nav-border)] flex flex-col shrink-0 ${isMobile ? 'fixed left-0 top-12 bottom-0 z-40' : 'relative z-20'} overflow-hidden ${isMobile ? 'shadow-xl' : ''} transition-all duration-300 ${widthClass} ${translateClass}`}
     >
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-2">
