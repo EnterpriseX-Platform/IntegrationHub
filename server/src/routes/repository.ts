@@ -1,3 +1,4 @@
+import { tenantUserWhere } from '../lib/tenants';
 // Data Repository — Backend Routes
 // Data stored physically in PostgreSQL schema `repo_data` as dynamic tables rt_<tableId>
 
@@ -1204,7 +1205,7 @@ router.get('/tables/:id/members', async (req: Request, res: Response) => {
       orderBy: { createdAt: 'asc' },
     });
     const [users, groups] = await Promise.all([
-      prisma.user.findMany({ where: { role: { not: 'admin' } }, select: { id: true, email: true, name: true, status: true }, orderBy: { name: 'asc' } }),
+      prisma.user.findMany({ where: { role: { not: 'admin' }, ...tenantUserWhere() }, select: { id: true, email: true, name: true, status: true }, orderBy: { name: 'asc' } }),
       prisma.userGroup.findMany({ select: { id: true, name: true, _count: { select: { members: true } } }, orderBy: { name: 'asc' } }),
     ]);
     res.json({ success: true, data: { members, users, groups } });

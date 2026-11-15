@@ -5,6 +5,7 @@ import { guardProjects, guardProject, basketProjects, projectScope, visibleProje
 import fs from 'fs';
 import path from 'path';
 import archiver from 'archiver';
+import { uniqueZipName } from '../services/sessionArchive';
 import multer from 'multer';
 import { base64Upload } from '../middleware/base64Upload';
 import { requireSession } from '../middleware/requireSession';
@@ -582,34 +583,26 @@ router.get('/:id/download-all', async (req: Request, res: Response) => {
       return;
     }
 
-    // Set headers for ZIP download
+    const present = files.filter(f => fs.existsSync(f.path));
+    if (present.length === 0) {
+      res.status(400).json({ success: false, error: 'No files found on disk' });
+      return;
+    }
+
     const zipName = `${basket.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}-files.zip`;
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader('Content-Disposition', `attachment; filename="${zipName}"`);
 
-    // Create ZIP archive
     const archive = archiver('zip', { zlib: { level: 6 } });
     archive.on('error', (err) => {
       console.error('Archive error:', err);
-      res.status(500).json({ success: false, error: 'Failed to create archive' });
+      if (!res.headersSent) res.status(500).json({ success: false, error: 'Failed to create archive' });
+      else res.destroy();
     });
-
     archive.pipe(res);
 
-    // Add files to archive
-    let addedCount = 0;
-    for (const file of files) {
-      if (fs.existsSync(file.path)) {
-        archive.file(file.path, { name: file.originalName });
-        addedCount++;
-      }
-    }
-
-    if (addedCount === 0) {
-      archive.abort();
-      res.status(400).json({ success: false, error: 'No files found on disk' });
-      return;
-    }
+    const used = new Set<string>();
+    for (const file of present) archive.file(file.path, { name: uniqueZipName(file.originalName, used) });
 
     await archive.finalize();
 
@@ -618,9 +611,9 @@ router.get('/:id/download-all', async (req: Request, res: Response) => {
       data: {
         basketId: id,
         type: 'bulk_download',
-        message: `Downloaded all files as ZIP (${addedCount} files)`,
-        fileCount: addedCount,
-        metadata: JSON.stringify({ zipName, filesCount: addedCount })
+        message: `Downloaded all files as ZIP (${present.length} files)`,
+        fileCount: present.length,
+        metadata: JSON.stringify({ zipName, filesCount: present.length })
       }
     });
   } catch (error) {
@@ -947,7 +940,9 @@ const handleBasketFileUpload = async (req: Request, res: Response) => {
         filePath = path.join(basket.path, 'sessions', session.batchName, `${fileId}_${filename}`);
         fs.mkdirSync(path.dirname(filePath), { recursive: true });
       } else {
-        filePath = path.join(basket.path, 'incoming', `${fileId}_${filename}`);
+        res.status(404).json({ success: false, error: 'Session not found in this basket' });
+        cleanupTemp();
+        return;
       }
     } else {
       filePath = path.join(basket.path, 'incoming', `${fileId}_${filename}`);
@@ -1952,6 +1947,20 @@ router.post('/:id/shares', async (req: Request, res: Response) => {
 
     if (basket.type !== 'shares') {
       res.status(400).json({ success: false, error: 'Sharing is only available for Shares Baskets' });
+      return;
+    }
+
+    if (!roleAllows(await projectRole(req, basket.projectId), 'editor')) {
+      res.status(403).json({ success: false, error: 'You do not have access to this basket' });
+      return;
+    }
+    if (!['read', 'write'].includes(permission)) {
+      res.status(400).json({ success: false, error: 'Permission must be "read" or "write"' });
+      return;
+    }
+    const target = await prisma.project.findUnique({ where: { id: projectId }, select: { id: true } });
+    if (!target) {
+      res.status(404).json({ success: false, error: 'Project not found' });
       return;
     }
 

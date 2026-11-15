@@ -4,6 +4,20 @@ import archiver from 'archiver';
 import { prisma } from '../lib/prisma';
 
 /**
+ * Give each entry a distinct name inside a zip: a second "a.csv" becomes
+ * "a (2).csv", so extracting the archive gives back every file.
+ */
+export function uniqueZipName(name: string, used: Set<string>): string {
+  const base = (name || 'file').replace(/[\\/]/g, '_');
+  let candidate = base;
+  const ext = path.extname(base);
+  const stem = base.slice(0, base.length - ext.length);
+  for (let n = 2; used.has(candidate.toLowerCase()); n++) candidate = `${stem} (${n})${ext}`;
+  used.add(candidate.toLowerCase());
+  return candidate;
+}
+
+/**
  * Zip every file of a session into <basket>/archive/<batchName>.zip and record
  * the archive on the session. Does not change the session status.
  */
@@ -31,9 +45,10 @@ export async function archiveSessionFiles(basketId: string, sessionId: string) {
     archive.on('error', reject);
     archive.pipe(output);
 
+    const used = new Set<string>();
     for (const file of session.basketFiles) {
       if (fs.existsSync(file.path)) {
-        archive.file(file.path, { name: file.originalName });
+        archive.file(file.path, { name: uniqueZipName(file.originalName, used) });
       }
     }
 

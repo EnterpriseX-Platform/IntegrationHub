@@ -321,6 +321,7 @@ export class ExecutionEngine extends EventEmitter {
         const joinNodeId = this.findJoinNode(branchTargets, adjacencyList, flow);
 
         // Execute all branches in parallel with isolated contexts
+        const branchOutcomes: any[] = new Array(branchTargets.length);
         const branchPromises = branchTargets.map(async (branchStartId, idx) => {
           const branchContext: ExecutionContext = {
             flow: context.flow,
@@ -333,13 +334,20 @@ export class ExecutionEngine extends EventEmitter {
 
           this.emit('node:log', node.id, `Branch ${idx + 1}: starting at ${branchStartId}`);
 
+          const started = Date.now();
           try {
             // Execute chain until we hit the join node or a dead end
             await this.executeChainUntil(branchStartId, branchContext, adjacencyList, flow, joinNodeId);
+            // Node outputs of the branch stay reachable as {{nodeId}} after the join
+            for (const [k, v] of branchContext.variables) {
+              if (!context.variables.has(k) && !k.startsWith('__aggregate_')) context.variables.set(k, v);
+            }
+            branchOutcomes[idx] = { branchId: branchStartId, success: true, data: branchContext.input, duration: Date.now() - started };
             return { branch: idx, success: true };
           } catch (err: any) {
             console.error(`[AggregateSplit] Branch ${idx + 1} error:`, err.message);
             this.emit('node:log', node.id, `Branch ${idx + 1} error: ${err.message}`);
+            branchOutcomes[idx] = { branchId: branchStartId, success: false, error: err.message, duration: Date.now() - started };
             return { branch: idx, success: false, error: err.message };
           }
         });
@@ -347,6 +355,10 @@ export class ExecutionEngine extends EventEmitter {
         const branchResults = await Promise.allSettled(branchPromises);
         const summary = branchResults.map(r => r.status === 'fulfilled' ? r.value : { success: false, error: 'rejected' });
         context.variables.set(`__aggregate_branches_summary`, summary);
+        // What aggregate-join reads: one result per branch, in branch order
+        context.variables.set(`__aggregate_${node.id}_results`, branchOutcomes.filter(Boolean));
+        const info = context.variables.get(`__aggregate_${node.id}_branches`);
+        if (info) context.variables.set(`__aggregate_${node.id}_branches`, { ...info, totalBranches: branchTargets.length });
 
         this.emit('node:log', node.id, `Fan-out completed: ${summary.filter(s => s.success).length}/${branchTargets.length} succeeded`);
 

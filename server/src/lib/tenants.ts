@@ -1,3 +1,4 @@
+import { currentTenant } from './tenantContext';
 import { prisma } from './prisma';
 import { DEFAULT_TENANT_SLUG } from '../services/tenantBootstrap';
 
@@ -51,4 +52,15 @@ export async function resolveTenant(userId: string, role: string | null | undefi
   const anyMembership = await prisma.tenantMember.count({ where: { userId } });
   if (anyMembership > 0) return null;
   return { tenantId: defaultId, role: 'member', isDefault: true };
+}
+
+/**
+ * Prisma `where` fragment limiting users to the current tenant. The default
+ * tenant also owns users that have no membership yet (pre-tenancy accounts).
+ */
+export function tenantUserWhere(): Record<string, any> {
+  const ctx = currentTenant();
+  if (!ctx) return {};
+  const mine = { tenantMemberships: { some: { tenantId: ctx.tenantId } } };
+  return ctx.isDefault ? { OR: [mine, { tenantMemberships: { none: {} } }] } : mine;
 }

@@ -641,7 +641,8 @@ const DeployPanel = ({ flowId, projectId, flowName: _flowName, nodes, onStatusCh
         
         if (flowConfig.deployment) {
           setConfig({
-            enabled: flowConfig.deployment.enabled ?? false,
+            // The flow status is what the scheduler and header use
+            enabled: flow.status === 'Active',
             deployedAt: flowConfig.deployment.deployedAt,
             triggerType: flowConfig.deployment.triggerType || 'manual',
             schedule: flowConfig.deployment.schedule,
@@ -655,6 +656,7 @@ const DeployPanel = ({ flowId, projectId, flowName: _flowName, nodes, onStatusCh
           
           setConfig(prev => ({
             ...prev,
+            enabled: flow.status === 'Active',
             triggerType: detectedType,
           }));
         }

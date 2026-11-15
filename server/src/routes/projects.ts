@@ -1,3 +1,4 @@
+import { tenantUserWhere } from '../lib/tenants';
 import { Router, Request, Response } from 'express';
 import { prisma } from '../lib/prisma';
 import { ApiResponseWrapper, Flow } from '../types';
@@ -660,7 +661,7 @@ router.get('/:id/members/candidates', async (req: Request, res: Response) => {
     }
     const [users, groups] = await Promise.all([
       prisma.user.findMany({
-        where: { role: { not: 'admin' }, projectMemberships: { none: { projectId: req.params.id } } },
+        where: { role: { not: 'admin' }, projectMemberships: { none: { projectId: req.params.id } }, ...tenantUserWhere() },
         select: { id: true, email: true, name: true, status: true },
         orderBy: { name: 'asc' },
       }),
