@@ -6,8 +6,9 @@ import { Button } from '../components/ui/Button';
 import {
   Plus, FolderOpen, Loader2, AlertCircle, RefreshCw,
   Pencil, Trash2, Layers, Plug, ChevronDown, ChevronRight,
-  CheckCircle2, Search, X, Building2, GripVertical
+  CheckCircle2, Building2, GripVertical
 } from 'lucide-react';
+import { Search as CdsSearch } from '@carbon/react';
 
 import { API_URL, apiFetch } from '../config/api';
 
@@ -1462,28 +1463,21 @@ const Projects = () => {
       <div className="p-4 sm:p-6">
         {/* Search Bar */}
         <div className="mb-4 sm:mb-6 flex items-center gap-4">
-          <div className="relative max-w-md flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search projects..."
-              className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-            />
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-          
+          <CdsSearch
+            className="max-w-md flex-1"
+            size="md"
+            labelText="Search projects"
+            value={searchTerm}
+            onChange={(e: any) => setSearchTerm(e.target.value)}
+            onClear={() => setSearchTerm('')}
+            placeholder="Search projects..."
+          />
+
           {/* Reset Order Button - only show when custom order exists */}
           {(groupOrder.length > 0 || Object.keys(agencyOrders).length > 0) && (
-            <button
+            <Button
+              variant="ghost"
+              leftIcon={<RefreshCw />}
               onClick={async () => {
                 // Reset all positions to 0 in database
                 try {
@@ -1521,12 +1515,10 @@ const Projects = () => {
                   console.error('Failed to reset positions:', err);
                 }
               }}
-              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
               title="Reset custom group and agency order"
             >
-              <RefreshCw className="h-4 w-4" />
               Reset Order
-            </button>
+            </Button>
           )}
         </div>
 

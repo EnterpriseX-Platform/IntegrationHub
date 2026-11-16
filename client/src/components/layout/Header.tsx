@@ -1,14 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, Link, useParams, useNavigate } from 'react-router-dom';
-import { 
-  Bell, Sun, Moon, Menu, 
-  User, 
-  Settings, 
-  LogOut,
-  HelpCircle,
-  ChevronDown,
-  Shield
-} from 'lucide-react';
+import {
+  Notification as Bell, Sun, Moon, User, Settings, Logout as LogOut, Help as HelpCircle, Security as Shield,
+} from '@carbon/icons-react';
+import {
+  Header as CdsHeader, HeaderMenuButton, HeaderName, HeaderGlobalBar, HeaderGlobalAction,
+  HeaderPanel, SkipToContent, Switcher, SwitcherItem, SwitcherDivider, Tag,
+} from '@carbon/react';
 
 import { useCurrentUser } from '../../lib/currentUser';
 import { TenantSwitcher } from '../tenant/TenantSwitcher';
@@ -149,6 +147,8 @@ export const Header: React.FC<HeaderProps> = ({
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark';
     document.documentElement.dataset.theme = next;
+    document.documentElement.classList.toggle('cds--g100', next === 'dark');
+    document.documentElement.classList.toggle('cds--g10', next !== 'dark');
     try { localStorage.setItem('theme', next); } catch { /* ignore */ }
     setTheme(next);
   };
@@ -171,7 +171,8 @@ export const Header: React.FC<HeaderProps> = ({
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)
+        && !(event.target as HTMLElement).closest?.('.cds--header__action')) {
         setIsProfileOpen(false);
       }
     };
@@ -186,137 +187,75 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="h-12 shrink-0 bg-[#161616] text-[#f4f4f4] border-b border-[#393939] flex items-center justify-between gap-2 relative z-30">
-      {/* Left: menu · product · tenant · page title (Carbon UI shell, RunLoop style) */}
-      <div className="flex items-center min-w-0 flex-1 h-full">
-        <button
-          onClick={onToggleSidebar}
-          title={isSidebarCollapsed ? 'Expand menu' : 'Collapse menu'}
-          className="shrink-0 w-12 h-12 flex items-center justify-center text-[#f4f4f4] hover:bg-[#262626] transition-colors"
-        >
-          <Menu className="w-5 h-5" />
-        </button>
-        <Link to="/dashboard" className="shrink-0 flex items-center gap-2 pl-1 pr-4 h-full hover:bg-[#262626]">
-          <DehLogo size={22} className="text-[#f4f4f4]" />
-          <span className="text-[14px] font-semibold tracking-tight hidden sm:inline">{APP_NAME}</span>
-        </Link>
-        <span className="w-px h-6 bg-[#393939] hidden sm:block" />
-        <TenantSwitcher />
-        <span className="w-px h-6 bg-[#393939] hidden sm:block" />
-        <span className="hidden sm:block px-4 text-[14px] font-semibold text-white truncate">
-          {breadcrumbs.length ? breadcrumbs[breadcrumbs.length - 1].label : 'Dashboard'}
-        </span>
-      </div>
+    <CdsHeader aria-label={APP_NAME} className="app-header cds--g100">
+      <SkipToContent />
+      <HeaderMenuButton
+        aria-label={isSidebarCollapsed ? 'Open menu' : 'Close menu'}
+        onClick={onToggleSidebar}
+        isActive={!isSidebarCollapsed}
+        isCollapsible
+        className="app-header__menu"
+      />
+      <HeaderName as={Link as any} to="/dashboard" prefix="">
+        <DehLogo size={20} className="mr-2" />
+        <span className="hidden sm:inline">{APP_NAME}</span>
+      </HeaderName>
+      <div className="app-header__tenant"><TenantSwitcher /></div>
+      <span className="app-header__title hidden sm:block truncate">
+        {breadcrumbs.length ? breadcrumbs[breadcrumbs.length - 1].label : 'Dashboard'}
+      </span>
 
-      {/* Right side actions */}
-      <div className="flex items-center shrink-0">
-        {/* Carbon theme toggle (g100 dark / g10 light) */}
-        <button
-          onClick={toggleTheme}
-          title={theme === 'dark' ? 'Light theme' : 'Dark theme'}
-          className="w-12 h-12 flex items-center justify-center text-[#f4f4f4] hover:bg-[#262626] transition-colors"
-        >
-          {theme === 'dark' ? <Sun className="w-[18px] h-[18px]" /> : <Moon className="w-[18px] h-[18px]" />}
-        </button>
-
-        {/* Notification Bell */}
-        <button className="relative w-12 h-12 flex items-center justify-center text-[#f4f4f4] hover:bg-[#262626] transition-colors">
-          <Bell className="w-[18px] h-[18px]" />
+      <HeaderGlobalBar>
+        <HeaderGlobalAction aria-label={theme === 'dark' ? 'Light theme' : 'Dark theme'} onClick={toggleTheme} tooltipAlignment="end">
+          {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+        </HeaderGlobalAction>
+        <HeaderGlobalAction aria-label="Notifications" tooltipAlignment="end" className="relative">
+          <Bell size={20} />
           {notificationCount > 0 && (
-            <span className="absolute top-1 right-1 min-w-4 h-4 px-1 bg-red-500 text-white text-[12px] ring-2 ring-black rounded-full flex items-center justify-center font-medium">
+            <span className="absolute top-2 right-2 min-w-4 h-4 px-1 bg-red-600 text-white text-[11px] rounded-full flex items-center justify-center">
               {notificationCount > 9 ? '9+' : notificationCount}
             </span>
           )}
-        </button>
+        </HeaderGlobalAction>
+        <HeaderGlobalAction
+          aria-label={userName}
+          isActive={isProfileOpen}
+          onClick={() => setIsProfileOpen(v => !v)}
+          tooltipAlignment="end"
+        >
+          <span className="w-[26px] h-[26px] rounded-full bg-[#393939] flex items-center justify-center text-white text-xs font-semibold">{userInitial}</span>
+        </HeaderGlobalAction>
+      </HeaderGlobalBar>
 
-        {/* User Profile Dropdown */}
-        <div className="relative" ref={dropdownRef}>
-          <button
-            onClick={() => setIsProfileOpen(!isProfileOpen)}
-            className="flex items-center gap-2 h-12 px-2 md:px-3 hover:bg-[#262626] transition-colors"
-          >
-            <div className="w-[26px] h-[26px] rounded-full bg-[#393939] flex items-center justify-center text-white text-xs font-semibold">
-              {userInitial}
-            </div>
-            <div className="hidden text-left max-w-[180px]">
-              <p className="text-[13px] font-medium text-[#f4f4f4] leading-tight truncate">{userName}</p>
-              <p className="text-[12px] text-[#a8a8a8] leading-tight truncate">{userEmail}</p>
-            </div>
-            <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform hidden ${isProfileOpen ? 'rotate-180' : ''}`} />
-          </button>
-
-          {/* Dropdown Menu */}
-          {isProfileOpen && (
-            <div className="absolute right-0 top-full mt-0 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-              {/* User Info Header */}
-              <div className="px-4 py-3 border-b border-gray-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-medium">
-                    {userInitial}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{userName}</p>
-                    <p className="text-xs text-gray-500 truncate">{userEmail}</p>
-                    {isAdmin && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 mt-1">
-                        <Shield className="w-3 h-3 mr-1" />
-                        Admin
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-              
-              {/* Menu Items */}
-              <button
-                onClick={() => {
-                  setIsProfileOpen(false);
-                  navigate('/profile');
-                }}
-                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                <User className="w-4 h-4 text-gray-400" />
-                Profile
-              </button>
-              
-              {/* Settings - Admin only */}
-              {isAdmin && (
-                <button
-                  onClick={() => {
-                    setIsProfileOpen(false);
-                    navigate('/settings');
-                  }}
-                  className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  <Settings className="w-4 h-4 text-gray-400" />
-                  Settings
-                </button>
-              )}
-              
-              <button
-                onClick={() => {
-                  setIsProfileOpen(false);
-                }}
-                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                <HelpCircle className="w-4 h-4 text-gray-400" />
-                Help & Support
-              </button>
-              
-              <div className="border-t border-gray-100 mt-1 pt-1">
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                >
-                  <LogOut className="w-4 h-4" />
-                  Sign out
-                </button>
-              </div>
-            </div>
-          )}
+      <HeaderPanel expanded={isProfileOpen} aria-label="Account" className="app-header__panel cds--g100">
+        <div ref={dropdownRef} className="flex flex-col h-full">
+          <div className="px-4 py-4 border-b border-[#393939]">
+            <p className="text-sm font-semibold text-[#f4f4f4] truncate">{userName}</p>
+            <p className="text-xs text-[#c6c6c6] truncate">{userEmail}</p>
+            {isAdmin && (
+              <Tag type="purple" size="sm" className="mt-2" renderIcon={Shield}>Admin</Tag>
+            )}
+          </div>
+          <Switcher aria-label="Account menu">
+            <SwitcherItem aria-label="Profile" onClick={() => { setIsProfileOpen(false); navigate('/profile'); }}>
+              <span className="inline-flex items-center gap-3"><User size={16} /> Profile</span>
+            </SwitcherItem>
+            {isAdmin && (
+              <SwitcherItem aria-label="Settings" onClick={() => { setIsProfileOpen(false); navigate('/settings'); }}>
+                <span className="inline-flex items-center gap-3"><Settings size={16} /> Settings</span>
+              </SwitcherItem>
+            )}
+            <SwitcherItem aria-label="Help & Support" onClick={() => setIsProfileOpen(false)}>
+              <span className="inline-flex items-center gap-3"><HelpCircle size={16} /> Help & Support</span>
+            </SwitcherItem>
+            <SwitcherDivider />
+            <SwitcherItem aria-label="Sign out" onClick={handleLogout}>
+              <span className="inline-flex items-center gap-3"><LogOut size={16} /> Sign out</span>
+            </SwitcherItem>
+          </Switcher>
         </div>
-      </div>
-    </header>
+      </HeaderPanel>
+    </CdsHeader>
   );
 };
 

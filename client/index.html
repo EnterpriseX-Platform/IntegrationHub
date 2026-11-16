@@ -11,8 +11,13 @@
     <title>IntegrationX</title>
     <script>
       // Carbon theme: light (g10) by default like IAMX, remembered per browser
-      try { document.documentElement.dataset.theme = localStorage.getItem('theme') || 'light'; }
-      catch (e) { document.documentElement.dataset.theme = 'light'; }
+      (function () {
+        var t = 'light';
+        try { t = localStorage.getItem('theme') || 'light'; } catch (e) {}
+        document.documentElement.dataset.theme = t;
+        // Carbon theme class: g10 (light) / g100 (dark)
+        document.documentElement.classList.add(t === 'dark' ? 'cds--g100' : 'cds--g10');
+      })();
     </script>
   </head>
   <body>

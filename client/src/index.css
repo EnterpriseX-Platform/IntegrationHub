@@ -328,3 +328,35 @@ main table th { font-size: 12px; }
   main h1.text-2xl, main h1.text-xl { font-size: 1.625rem; line-height: 2rem; }
 }
 main button.bg-blue-600, main a.bg-blue-600 { white-space: nowrap; }
+
+
+/* ── Carbon UI Shell inside the app layout ───────────────────────────────── */
+/* Carbon's header and side nav are position:fixed by default; the app lays
+   them out in the page flow instead (header on top, nav beside the content). */
+.app-header.cds--header { position: relative; inset: auto; flex-shrink: 0; z-index: 30; }
+.app-header .cds--header__menu-toggle { display: flex; }
+.app-header .cds--header__name { padding-left: 0.5rem; padding-right: 1rem; }
+.app-header__tenant { display: flex; align-items: center; height: 100%; border-left: 1px solid #393939; }
+.app-header__title { padding: 0 1rem; font-size: 14px; font-weight: 600; color: #f4f4f4; border-left: 1px solid #393939; line-height: 3rem; max-width: 40vw; }
+.app-header__panel.cds--header-panel { top: 3rem; position: fixed; }
+
+.app-sidenav.cds--side-nav { position: relative; inset: auto; height: auto; flex-shrink: 0; z-index: 20; }
+.app-sidenav.cds--side-nav--expanded { inline-size: 16rem; }
+.app-sidenav.app-sidenav--rail { inline-size: 3rem; }
+.app-sidenav.app-sidenav--rail .cds--side-nav__link-text { display: none; }
+.app-sidenav--mobile.cds--side-nav { position: fixed; top: 3rem; bottom: 0; left: 0; z-index: 40; }
+.app-sidenav--mobile.cds--side-nav:not(.cds--side-nav--expanded) { inline-size: 0; }
+.app-sidenav__section { padding: 1rem 1rem 0.25rem; font-size: 12px; letter-spacing: 0.32px; color: var(--cds-text-secondary, #525252); }
+
+/* Carbon buttons keep the app's leading/trailing icon slots */
+.app-btn.cds--btn { gap: 0.5rem; align-items: center; padding-inline-end: 1rem; }
+.app-btn--full.cds--btn { inline-size: 100%; max-inline-size: none; justify-content: center; }
+.app-btn__icon { display: inline-flex; }
+.app-btn__icon svg { width: 16px; height: 16px; }
+.app-btn__loading { min-block-size: auto; }
+
+/* Modal body: callers render their own forms and footer buttons */
+.app-modal__body.cds--modal-content { padding-inline-end: 1rem; margin-block-end: 1rem; }
+
+/* lucide icons are stroke-only; Carbon fills every svg inside buttons */
+.cds--btn svg.lucide, .cds--btn .lucide, .cds--header svg.lucide, .cds--side-nav svg.lucide { fill: none; }

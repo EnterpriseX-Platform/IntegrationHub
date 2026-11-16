@@ -1,28 +1,22 @@
 import React from 'react';
-import { Loader2 } from 'lucide-react';
+import { Button as CdsButton, InlineLoading } from '@carbon/react';
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
+/**
+ * App button, backed by Carbon's <Button>. Keeps the app's props so existing
+ * call sites do not change: variant/size/isLoading/leftIcon/rightIcon/fullWidth.
+ */
+interface ButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'type'> {
+  variant?: 'primary' | 'secondary' | 'tertiary' | 'danger' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
   isLoading?: boolean;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
   fullWidth?: boolean;
+  type?: 'button' | 'submit' | 'reset';
 }
 
-const variantClasses = {
-  primary: 'bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 focus-visible:ring-blue-500',
-  secondary: 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 active:bg-gray-100 focus-visible:ring-gray-400',
-  danger: 'bg-red-600 text-white hover:bg-red-700 active:bg-red-800 focus-visible:ring-red-500',
-  ghost: 'bg-transparent text-gray-600 hover:bg-gray-100 hover:text-gray-900 active:bg-gray-200 focus-visible:ring-gray-400',
-};
-
-const sizeClasses = {
-  // The root font size is 14 px, so text-sm would be 12.25 px; set label sizes in px.
-  sm: 'h-8 px-3 text-[13px] [&_svg]:w-3.5 [&_svg]:h-3.5',
-  md: 'h-9 px-3.5 text-[14px] [&_svg]:w-4 [&_svg]:h-4',
-  lg: 'h-10 px-4 text-[15px] [&_svg]:w-4 [&_svg]:h-4',
-};
+// Carbon names: sm 32px, md 40px, lg 48px. The app's "md" was 36px, closest is md.
+const SIZE: Record<NonNullable<ButtonProps['size']>, 'sm' | 'md' | 'lg'> = { sm: 'sm', md: 'md', lg: 'lg' };
 
 export const Button: React.FC<ButtonProps> = ({
   children,
@@ -34,30 +28,28 @@ export const Button: React.FC<ButtonProps> = ({
   fullWidth = false,
   className = '',
   disabled,
+  type = 'button',
   ...props
 }) => {
+  const kind = variant === 'secondary' ? 'tertiary' : variant;
   return (
-    <button
-      className={`
-        inline-flex items-center justify-center gap-1.5 whitespace-nowrap
-        font-medium leading-none rounded-lg
-        transition-colors duration-150
-        focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
-        disabled:opacity-50 disabled:cursor-not-allowed
-        ${variantClasses[variant]}
-        ${sizeClasses[size]}
-        ${fullWidth ? 'w-full' : ''}
-        ${className}
-      `}
+    <CdsButton
+      kind={kind as any}
+      size={SIZE[size]}
+      type={type}
       disabled={disabled || isLoading}
-      {...props}
+      className={`app-btn ${fullWidth ? 'app-btn--full' : ''} ${className}`}
+      {...(props as any)}
     >
-      {isLoading && (
-        <Loader2 className="animate-spin" />
+      {isLoading ? (
+        <InlineLoading className="app-btn__loading" description={typeof children === 'string' ? children : undefined} />
+      ) : (
+        <>
+          {leftIcon && <span className="app-btn__icon">{leftIcon}</span>}
+          {children}
+          {rightIcon && <span className="app-btn__icon">{rightIcon}</span>}
+        </>
       )}
-      {!isLoading && leftIcon}
-      {children}
-      {!isLoading && rightIcon}
-    </button>
+    </CdsButton>
   );
 };

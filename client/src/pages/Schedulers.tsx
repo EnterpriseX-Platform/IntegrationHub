@@ -2,10 +2,12 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Play, Pause, RotateCcw, Search, Plus, Pencil, Trash2, BarChart3, Square,
+  Play, Pause, RotateCcw, Plus, Pencil, Trash2, BarChart3, Square,
   Loader2, CheckCircle2, XCircle, Zap, Calendar, GripVertical,
 } from 'lucide-react';
 import { CronExpressionParser } from 'cron-parser';
+import { Search, IconButton, ContentSwitcher, Switch, Loading } from '@carbon/react';
+import { Button } from '../components/ui/Button';
 import { API_URL } from '../config/api';
 import SchedulerFormModal, { SchedulerFormValues } from '../components/SchedulerFormModal';
 import ProjectTreeSidebar, { SidebarFilter, SidebarProject } from '../components/operator/ProjectTreeSidebar';
@@ -424,8 +426,8 @@ export default function Schedulers() {
   // ─── Render ────────────────────────────────────────────────────────────────
 
   if (loading) return (
-    <div className="flex h-full items-center justify-center text-slate-500">
-      <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading…
+    <div className="flex h-full items-center justify-center">
+      <Loading withOverlay={false} description="Loading schedulers" />
     </div>
   );
 
@@ -453,54 +455,33 @@ export default function Schedulers() {
                 </div>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
-                <div className="relative w-full sm:w-72">
-                  <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-                  <input
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                    placeholder="Search by name, project, schedule…"
-                    className="w-full rounded-md border border-slate-200 bg-white pl-8 pr-3 py-1.5 text-sm placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-100 transition-colors"
-                  />
-                </div>
-                <button
-                  onClick={() => fetchData()}
-                  className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors"
-                  title="Refresh"
-                >
+                <Search
+                  size="md"
+                  className="w-full sm:!w-72"
+                  labelText="Search schedulers"
+                  value={search}
+                  onChange={(e: any) => setSearch(e.target.value)}
+                  placeholder="Search by name, project, schedule…"
+                />
+                <IconButton kind="ghost" size="md" label="Refresh" onClick={() => fetchData()}>
                   <RotateCcw className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={openCreate}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 h-9 text-[14px] font-medium text-white hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-sm whitespace-nowrap"
-                >
-                  <Plus className="h-4 w-4" /> New scheduler
-                </button>
+                </IconButton>
+                <Button onClick={openCreate} leftIcon={<Plus />}>New scheduler</Button>
               </div>
             </div>
 
             {/* Segmented status control */}
-            <div className="mt-3 inline-flex items-center rounded-lg bg-slate-100 p-0.5">
-              {[
-                { id: 'all',     label: 'All',     count: stats.all },
-                { id: 'active',  label: 'Active',  count: stats.active,  dot: 'bg-emerald-500' },
-                { id: 'paused',  label: 'Paused',  count: stats.paused,  dot: 'bg-slate-400' },
-                { id: 'running', label: 'Running', count: stats.running, dot: 'bg-violet-500' },
-              ].map(t => (
-                <button
-                  key={t.id}
-                  onClick={() => setStatusTab(t.id as any)}
-                  className={`relative inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[12px] font-medium transition-all ${
-                    statusTab === t.id
-                      ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200/60'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  {t.dot && <span className={`h-1.5 w-1.5 rounded-full ${t.dot}`} />}
-                  {t.label}
-                  <span className={`tabular-nums text-[12px] ${statusTab === t.id ? 'text-slate-500' : 'text-slate-400'}`}>{t.count}</span>
-                </button>
-              ))}
-            </div>
+            <ContentSwitcher
+              size="sm"
+              className="mt-3 max-w-md"
+              selectedIndex={['all', 'active', 'paused', 'running'].indexOf(statusTab)}
+              onChange={({ name }: any) => setStatusTab(name)}
+            >
+              <Switch name="all" text={`All (${stats.all})`} />
+              <Switch name="active" text={`Active (${stats.active})`} />
+              <Switch name="paused" text={`Paused (${stats.paused})`} />
+              <Switch name="running" text={`Running (${stats.running})`} />
+            </ContentSwitcher>
           </div>
         </div>
 
@@ -518,12 +499,7 @@ export default function Schedulers() {
                 {search ? `Nothing matches "${search}".` : 'Schedulers run flows automatically on a cron schedule.'}
               </p>
               {!search && (
-                <button
-                  onClick={openCreate}
-                  className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 h-9 text-[14px] font-medium text-white hover:bg-blue-700 whitespace-nowrap"
-                >
-                  <Plus className="h-4 w-4" /> New scheduler
-                </button>
+                <Button className="mt-4" onClick={openCreate} leftIcon={<Plus />}>New scheduler</Button>
               )}
             </div>
           ) : (

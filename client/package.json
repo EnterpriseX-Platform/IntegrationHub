@@ -10,6 +10,8 @@
     "preview": "vite"
   },
   "dependencies": {
+    "@carbon/icons-react": "11.92.0",
+    "@carbon/react": "1.119.0",
     "@codemirror/lang-sql": "^6.10.0",
     "@codemirror/language": "^6.12.1",
     "@codemirror/state": "^6.5.4",
