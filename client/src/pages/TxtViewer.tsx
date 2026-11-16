@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { Theme, Loading, InlineLoading, InlineNotification, IconButton, Search } from '@carbon/react';
+import { ArrowUp, ArrowDown, Close, Search as SearchIcon, Download } from '@carbon/icons-react';
+import { Button } from '../components/ui/Button';
 import { API_URL, withAuthToken } from '../config/api';
 
 const PAGE_SIZE = 1000;
@@ -154,7 +157,7 @@ export default function TxtViewer() {
     return (
       <div className="h-screen flex items-center justify-center bg-[#1e1e1e]">
         <div className="flex flex-col items-center gap-3">
-          <div className="animate-spin h-8 w-8 border-3 border-blue-400 border-t-transparent rounded-full" />
+          <Loading withOverlay={false} small description="Loading file" />
           <span className="text-sm text-gray-400">Loading file...</span>
         </div>
       </div>
@@ -164,15 +167,9 @@ export default function TxtViewer() {
   if (error) {
     return (
       <div className="h-screen flex items-center justify-center bg-[#1e1e1e]">
-        <div className="bg-[#2d2d2d] rounded-lg shadow-lg p-8 max-w-md text-center">
-          <div className="w-16 h-16 mx-auto mb-4 bg-red-900/30 rounded-full flex items-center justify-center">
-            <svg className="w-8 h-8 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <h2 className="text-lg font-semibold text-gray-200 mb-2">Error</h2>
-          <p className="text-gray-400">{error}</p>
-        </div>
+        <Theme theme="g100" className="max-w-md w-full">
+          <InlineNotification kind="error" lowContrast hideCloseButton title="Error" subtitle={error} />
+        </Theme>
       </div>
     );
   }
@@ -196,59 +193,52 @@ export default function TxtViewer() {
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <button
+        <Theme theme="g100" className="flex items-center gap-2 bg-transparent">
+          <IconButton
+            kind="ghost"
+            size="sm"
+            label="Search (Ctrl+F)"
             onClick={() => { setShowSearch(!showSearch); if (!showSearch) setTimeout(() => searchInputRef.current?.focus(), 50); }}
-            className="inline-flex items-center justify-center px-2 h-8 text-[13px] bg-white/10 hover:bg-white/20 rounded transition-colors whitespace-nowrap"
-            title="Search (Ctrl+F)"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </button>
-          <button
-            onClick={handleDownload}
-            className="inline-flex items-center justify-center px-3 h-8 text-[13px] bg-white/10 hover:bg-white/20 rounded transition-colors whitespace-nowrap"
-            title="Download"
-          >
-            <svg className="w-4 h-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
+            <SearchIcon />
+          </IconButton>
+          <Button variant="ghost" size="sm" onClick={handleDownload} title="Download" leftIcon={<Download />}>
             Download
-          </button>
-        </div>
+          </Button>
+        </Theme>
       </div>
 
       {/* Search Bar */}
       {showSearch && (
-        <div className="bg-[#3c3c3c] border-b border-[#404040] px-4 py-1.5 flex items-center gap-2 flex-shrink-0">
-          <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <input
-            ref={searchInputRef}
-            type="text"
-            placeholder="Search in loaded lines..."
-            value={searchText}
-            onChange={e => setSearchText(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') goToMatch(currentMatch + (e.shiftKey ? -1 : 1)); }}
-            className="flex-1 px-2 py-0.5 text-xs bg-[#2d2d2d] border border-[#505050] rounded text-gray-200 outline-none focus:border-blue-500"
-          />
+        <Theme theme="g100" className="bg-[#3c3c3c] border-b border-[#404040] px-4 py-1.5 flex items-center gap-2 flex-shrink-0">
+          <div className="flex-1">
+            <Search
+              ref={searchInputRef}
+              id="txt-viewer-search"
+              size="sm"
+              labelText="Search in loaded lines"
+              placeholder="Search in loaded lines..."
+              value={searchText}
+              onChange={(e: any) => setSearchText(e.target.value)}
+              onClear={() => setSearchText('')}
+              onKeyDown={(e: any) => { if (e.key === 'Enter') goToMatch(currentMatch + (e.shiftKey ? -1 : 1)); }}
+            />
+          </div>
           {searchResults.length > 0 && (
             <span className="text-[12px] text-gray-400">
               {currentMatch + 1} / {searchResults.length}
             </span>
           )}
-          <button onClick={() => goToMatch(currentMatch - 1)} className="px-1 text-gray-400 hover:text-gray-200" disabled={searchResults.length === 0}>
-            <svg className="w-4 h-4" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M6 2v8M3 5l3-3 3 3" /></svg>
-          </button>
-          <button onClick={() => goToMatch(currentMatch + 1)} className="px-1 text-gray-400 hover:text-gray-200" disabled={searchResults.length === 0}>
-            <svg className="w-4 h-4" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M6 10V2M3 7l3 3 3-3" /></svg>
-          </button>
-          <button onClick={() => { setShowSearch(false); setSearchText(''); setSearchResults([]); setCurrentMatch(-1); }} className="px-1 text-gray-400 hover:text-gray-200">
-            <svg className="w-4 h-4" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 3l6 6M9 3l-6 6" /></svg>
-          </button>
-        </div>
+          <IconButton kind="ghost" size="sm" label="Previous match" onClick={() => goToMatch(currentMatch - 1)} disabled={searchResults.length === 0}>
+            <ArrowUp />
+          </IconButton>
+          <IconButton kind="ghost" size="sm" label="Next match" onClick={() => goToMatch(currentMatch + 1)} disabled={searchResults.length === 0}>
+            <ArrowDown />
+          </IconButton>
+          <IconButton kind="ghost" size="sm" label="Close search" onClick={() => { setShowSearch(false); setSearchText(''); setSearchResults([]); setCurrentMatch(-1); }}>
+            <Close />
+          </IconButton>
+        </Theme>
       )}
 
       {/* Content Area */}
@@ -281,10 +271,9 @@ export default function TxtViewer() {
           </tbody>
         </table>
         {loadingMore && (
-          <div className="flex items-center justify-center py-4 gap-2">
-            <div className="animate-spin h-4 w-4 border-2 border-blue-400 border-t-transparent rounded-full" />
-            <span className="text-xs text-gray-500">Loading more lines...</span>
-          </div>
+          <Theme theme="g100" className="flex items-center justify-center py-4 bg-transparent">
+            <InlineLoading description="Loading more lines..." />
+          </Theme>
         )}
       </div>
 

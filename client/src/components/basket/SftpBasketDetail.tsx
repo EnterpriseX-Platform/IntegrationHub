@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import {
-  Folder, FolderPlus, File, Upload, X, ChevronRight,
+  Folder, FolderPlus, File, Upload, ChevronRight,
   ChevronDown, Trash2, Download,
   ExternalLink, ArrowLeft, Server, RefreshCw, AlertCircle,
-  Home, CheckCircle, Loader2, Settings2
+  Home, CheckCircle, Settings2
 } from 'lucide-react';
 import { Button } from '../ui/Button';
+import { ComposedModal, ModalHeader, ModalBody, ModalFooter, IconButton, TextInput, Search, Loading, InlineLoading, ProgressBar } from '@carbon/react';
 import { API_URL, apiFetch, withAuthToken } from '../../config/api';
 
 interface Project {
@@ -95,8 +96,10 @@ const DirTreeItem = ({
           }`}
         >
           {hasChildren ? (
-            <button
-              type="button"
+            <span
+              role="button"
+              tabIndex={0}
+              aria-label={isExpanded ? 'Collapse' : 'Expand'}
               onClick={(e) => {
                 e.stopPropagation();
                 onToggleExpand(dirPath);
@@ -110,7 +113,7 @@ const DirTreeItem = ({
               ) : (
                 <ChevronRight className="h-3.5 w-3.5 text-gray-600" />
               )}
-            </button>
+            </span>
           ) : (
             <span className="w-5 flex-shrink-0" />
           )}
@@ -467,36 +470,40 @@ export const SftpBasketDetail = ({ basket, onBack, sftpConnections = [] }: SftpB
   const rootDirs = (dirChildren.get('/') || []).filter(e => e.type === 'directory');
 
   return (
-    <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-      onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-      onDrop={(e) => { e.preventDefault(); e.stopPropagation(); }}
+    <>
+    <ComposedModal
+      open
+      size="lg"
+      preventCloseOnClickOutside
+      selectorsFloatingMenus={['.app-stacked-modal']}
+      onClose={() => { onBack(); return false; }}
+      onDragOver={(e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); }}
+      onDrop={(e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); }}
     >
-      <div className="bg-white rounded-xl w-full max-w-5xl h-[85vh] flex flex-col">
         {/* Modal Header */}
-        <div className="px-5 py-3 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
+        <ModalHeader>
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 flex-1 min-w-0">
-            <button
-              onClick={onBack}
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg flex-shrink-0"
-            >
+            <IconButton kind="ghost" size="md" label="Back" onClick={onBack} className="flex-shrink-0">
               <ArrowLeft className="h-5 w-5" />
-            </button>
+            </IconButton>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 bg-purple-500 rounded-lg flex items-center justify-center flex-shrink-0">
                   <Server className="h-4 w-4 text-white" />
                 </div>
                 {isEditingBasketDetail ? (
-                  <input
-                    type="text"
+                  <TextInput
+                    id="sftp-basket-name"
+                    labelText="Basket name"
+                    hideLabel
                     value={editBasketDetailName}
                     onChange={(e) => setEditBasketDetailName(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') saveBasketDetailChanges();
                       if (e.key === 'Escape') cancelEditingBasketDetail();
                     }}
-                    className="text-lg font-semibold text-gray-900 outline-none border-b-2 border-purple-500 bg-transparent px-0 py-0 w-full max-w-xl"
+                    className="w-full max-w-xl"
                     autoFocus
                   />
                 ) : (
@@ -511,15 +518,18 @@ export const SftpBasketDetail = ({ basket, onBack, sftpConnections = [] }: SftpB
               </div>
               <div className="mt-1 ml-9">
                 {isEditingBasketDetail ? (
-                  <input
-                    type="text"
+                  <TextInput
+                    id="sftp-basket-desc"
+                    labelText="Description"
+                    hideLabel
+                    size="sm"
                     value={editBasketDetailDesc}
                     onChange={(e) => setEditBasketDetailDesc(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') saveBasketDetailChanges();
                       if (e.key === 'Escape') cancelEditingBasketDetail();
                     }}
-                    className="text-sm text-gray-600 outline-none border-b-2 border-purple-500 bg-transparent px-0 py-0 w-full max-w-xl"
+                    className="w-full max-w-xl"
                     placeholder="Add description..."
                   />
                 ) : (
@@ -534,30 +544,21 @@ export const SftpBasketDetail = ({ basket, onBack, sftpConnections = [] }: SftpB
               </div>
               {isEditingBasketDetail && (
                 <div className="flex items-center gap-2 mt-2 ml-9">
-                  <button
-                    onClick={saveBasketDetailChanges}
-                    disabled={!editBasketDetailName.trim()}
-                    className="inline-flex items-center justify-center text-[13px] px-2 h-8 rounded disabled:opacity-50 whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700"
-                  >
+                  <Button size="sm" onClick={saveBasketDetailChanges} disabled={!editBasketDetailName.trim()}>
                     Save
-                  </button>
-                  <button
-                    onClick={cancelEditingBasketDetail}
-                    className="inline-flex items-center justify-center h-9 px-3 text-[14px] font-medium border border-gray-300 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap"
-                  >
+                  </Button>
+                  <Button size="sm" variant="secondary" onClick={cancelEditingBasketDetail}>
                     Cancel
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
           </div>
-          <button onClick={onBack} className="p-2 text-gray-400 hover:text-gray-600 ml-4 flex-shrink-0">
-            <X className="h-5 w-5" />
-          </button>
         </div>
+        </ModalHeader>
 
         {/* Content */}
-        <div className="flex-1 overflow-hidden">
+        <ModalBody className="h-[70vh] overflow-hidden !p-0 !mb-0">
           {error && !loading ? (
             <div className="flex flex-col items-center justify-center h-full text-center px-8">
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
@@ -612,21 +613,19 @@ export const SftpBasketDetail = ({ basket, onBack, sftpConnections = [] }: SftpB
                   </div>
                   <Button
                     onClick={() => saveConnection(selectedConnectionId)}
-                    disabled={!selectedConnectionId || savingConnection}
-                    className="w-full mt-3 flex items-center justify-center gap-2"
+                    disabled={!selectedConnectionId}
+                    isLoading={savingConnection}
+                    fullWidth
+                    leftIcon={<Settings2 className="h-4 w-4" />}
+                    className="mt-3"
                   >
-                    {savingConnection ? (
-                      <><Loader2 className="h-4 w-4 animate-spin" /> Saving...</>
-                    ) : (
-                      <><Settings2 className="h-4 w-4" /> Set Connection</>
-                    )}
+                    {savingConnection ? 'Saving...' : 'Set Connection'}
                   </Button>
                 </div>
               )}
 
               {!error.includes('No SFTP connection') && (
-                <Button onClick={() => fetchEntries(currentPath)} className="flex items-center gap-2">
-                  <RefreshCw className="h-4 w-4" />
+                <Button onClick={() => fetchEntries(currentPath)} leftIcon={<RefreshCw className="h-4 w-4" />}>
                   Retry
                 </Button>
               )}
@@ -660,13 +659,9 @@ export const SftpBasketDetail = ({ basket, onBack, sftpConnections = [] }: SftpB
                     </button>
 
                     <div className="relative opacity-0 group-hover:opacity-100 transition-opacity pr-1">
-                      <button
-                        onClick={() => { setShowNewFolderModal(true); }}
-                        className="p-1 hover:bg-gray-200 rounded"
-                        title="New Folder"
-                      >
-                        <FolderPlus className="h-3.5 w-3.5 text-gray-500" />
-                      </button>
+                      <IconButton kind="ghost" size="sm" label="New Folder" onClick={() => { setShowNewFolderModal(true); }}>
+                        <FolderPlus className="h-3.5 w-3.5" />
+                      </IconButton>
                     </div>
                   </div>
 
@@ -690,8 +685,7 @@ export const SftpBasketDetail = ({ basket, onBack, sftpConnections = [] }: SftpB
 
                   {!dirChildren.has('/') && (
                     <div className="text-center py-8 text-gray-400 text-sm">
-                      <RefreshCw className="h-5 w-5 mx-auto mb-2 animate-spin" />
-                      Loading...
+                      <InlineLoading description="Loading..." className="justify-center" />
                     </div>
                   )}
                 </div>
@@ -705,7 +699,7 @@ export const SftpBasketDetail = ({ basket, onBack, sftpConnections = [] }: SftpB
                 onDragLeave={handleDragLeave}
               >
                 {/* Breadcrumb & Actions */}
-                <div className="px-6 py-3 border-b border-gray-200 flex items-center justify-between bg-white">
+                <div className="px-6 py-3 border-b border-gray-200 flex items-center justify-between">
                   <div className="flex items-center gap-1 text-sm overflow-hidden">
                     <button
                       onClick={() => navigateTo('/')}
@@ -731,27 +725,23 @@ export const SftpBasketDetail = ({ basket, onBack, sftpConnections = [] }: SftpB
                     ))}
                   </div>
                   <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      placeholder="Search..."
-                      value={filesSearch}
-                      onChange={(e) => setFilesSearch(e.target.value)}
-                      className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm w-40 focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
-                    />
-                    <button
-                      onClick={() => fetchEntries(currentPath)}
-                      className="p-1.5 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded-lg"
-                      title="Refresh"
-                    >
+                    <div className="w-48">
+                      <Search
+                        id="sftp-files-search"
+                        size="md"
+                        labelText="Search files"
+                        placeholder="Search..."
+                        value={filesSearch}
+                        onChange={(e: any) => setFilesSearch(e.target.value)}
+                        onClear={() => setFilesSearch('')}
+                      />
+                    </div>
+                    <IconButton kind="ghost" size="md" label="Refresh" onClick={() => fetchEntries(currentPath)}>
                       <RefreshCw className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => setShowNewFolderModal(true)}
-                      className="p-1.5 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded-lg"
-                      title="New Folder"
-                    >
+                    </IconButton>
+                    <IconButton kind="ghost" size="md" label="New Folder" onClick={() => setShowNewFolderModal(true)}>
                       <FolderPlus className="h-4 w-4" />
-                    </button>
+                    </IconButton>
                     <input
                       ref={fileInputRef}
                       type="file"
@@ -762,9 +752,8 @@ export const SftpBasketDetail = ({ basket, onBack, sftpConnections = [] }: SftpB
                     <Button
                       onClick={() => fileInputRef.current?.click()}
                       isLoading={uploading}
-                      className="flex items-center gap-2"
+                      leftIcon={<Upload className="h-4 w-4" />}
                     >
-                      <Upload className="h-4 w-4" />
                       Upload
                     </Button>
                   </div>
@@ -775,10 +764,12 @@ export const SftpBasketDetail = ({ basket, onBack, sftpConnections = [] }: SftpB
                   <div className="px-6 py-2 border-b border-gray-200 bg-purple-50/50 space-y-1">
                     {uploadProgress.map((up, idx) => (
                       <div key={idx} className="flex items-center gap-3">
-                        <Loader2 className={`h-3.5 w-3.5 flex-shrink-0 ${up.progress < 100 ? 'animate-spin text-purple-500' : 'text-green-500'}`} />
+                        {up.progress < 100
+                          ? <InlineLoading className="!w-auto flex-shrink-0" />
+                          : <CheckCircle className="h-3.5 w-3.5 flex-shrink-0 text-green-500" />}
                         <span className="text-xs text-gray-700 truncate flex-1">{up.name}</span>
-                        <div className="w-24 h-1.5 bg-gray-200 rounded-full overflow-hidden flex-shrink-0">
-                          <div className="h-full bg-purple-500 rounded-full transition-all" style={{ width: `${up.progress}%` }} />
+                        <div className="w-24 flex-shrink-0">
+                          <ProgressBar label={up.name} hideLabel size="small" value={up.progress} max={100} />
                         </div>
                         <span className="text-xs text-gray-500 w-8 text-right flex-shrink-0">{up.progress}%</span>
                       </div>
@@ -790,7 +781,7 @@ export const SftpBasketDetail = ({ basket, onBack, sftpConnections = [] }: SftpB
                 <div className="flex-1 overflow-auto p-6 bg-gray-50/30">
                   {loading ? (
                     <div className="flex items-center justify-center h-full">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500" />
+                      <Loading withOverlay={false} small />
                     </div>
                   ) : filteredEntries.length > 0 ? (
                     <div className="space-y-2">
@@ -812,7 +803,7 @@ export const SftpBasketDetail = ({ basket, onBack, sftpConnections = [] }: SftpB
                       {directories.map(entry => (
                         <div
                           key={entry.name}
-                          className="flex items-center gap-4 p-3 bg-white rounded-lg border border-gray-200 hover:border-purple-300 hover:shadow-sm group transition-all cursor-pointer"
+                          className="cds--tile app-tile flex items-center gap-4 p-3 hover:shadow-sm group transition-all cursor-pointer"
                           onClick={() => navigateTo(currentPath === '/' ? `/${entry.name}` : `${currentPath}/${entry.name}`)}
                         >
                           <Folder className="h-5 w-5 text-purple-400" />
@@ -825,13 +816,9 @@ export const SftpBasketDetail = ({ basket, onBack, sftpConnections = [] }: SftpB
                             </p>
                           </div>
                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                              onClick={(e) => { e.stopPropagation(); confirmDeleteEntry(entry.name, 'directory'); }}
-                              className="p-1.5 text-red-600 hover:bg-red-50 rounded"
-                              title="Delete"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
+                            <IconButton kind="ghost" size="sm" label="Delete" onClick={(e: React.MouseEvent) => { e.stopPropagation(); confirmDeleteEntry(entry.name, 'directory'); }}>
+                              <Trash2 className="h-4 w-4 text-red-600" />
+                            </IconButton>
                           </div>
                         </div>
                       ))}
@@ -840,7 +827,7 @@ export const SftpBasketDetail = ({ basket, onBack, sftpConnections = [] }: SftpB
                       {files.map(entry => (
                         <div
                           key={entry.name}
-                          className="flex items-center gap-4 p-3 bg-white rounded-lg border border-gray-200 hover:border-purple-300 hover:shadow-sm group transition-all"
+                          className="cds--tile app-tile flex items-center gap-4 p-3 hover:shadow-sm group transition-all"
                         >
                           <File className="h-5 w-5 text-gray-400" />
                           <div className="flex-1 min-w-0">
@@ -852,27 +839,15 @@ export const SftpBasketDetail = ({ basket, onBack, sftpConnections = [] }: SftpB
                             </p>
                           </div>
                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                              onClick={() => viewFile(entry.name)}
-                              className="p-1.5 text-purple-600 hover:bg-purple-50 rounded"
-                              title="View"
-                            >
+                            <IconButton kind="ghost" size="sm" label="View" onClick={() => viewFile(entry.name)}>
                               <ExternalLink className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => downloadFile(entry.name)}
-                              className="p-1.5 text-green-600 hover:bg-green-50 rounded"
-                              title="Download"
-                            >
+                            </IconButton>
+                            <IconButton kind="ghost" size="sm" label="Download" onClick={() => downloadFile(entry.name)}>
                               <Download className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => confirmDeleteEntry(entry.name, 'file')}
-                              className="p-1.5 text-red-600 hover:bg-red-50 rounded"
-                              title="Delete"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
+                            </IconButton>
+                            <IconButton kind="ghost" size="sm" label="Delete" onClick={() => confirmDeleteEntry(entry.name, 'file')}>
+                              <Trash2 className="h-4 w-4 text-red-600" />
+                            </IconButton>
                           </div>
                         </div>
                       ))}
@@ -895,23 +870,15 @@ export const SftpBasketDetail = ({ basket, onBack, sftpConnections = [] }: SftpB
               </div>
             </div>
           )}
-        </div>
-      </div>
+        </ModalBody>
+    </ComposedModal>
 
       {/* Delete Confirmation Modal */}
-      {deleteTarget && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm mx-4">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">Delete {deleteTarget.type === 'directory' ? 'Folder' : 'File'}</h2>
-              <button
-                onClick={() => setDeleteTarget(null)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="h-5 w-5 text-gray-500" />
-              </button>
-            </div>
-            <div className="p-6">
+      <ComposedModal open={!!deleteTarget} size="xs" className="app-stacked-modal" onClose={() => { setDeleteTarget(null); return false; }}>
+        <ModalHeader title={`Delete ${deleteTarget?.type === 'directory' ? 'Folder' : 'File'}`} closeModal={() => setDeleteTarget(null)} />
+        <ModalBody>
+          {deleteTarget && (
+            <>
               <div className="flex items-center gap-3 text-amber-500 mb-3">
                 <AlertCircle className="h-8 w-8" />
               </div>
@@ -921,54 +888,44 @@ export const SftpBasketDetail = ({ basket, onBack, sftpConnections = [] }: SftpB
               <p className="text-sm text-gray-500 mt-2">
                 This action cannot be undone.{deleteTarget.type === 'directory' ? ' All contents inside this folder will be permanently deleted.' : ''}
               </p>
-            </div>
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
-              <Button variant="ghost" onClick={() => setDeleteTarget(null)}>
-                Cancel
-              </Button>
-              <Button
-                variant="danger"
-                onClick={handleDeleteEntry}
-                isLoading={isDeleting}
-              >
-                Delete
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+            </>
+          )}
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="secondary" onClick={() => setDeleteTarget(null)}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={handleDeleteEntry} isLoading={isDeleting}>
+            Delete
+          </Button>
+        </ModalFooter>
+      </ComposedModal>
 
       {/* New Folder Modal */}
-      {showNewFolderModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
-          <div className="bg-white rounded-xl w-full max-w-sm">
-            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">New Folder</h3>
-              <button onClick={() => setShowNewFolderModal(false)} className="text-gray-400 hover:text-gray-600">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="p-6">
-              <p className="text-sm text-gray-500 mb-3">
-                Create folder in: <span className="font-medium text-gray-700 font-mono">{currentPath}</span>
-              </p>
-              <input
-                type="text"
-                placeholder="Folder name"
-                value={newFolderName}
-                onChange={(e) => setNewFolderName(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && createFolder()}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600"
-                autoFocus
-              />
-            </div>
-            <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
-              <Button variant="ghost" onClick={() => setShowNewFolderModal(false)}>Cancel</Button>
-              <Button onClick={createFolder}>Create</Button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+      <ComposedModal open={showNewFolderModal} size="xs" className="app-stacked-modal" onClose={() => { setShowNewFolderModal(false); return false; }}>
+        <ModalHeader title="New Folder" closeModal={() => setShowNewFolderModal(false)} />
+        <ModalBody>
+          <p className="text-sm text-gray-500 mb-3">
+            Create folder in: <span className="font-medium text-gray-700 font-mono">{currentPath}</span>
+          </p>
+          {showNewFolderModal && (
+            <TextInput
+              id="sftp-new-folder-name"
+              labelText="Folder name"
+              hideLabel
+              placeholder="Folder name"
+              value={newFolderName}
+              onChange={(e) => setNewFolderName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && createFolder()}
+              autoFocus
+            />
+          )}
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="secondary" onClick={() => setShowNewFolderModal(false)}>Cancel</Button>
+          <Button onClick={createFolder}>Create</Button>
+        </ModalFooter>
+      </ComposedModal>
+    </>
   );
 };

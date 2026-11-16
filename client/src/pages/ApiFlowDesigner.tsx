@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronDown, Globe } from 'lucide-react';
 import { Button } from '../components/ui/Button';
+import { IconButton, Tabs, TabList, Tab, TextInput, TextArea, Tag, Toggle, InlineNotification, Loading } from '@carbon/react';
 import { OpenApiSpecEditor, type OpenApiSpec } from '../components/flow/OpenApiSpecEditor';
 import { FlowDesigner } from '../components/flow/FlowDesigner';
 import { nodeRegistry } from '../lib/flow-sdk/nodeRegistry';
@@ -289,9 +290,9 @@ export const ApiFlowDesigner = () => {
       <div className="bg-white border-b px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <button onClick={() => navigate(-1)} className="p-2 hover:bg-gray-100 rounded">
+            <IconButton kind="ghost" size="md" label="Back" onClick={() => navigate(-1)}>
               <i className="fas fa-arrow-left text-gray-600"></i>
-            </button>
+            </IconButton>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                 <Globe className="h-5 w-5 text-blue-600" />
@@ -299,7 +300,7 @@ export const ApiFlowDesigner = () => {
               <div>
                 <h1 className="font-semibold text-gray-900 whitespace-nowrap">{flowName || 'Untitled API'}</h1>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full whitespace-nowrap">REST API</span>
+                  <Tag size="sm" type="blue">REST API</Tag>
                   <span className="text-xs text-gray-500 whitespace-nowrap">{apiSpec.operations.length} operations</span>
                 </div>
               </div>
@@ -307,26 +308,30 @@ export const ApiFlowDesigner = () => {
           </div>
 
           {/* Tabs */}
-          <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
-            {[
-              { id: 'spec', label: 'OpenAPI Specification', icon: 'fa-file-code' },
-              { id: 'designer', label: 'Flow Designer', icon: 'fa-project-diagram' },
-              { id: 'test', label: 'Test & Debug', icon: 'fa-bug' },
-              { id: 'deploy', label: 'Deploy', icon: 'fa-rocket' },
-            ].map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`inline-flex items-center justify-center px-3.5 h-9 rounded-lg text-[14px] font-medium transition-colors ${
-                  activeTab === tab.id 
-                    ? 'bg-white text-gray-900 shadow-sm' 
-                    : 'text-gray-600 hover:text-gray-900'
-                } whitespace-nowrap`}
-              >
-                <i className={`fas ${tab.icon} mr-2`}></i>
-                {tab.label}
-              </button>
-            ))}
+          <div>
+            {(() => {
+              const tabs = [
+                { id: 'spec', label: 'OpenAPI Specification', icon: 'fa-file-code' },
+                { id: 'designer', label: 'Flow Designer', icon: 'fa-project-diagram' },
+                { id: 'test', label: 'Test & Debug', icon: 'fa-bug' },
+                { id: 'deploy', label: 'Deploy', icon: 'fa-rocket' },
+              ];
+              return (
+                <Tabs
+                  selectedIndex={Math.max(0, tabs.findIndex(t => t.id === activeTab))}
+                  onChange={({ selectedIndex }: { selectedIndex: number }) => setActiveTab(tabs[selectedIndex].id as any)}
+                >
+                  <TabList aria-label="API flow sections" contained>
+                    {tabs.map(tab => (
+                      <Tab key={tab.id}>
+                        <i className={`fas ${tab.icon} mr-2`}></i>
+                        {tab.label}
+                      </Tab>
+                    ))}
+                  </TabList>
+                </Tabs>
+              );
+            })()}
           </div>
 
           <div className="flex items-center gap-2">
@@ -740,40 +745,36 @@ const TestPanel = ({ operations, flowId, getMethodColor, selectedOp, onSelectOp 
               <code className="flex-1 px-4 py-2 bg-white border rounded-lg text-sm font-mono text-gray-700 truncate flex items-center gap-0">
                 {buildUrlDisplay()}
               </code>
-              <button
-                onClick={handleSendRequest}
-                disabled={loading}
-                className="px-3 h-9 text-[14px] font-medium rounded-lg flex items-center gap-2 transition-colors whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700"
-              >
-                {loading ? (
-                  <><i className="fas fa-spinner fa-spin"></i> Sending...</>
-                ) : (
-                  <><i className="fas fa-paper-plane"></i> Send</>
-                )}
-              </button>
+              <Button onClick={handleSendRequest} isLoading={loading} leftIcon={loading ? undefined : <i className="fas fa-paper-plane"></i>}>
+                {loading ? 'Sending...' : 'Send'}
+              </Button>
             </div>
           </div>
 
           {/* Request Tabs */}
-          <div className="flex border-b">
-            {[
-              { id: 'params', label: 'Parameters', icon: 'fa-sliders-h' },
-              ...(currentOp.requestBody ? [{ id: 'body', label: 'Body', icon: 'fa-code' }] : []),
-              { id: 'headers', label: 'Headers', icon: 'fa-list' }
-            ].map((tab: any) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveRequestTab(tab.id)}
-                className={`px-5 py-3 text-sm font-medium flex items-center gap-2 transition-colors ${
-                  activeRequestTab === tab.id
-                    ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-              >
-                <i className={`fas ${tab.icon}`}></i>
-                {tab.label}
-              </button>
-            ))}
+          <div className="border-b">
+            {(() => {
+              const reqTabs: any[] = [
+                { id: 'params', label: 'Parameters', icon: 'fa-sliders-h' },
+                ...(currentOp.requestBody ? [{ id: 'body', label: 'Body', icon: 'fa-code' }] : []),
+                { id: 'headers', label: 'Headers', icon: 'fa-list' }
+              ];
+              return (
+                <Tabs
+                  selectedIndex={Math.max(0, reqTabs.findIndex(t => t.id === activeRequestTab))}
+                  onChange={({ selectedIndex }: { selectedIndex: number }) => setActiveRequestTab(reqTabs[selectedIndex].id)}
+                >
+                  <TabList aria-label="Request sections">
+                    {reqTabs.map(tab => (
+                      <Tab key={tab.id}>
+                        <i className={`fas ${tab.icon} mr-2`}></i>
+                        {tab.label}
+                      </Tab>
+                    ))}
+                  </TabList>
+                </Tabs>
+              );
+            })()}
           </div>
 
           {/* Request Content */}
@@ -793,16 +794,19 @@ const TestPanel = ({ operations, flowId, getMethodColor, selectedOp, onSelectOp 
                           <code className="w-32 px-3 py-2 bg-gray-100 rounded text-sm font-medium text-gray-700">
                             {key}
                           </code>
-                          <input
-                            type="text"
-                            value={value}
-                            onChange={(e) => setRequest(prev => ({
-                              ...prev,
-                              pathParams: { ...prev.pathParams, [key]: e.target.value }
-                            }))}
-                            placeholder={`Enter ${key}`}
-                            className="flex-1 px-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          />
+                          <div className="flex-1">
+                            <TextInput
+                              id={`api-test-path-${key}`}
+                              labelText={key}
+                              hideLabel
+                              value={value}
+                              onChange={(e) => setRequest(prev => ({
+                                ...prev,
+                                pathParams: { ...prev.pathParams, [key]: e.target.value }
+                              }))}
+                              placeholder={`Enter ${key}`}
+                            />
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -822,16 +826,19 @@ const TestPanel = ({ operations, flowId, getMethodColor, selectedOp, onSelectOp 
                           <code className="w-32 px-3 py-2 bg-gray-100 rounded text-sm font-medium text-gray-700">
                             {key}
                           </code>
-                          <input
-                            type="text"
-                            value={value}
-                            onChange={(e) => setRequest(prev => ({
-                              ...prev,
-                              queryParams: { ...prev.queryParams, [key]: e.target.value }
-                            }))}
-                            placeholder="Value"
-                            className="flex-1 px-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          />
+                          <div className="flex-1">
+                            <TextInput
+                              id={`api-test-query-${key}`}
+                              labelText={key}
+                              hideLabel
+                              value={value}
+                              onChange={(e) => setRequest(prev => ({
+                                ...prev,
+                                queryParams: { ...prev.queryParams, [key]: e.target.value }
+                              }))}
+                              placeholder="Value"
+                            />
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -854,17 +861,23 @@ const TestPanel = ({ operations, flowId, getMethodColor, selectedOp, onSelectOp 
                     <i className="fas fa-code text-purple-500"></i>
                     Request Body (JSON)
                   </h4>
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => setRequest(prev => ({ ...prev, body: formatJson(JSON.parse(prev.body || '{}')) }))}
-                    className="inline-flex items-center justify-center text-[13px] text-blue-600 hover:text-blue-700 px-3 h-8 bg-blue-50 rounded-lg whitespace-nowrap"
+                    leftIcon={<i className="fas fa-magic"></i>}
                   >
-                    <i className="fas fa-magic mr-1"></i> Format JSON
-                  </button>
+                    Format JSON
+                  </Button>
                 </div>
-                <textarea
+                <TextArea
+                  id="api-test-body"
+                  labelText="Request body"
+                  hideLabel
                   value={request.body}
                   onChange={(e) => setRequest(prev => ({ ...prev, body: e.target.value }))}
-                  className="w-full h-80 p-4 border rounded-lg font-mono text-sm resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="font-mono"
+                  rows={16}
                   placeholder="{}"
                   spellCheck={false}
                 />
@@ -880,21 +893,21 @@ const TestPanel = ({ operations, flowId, getMethodColor, selectedOp, onSelectOp 
                 <div className="space-y-3">
                   {Object.entries(request.headers).map(([key, value]) => (
                     <div key={key} className="flex items-center gap-3">
-                      <input
-                        type="text"
-                        value={key}
-                        readOnly
-                        className="w-48 px-4 h-9 bg-gray-100 border rounded-lg text-sm font-medium text-gray-700"
-                      />
-                      <input
-                        type="text"
-                        value={value}
-                        onChange={(e) => setRequest(prev => ({
-                          ...prev,
-                          headers: { ...prev.headers, [key]: e.target.value }
-                        }))}
-                        className="flex-1 px-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-                      />
+                      <div className="w-48">
+                        <TextInput id={`api-test-header-name-${key}`} labelText="Header name" hideLabel value={key} readOnly />
+                      </div>
+                      <div className="flex-1">
+                        <TextInput
+                          id={`api-test-header-value-${key}`}
+                          labelText={`${key} value`}
+                          hideLabel
+                          value={value}
+                          onChange={(e) => setRequest(prev => ({
+                            ...prev,
+                            headers: { ...prev.headers, [key]: e.target.value }
+                          }))}
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -917,17 +930,13 @@ const TestPanel = ({ operations, flowId, getMethodColor, selectedOp, onSelectOp 
               <div className="space-y-4">
                 {/* Status Bar */}
                 <div className="flex items-center gap-4">
-                  <div className={`px-4 py-2 rounded-lg font-medium text-sm ${
-                    response.success
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-red-100 text-red-700'
-                  }`}>
+                  <Tag type={response.success ? 'green' : 'red'}>
                     {response.success ? (
                       <><i className="fas fa-check-circle mr-2"></i>Success</>
                     ) : (
                       <><i className="fas fa-times-circle mr-2"></i>Failed</>
                     )}
-                  </div>
+                  </Tag>
                   {response.duration && (
                     <div className="text-sm text-gray-500">
                       <i className="fas fa-clock mr-1"></i>
@@ -944,33 +953,27 @@ const TestPanel = ({ operations, flowId, getMethodColor, selectedOp, onSelectOp 
 
                 {/* Error Message */}
                 {response.error && (
-                  <div className="bg-red-50 border border-red-200 rounded-xl overflow-hidden">
-                    <div className="px-4 py-2 bg-red-100 border-b border-red-200 flex items-center gap-2">
-                      <i className="fas fa-exclamation-triangle text-red-600"></i>
-                      <span className="text-xs font-semibold text-red-700 uppercase">Error</span>
-                    </div>
-                    <div className="p-4">
-                      <p className="text-sm text-red-800 font-medium">{response.error}</p>
-                      {response.hint && (
-                        <p className="text-xs text-red-600 mt-2">
-                          <i className="fas fa-lightbulb mr-1"></i>
-                          {response.hint}
-                        </p>
-                      )}
-                    </div>
-                  </div>
+                  <InlineNotification
+                    kind="error"
+                    lowContrast
+                    hideCloseButton
+                    title={String(response.error)}
+                    subtitle={response.hint ? String(response.hint) : undefined}
+                  />
                 )}
 
                 {/* Response Body */}
-                <div className="bg-white rounded-xl border overflow-hidden">
+                <div className="cds--tile app-tile !p-0 overflow-hidden">
                   <div className="px-4 py-2 bg-gray-100 border-b flex items-center justify-between">
                     <span className="text-xs font-semibold text-gray-600 uppercase">Response Body</span>
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => navigator.clipboard.writeText(formatJson(response.data || response))}
-                      className="text-xs text-blue-600 hover:text-blue-700"
+                      leftIcon={<i className="fas fa-copy"></i>}
                     >
-                      <i className="fas fa-copy mr-1"></i> Copy
-                    </button>
+                      Copy
+                    </Button>
                   </div>
                   <pre className="p-4 text-sm font-mono overflow-x-auto max-h-[400px]">
                     {formatJson(response.data || response)}
@@ -1177,7 +1180,7 @@ const DeployPanel = ({ flowId, projectId, apiSpec, flowName }: DeployPanelProps)
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        <Loading withOverlay={false} description="Loading deployment" />
       </div>
     );
   }
@@ -1192,47 +1195,33 @@ const DeployPanel = ({ flowId, projectId, apiSpec, flowName }: DeployPanelProps)
             <p className="text-sm text-gray-500">Deploy your API to make it publicly accessible</p>
           </div>
           <div className="flex items-center gap-3">
-            <button
-              onClick={downloadApiSpec}
-              className="px-3 h-9 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 flex items-center gap-2 whitespace-nowrap"
-            >
-              <i className="fas fa-download"></i>
+            <Button variant="secondary" onClick={downloadApiSpec} leftIcon={<i className="fas fa-download"></i>}>
               Download OpenAPI YAML
-            </button>
+            </Button>
             {config.enabled ? (
-              <button
-                onClick={undeployAPI}
-                disabled={deploying}
-                className="px-3 h-9 rounded-lg flex items-center gap-2 disabled:opacity-70 whitespace-nowrap bg-red-600 text-white hover:bg-red-700"
-              >
-                <i className="fas fa-stop"></i>
+              <Button variant="danger" onClick={undeployAPI} disabled={deploying} leftIcon={<i className="fas fa-stop"></i>}>
                 {deploying ? 'Processing...' : 'Undeploy'}
-              </button>
+              </Button>
             ) : (
-              <button
-                onClick={deployAPI}
-                disabled={deploying}
-                className="px-3 h-9 rounded-lg flex items-center gap-2 disabled:opacity-70 whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700"
-              >
-                <i className="fas fa-rocket"></i>
+              <Button onClick={deployAPI} disabled={deploying} leftIcon={<i className="fas fa-rocket"></i>}>
                 {deploying ? 'Deploying...' : 'Deploy Public URL'}
-              </button>
+              </Button>
             )}
           </div>
         </div>
 
         {/* Message */}
         {message && (
-          <div className={`p-4 rounded-lg flex items-center gap-2 ${
-            message.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
-          }`}>
-            <i className={`fas ${message.type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}`}></i>
-            {message.text}
-          </div>
+          <InlineNotification
+            kind={message.type === 'success' ? 'success' : 'error'}
+            lowContrast
+            hideCloseButton
+            title={message.text}
+          />
         )}
 
         {/* Deployment Status */}
-        <div className="bg-white rounded-xl border p-6">
+        <div className="cds--tile app-tile p-6">
           <h3 className="font-medium text-gray-900 mb-4">Deployment Status</h3>
           
           <div className={`flex items-center gap-4 p-4 rounded-lg ${
@@ -1250,18 +1239,14 @@ const DeployPanel = ({ flowId, projectId, apiSpec, flowName }: DeployPanelProps)
                 }
               </div>
             </div>
-            <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-              config.enabled 
-                ? 'bg-green-100 text-green-700' 
-                : 'bg-gray-100 text-gray-600'
-            }`}>
+            <Tag size="sm" type={config.enabled ? 'green' : 'gray'}>
               {config.enabled ? 'Running' : 'Stopped'}
-            </div>
+            </Tag>
           </div>
         </div>
 
         {/* Public URL Display */}
-        <div className="bg-white rounded-xl border p-6">
+        <div className="cds--tile app-tile p-6">
           <h3 className="font-medium text-gray-900 mb-4">Public Base URL</h3>
           
           <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
@@ -1269,13 +1254,9 @@ const DeployPanel = ({ flowId, projectId, apiSpec, flowName }: DeployPanelProps)
               <code className="text-lg font-mono text-blue-900 font-semibold flex-1 break-all">
                 {fullBaseUrl}
               </code>
-              <button
-                onClick={() => copyToClipboard(fullBaseUrl)}
-                className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors flex-shrink-0"
-                title="Copy URL"
-              >
+              <IconButton kind="ghost" size="sm" label="Copy URL" onClick={() => copyToClipboard(fullBaseUrl)}>
                 <i className="fas fa-copy"></i>
-              </button>
+              </IconButton>
             </div>
 
           </div>
@@ -1289,7 +1270,7 @@ const DeployPanel = ({ flowId, projectId, apiSpec, flowName }: DeployPanelProps)
         </div>
 
         {/* Available Endpoints */}
-        <div className="bg-white rounded-xl border p-6">
+        <div className="cds--tile app-tile p-6">
           <h3 className="font-medium text-gray-900 mb-4">Available Endpoints</h3>
           <div className="space-y-2">
             {apiSpec.operations?.map((op: any) => (
@@ -1312,7 +1293,7 @@ const DeployPanel = ({ flowId, projectId, apiSpec, flowName }: DeployPanelProps)
         </div>
 
         {/* API Key Authentication Section */}
-        <div className="bg-white rounded-xl border p-6">
+        <div className="cds--tile app-tile p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-medium text-gray-900">API Key Authentication</h3>
             <a 
@@ -1327,12 +1308,13 @@ const DeployPanel = ({ flowId, projectId, apiSpec, flowName }: DeployPanelProps)
           {/* Toggle API Key */}
           <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg mb-4">
             <p className="font-medium text-gray-900">Require API Key</p>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={config.requireApiKey}
-                onChange={(e) => {
-                  const newValue = e.target.checked;
+            <Toggle
+                id="api-require-key"
+                labelText="Require API Key"
+                hideLabel
+                size="sm"
+                toggled={config.requireApiKey}
+                onToggle={(newValue: boolean) => {
                   setConfig(prev => ({ ...prev, requireApiKey: newValue }));
                   apiFetch(`${API_URL}/flows/${flowId}/deployment`, {
                     method: 'PUT',
@@ -1344,10 +1326,7 @@ const DeployPanel = ({ flowId, projectId, apiSpec, flowName }: DeployPanelProps)
                     }),
                   });
                 }}
-                className="sr-only peer"
-              />
-              <div className="w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-600"></div>
-            </label>
+            />
           </div>
 
           {config.requireApiKey ? (

@@ -2,10 +2,11 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Search, RotateCcw, Package, Clock, Loader2, ArrowUpRight, FolderOpen,
+  RotateCcw, Package, Clock, ArrowUpRight, FolderOpen,
   Inbox, Server, Folder, GripVertical,
 } from 'lucide-react';
 import { API_URL } from '../config/api';
+import { IconButton, Loading, Search as CdsSearch, ContentSwitcher, Switch, InlineNotification } from '@carbon/react';
 import ProjectTreeSidebar, { SidebarFilter, SidebarProject } from '../components/operator/ProjectTreeSidebar';
 import { filterByScope, buildProjectsById } from '../components/operator/operatorUtils';
 import { useProjectTagGroups, parseTagsField } from '../components/operator/useProjectTagGroups';
@@ -171,20 +172,22 @@ function renderBasketRow(opts: RowOpts) {
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-0.5 pl-1">
-        <button
-          onClick={(e) => { e.stopPropagation(); navigate(`/projects/${b.projectId}/baskets`); }}
-          className="inline-flex items-center justify-center h-7 w-7 rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
-          title="Open in project"
+        <IconButton
+          kind="ghost"
+          size="sm"
+          label="Open in project"
+          onClick={(e: React.MouseEvent) => { e.stopPropagation(); navigate(`/projects/${b.projectId}/baskets`); }}
         >
           <FolderOpen className="h-3.5 w-3.5" />
-        </button>
-        <button
-          onClick={(e) => { e.stopPropagation(); navigate(`/projects/${b.projectId}/baskets?basket=${b.id}`); }}
-          className="inline-flex items-center justify-center h-7 w-7 rounded-md text-slate-700 hover:bg-blue-600 hover:text-white transition-colors"
-          title="View basket"
+        </IconButton>
+        <IconButton
+          kind="ghost"
+          size="sm"
+          label="View basket"
+          onClick={(e: React.MouseEvent) => { e.stopPropagation(); navigate(`/projects/${b.projectId}/baskets?basket=${b.id}`); }}
         >
           <ArrowUpRight className="h-3.5 w-3.5" />
-        </button>
+        </IconButton>
       </div>
     </li>
   );
@@ -344,7 +347,7 @@ export default function BasketManagement() {
 
   if (loading) return (
     <div className="flex h-full items-center justify-center text-slate-500">
-      <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading…
+      <Loading withOverlay={false} small className="mr-2" /> Loading…
     </div>
   );
 
@@ -352,10 +355,12 @@ export default function BasketManagement() {
     <div className="flex flex-col xl:flex-row h-full bg-slate-50">
       {copyMessage && (
         <div className="fixed bottom-6 right-6 z-50">
-          <div className="flex items-center gap-2.5 rounded-lg shadow-lg ring-1 px-4 py-2.5 bg-rose-50 ring-rose-200 text-rose-800">
-            <span className="text-[12.5px] font-medium">{copyMessage}</span>
-            <button onClick={() => setCopyMessage(null)} className="ml-2 text-slate-400 hover:text-slate-700">×</button>
-          </div>
+          <InlineNotification
+            kind="error"
+            lowContrast
+            title={copyMessage}
+            onClose={() => { setCopyMessage(null); return false; }}
+          />
         </div>
       )}
       <ProjectTreeSidebar
@@ -381,47 +386,43 @@ export default function BasketManagement() {
               </div>
               <div className="flex items-center gap-2 flex-wrap">
                 <div className="relative w-full sm:w-72">
-                  <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-                  <input
+                  <CdsSearch
+                    id="basket-mgmt-search"
+                    size="md"
+                    labelText="Search baskets"
                     value={search}
-                    onChange={e => setSearch(e.target.value)}
+                    onChange={(e: any) => setSearch(e.target.value)}
+                    onClear={() => setSearch('')}
                     placeholder="Search by name, project, description…"
-                    className="w-full rounded-md border border-slate-200 bg-white pl-8 pr-3 py-1.5 text-sm placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-100 transition-colors"
                   />
                 </div>
-                <button
-                  onClick={() => fetchData()}
-                  className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors"
-                  title="Refresh"
-                >
+                <IconButton kind="ghost" size="md" label="Refresh" onClick={() => fetchData()}>
                   <RotateCcw className="h-4 w-4" />
-                </button>
+                </IconButton>
               </div>
             </div>
 
             {/* Segmented type control */}
-            <div className="mt-3 inline-flex items-center rounded-lg bg-slate-100 p-0.5">
-              {[
+            {(() => {
+              const typeTabs = [
                 { id: 'all',    label: 'All',    count: stats.all },
-                { id: 'batch',  label: 'Batch',  count: stats.batch,  dot: 'bg-slate-400'  },
-                { id: 'shares', label: 'Shares', count: stats.shares, dot: 'bg-cyan-500'   },
-                { id: 'sftp',   label: 'SFTP',   count: stats.sftp,   dot: 'bg-violet-500' },
-              ].map(t => (
-                <button
-                  key={t.id}
-                  onClick={() => setTypeTab(t.id as any)}
-                  className={`relative inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[12px] font-medium transition-all ${
-                    typeTab === t.id
-                      ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200/60'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
+                { id: 'batch',  label: 'Batch',  count: stats.batch  },
+                { id: 'shares', label: 'Shares', count: stats.shares },
+                { id: 'sftp',   label: 'SFTP',   count: stats.sftp   },
+              ];
+              return (
+                <ContentSwitcher
+                  className="mt-3 max-w-md"
+                  size="sm"
+                  selectedIndex={Math.max(0, typeTabs.findIndex(t => t.id === typeTab))}
+                  onChange={({ name }: any) => setTypeTab(name as any)}
                 >
-                  {t.dot && <span className={`h-1.5 w-1.5 rounded-full ${t.dot}`} />}
-                  {t.label}
-                  <span className={`tabular-nums text-[12px] ${typeTab === t.id ? 'text-slate-500' : 'text-slate-400'}`}>{t.count}</span>
-                </button>
-              ))}
-            </div>
+                  {typeTabs.map(t => (
+                    <Switch key={t.id} name={t.id} text={`${t.label} ${t.count}`} />
+                  ))}
+                </ContentSwitcher>
+              );
+            })()}
           </div>
         </div>
 

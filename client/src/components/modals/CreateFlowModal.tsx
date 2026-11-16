@@ -1,7 +1,8 @@
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
-import { Globe, Clock, X, ChevronDown, CheckCircle2, Plus, Layers } from 'lucide-react';
+import { TextInput, TextArea, DismissibleTag } from '@carbon/react';
+import { Globe, Clock, ChevronDown, CheckCircle2, Plus, Layers } from 'lucide-react';
 
 interface CreateFlowModalProps {
   isOpen: boolean;
@@ -92,12 +93,14 @@ const ComboboxWithAdd = ({ label, value, options, onChange, onAddNew, placeholde
         <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-auto">
           {/* Search/Add Input */}
           <div className="p-1.5 border-b border-gray-100 sticky top-0 bg-white">
-            <input
-              type="text"
+            <TextInput
+              id={`combobox-${label.toLowerCase().replace(/\s+/g, '-')}-search`}
+              labelText={`Search or add ${label.toLowerCase()}`}
+              hideLabel
+              size="sm"
               value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInputValue(e.target.value)}
               placeholder={`Search or add ${label.toLowerCase()}...`}
-              className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
               autoFocus
             />
           </div>
@@ -194,21 +197,17 @@ const TagInput = ({ label, tags, onChange, placeholder }: TagInputProps) => {
         onClick={() => inputRef.current?.focus()}
       >
         {tags.map((tag) => (
-          <span
+          <DismissibleTag
             key={tag}
-            className="inline-flex items-center gap-0.5 text-[12px] px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full border border-blue-200"
-          >
-            {tag}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleRemoveTag(tag);
-              }}
-              className="hover:text-red-500 transition-colors p-0.5"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          </span>
+            size="sm"
+            type="blue"
+            text={tag}
+            title={`Remove ${tag}`}
+            onClose={(e: React.MouseEvent) => {
+              e.stopPropagation();
+              handleRemoveTag(tag);
+            }}
+          />
         ))}
         <input
           ref={inputRef}
@@ -347,14 +346,11 @@ export const CreateFlowModal = ({ isOpen, onClose, onCreate, onUpdate, projectId
 
         {/* Name */}
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">
-            Name <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
+          <TextInput
+            id="create-flow-name"
+            labelText={<>Name <span className="text-red-500">*</span></>}
             value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
             placeholder={selectedType === 'rest-api' ? 'e.g., Customer API' : 'e.g., Daily Report'}
             autoFocus
           />
@@ -362,11 +358,11 @@ export const CreateFlowModal = ({ isOpen, onClose, onCreate, onUpdate, projectId
 
         {/* Description */}
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">Description</label>
-          <textarea
+          <TextArea
+            id="create-flow-description"
+            labelText="Description"
             value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
             rows={2}
             placeholder="What does this flow do?"
           />

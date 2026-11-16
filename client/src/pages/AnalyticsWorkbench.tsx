@@ -2,12 +2,18 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Database, Key, BarChart2, Play, Pencil, Trash2, Plus,
   Eye, EyeOff, Copy, Check, X, RefreshCw,
-  AlertCircle, Loader2, Search, Table2,
+  AlertCircle, Loader2, Table2,
   ChevronRight, ChevronDown, Save,
   Settings, Filter, GripVertical, LayoutGrid,
   ArrowRight, ArrowLeft, ArrowRightLeft, FileSpreadsheet
 } from 'lucide-react';
 import { API_URL, apiFetch } from '../config/api';
+import {
+  ComposedModal, ModalHeader, ModalBody, ModalFooter,
+  TextInput, PasswordInput, Select, SelectItem, TextArea, Checkbox, Search as CdsSearch,
+  IconButton, Tag, Loading, InlineLoading, InlineNotification, Tabs, TabList, Tab, ContentSwitcher, Switch,
+} from '@carbon/react';
+import { Button } from '../components/ui/Button';
 import { useCurrentUser, isAdminUser } from '../lib/currentUser';
 import { AdminOnlyNotice } from '../components/access/AdminOnly';
 
@@ -105,17 +111,10 @@ function Modal({ title, onClose, children }: {
   children: React.ReactNode;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
-          <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 rounded">
-            <X size={20} />
-          </button>
-        </div>
-        <div className="px-6 py-5">{children}</div>
-      </div>
-    </div>
+    <ComposedModal open onClose={onClose} size="sm">
+      <ModalHeader title={title} />
+      <ModalBody>{children}</ModalBody>
+    </ComposedModal>
   );
 }
 
@@ -127,19 +126,16 @@ function ConfirmDialog({ message, onConfirm, onCancel }: {
   onCancel: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 p-6">
-        <p className="text-gray-800 mb-6">{message}</p>
-        <div className="flex justify-end gap-3">
-          <button onClick={onCancel} className="inline-flex items-center justify-center px-3 h-9 text-[14px] rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 whitespace-nowrap">
-            Cancel
-          </button>
-          <button onClick={onConfirm} className="inline-flex items-center justify-center px-3 h-9 text-[14px] rounded-lg whitespace-nowrap bg-red-600 text-white hover:bg-red-700">
-            Delete
-          </button>
-        </div>
-      </div>
-    </div>
+    <ComposedModal open onClose={onCancel} size="xs" danger>
+      <ModalHeader title="Confirm delete" />
+      <ModalBody>
+        <p>{message}</p>
+      </ModalBody>
+      <ModalFooter>
+        <Button variant="secondary" onClick={onCancel}>Cancel</Button>
+        <Button variant="danger" onClick={onConfirm}>Delete</Button>
+      </ModalFooter>
+    </ComposedModal>
   );
 }
 
@@ -266,14 +262,14 @@ function ConnectionsSection() {
           <h2 className="text-xl font-bold text-gray-900">Connections</h2>
           <p className="text-sm text-gray-500 mt-0.5">Manage database connections for analytics</p>
         </div>
-        <button onClick={openCreate} className="flex items-center gap-2 px-3 h-9 text-[14px] font-medium rounded-lg whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700">
-          <Plus size={16} /> New Connection
-        </button>
+        <Button onClick={openCreate} leftIcon={<Plus size={16} />}>
+          New Connection
+        </Button>
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="animate-spin text-blue-500" size={28} />
+          <Loading withOverlay={false} small={false} description="Loading" />
         </div>
       ) : connections.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-gray-400">
@@ -283,7 +279,7 @@ function ConnectionsSection() {
       ) : (
         <div className="space-y-3">
           {connections.map(c => (
-            <div key={c.id} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+            <div key={c.id} className="cds--tile app-tile p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <Database size={18} className="text-blue-500 shrink-0" />
@@ -306,20 +302,15 @@ function ConnectionsSection() {
                       {testResults[c.id].msg}
                     </span>
                   )}
-                  <button
-                    onClick={() => handleTest(c)}
-                    disabled={testingId === c.id}
-                    title="Test connection"
-                    className="p-2 rounded-lg text-gray-500 hover:text-green-600 hover:bg-green-50 disabled:opacity-50"
-                  >
+                  <IconButton kind="ghost" size="sm" label="Test connection" onClick={() => handleTest(c)} disabled={testingId === c.id}>
                     {testingId === c.id ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
-                  </button>
-                  <button onClick={() => openEdit(c)} title="Edit" className="p-2 rounded-lg text-gray-500 hover:text-blue-600 hover:bg-blue-50">
+                  </IconButton>
+                  <IconButton kind="ghost" size="sm" label="Edit" onClick={() => openEdit(c)}>
                     <Pencil size={16} />
-                  </button>
-                  <button onClick={() => setDeleteTarget(c)} title="Delete" className="p-2 rounded-lg text-gray-500 hover:text-red-600 hover:bg-red-50">
+                  </IconButton>
+                  <IconButton kind="ghost" size="sm" label="Delete" onClick={() => setDeleteTarget(c)}>
                     <Trash2 size={16} />
-                  </button>
+                  </IconButton>
                 </div>
               </div>
               <p className="text-xs text-gray-400 mt-2 ml-7">
@@ -334,52 +325,42 @@ function ConnectionsSection() {
         <Modal title={editTarget ? 'Edit Connection' : 'New Connection'} onClose={() => setShowModal(false)}>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
-              <input
-                className="w-full border border-gray-300 rounded-lg px-3 h-9 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              <TextInput id="wb-name-3" labelText={<>Name <span className="text-red-500">*</span></>}
                 value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                 placeholder="My Production DB"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-              <select
-                className="w-full border border-gray-300 rounded-lg px-3 h-9 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              <Select id="wb-type-1" labelText="Type"
                 value={form.type}
                 onChange={e => {
                   const t = e.target.value as ConnectionType;
                   setForm(f => ({ ...f, type: t, port: DEFAULT_PORTS[t] }));
                 }}
               >
-                <option value="postgresql">PostgreSQL</option>
-                <option value="mysql">MySQL</option>
-                <option value="oracle">Oracle</option>
-              </select>
+                <SelectItem value="postgresql" text="PostgreSQL" />
+                <SelectItem value="mysql" text="MySQL" />
+                <SelectItem value="oracle" text="Oracle" />
+              </Select>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Host <span className="text-red-500">*</span></label>
-                <input
-                  className="w-full border border-gray-300 rounded-lg px-3 h-9 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                <TextInput id="wb-host-4" labelText={<>Host <span className="text-red-500">*</span></>}
                   value={form.host}
                   onChange={e => setForm(f => ({ ...f, host: e.target.value }))}
                   placeholder="localhost"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Port</label>
-                <input
-                  className="w-full border border-gray-300 rounded-lg px-3 h-9 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                <TextInput id="wb-port-5" labelText="Port"
                   value={form.port}
                   onChange={e => setForm(f => ({ ...f, port: e.target.value }))}
                 />
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Database <span className="text-red-500">*</span></label>
-              <input
-                className="w-full border border-gray-300 rounded-lg px-3 h-9 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              <TextInput id="wb-database-6" labelText={<>Database <span className="text-red-500">*</span></>}
                 value={form.database}
                 onChange={e => setForm(f => ({ ...f, database: e.target.value }))}
                 placeholder="mydb"
@@ -387,51 +368,36 @@ function ConnectionsSection() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Username <span className="text-red-500">*</span></label>
-                <input
-                  className="w-full border border-gray-300 rounded-lg px-3 h-9 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                <TextInput id="wb-username-7" labelText={<>Username <span className="text-red-500">*</span></>}
                   value={form.username}
                   onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                <input
-                  type="password"
-                  className="w-full border border-gray-300 rounded-lg px-3 h-9 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                <PasswordInput id="wb-password-8" labelText="Password"
                   value={form.password}
                   onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
                 />
               </div>
             </div>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                className="w-4 h-4 accent-blue-600"
-                checked={form.ssl}
-                onChange={e => setForm(f => ({ ...f, ssl: e.target.checked }))}
-              />
-              <span className="text-sm text-gray-700">Enable SSL</span>
-            </label>
+            <Checkbox
+              id="wb-conn-ssl"
+              labelText="Enable SSL"
+              checked={form.ssl}
+              onChange={(_e, { checked }) => setForm(f => ({ ...f, ssl: checked }))}
+            />
 
             {error && (
-              <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">
-                <AlertCircle size={14} /> {error}
-              </div>
+              <InlineNotification kind="error" lowContrast hideCloseButton title={error} />
             )}
 
             <div className="flex justify-end gap-3 pt-2">
-              <button onClick={() => setShowModal(false)} className="inline-flex items-center justify-center px-3.5 h-9 text-[14px] rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 whitespace-nowrap">
+              <Button variant="secondary" onClick={() => setShowModal(false)}>
                 Cancel
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={submitting}
-                className="px-3 h-9 text-[14px] rounded-lg disabled:opacity-60 flex items-center gap-2 whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700"
-              >
-                {submitting && <Loader2 size={14} className="animate-spin" />}
+              </Button>
+              <Button onClick={handleSubmit} isLoading={submitting}>
                 {editTarget ? 'Save Changes' : 'Create'}
-              </button>
+              </Button>
             </div>
           </div>
         </Modal>
@@ -535,12 +501,12 @@ function ApiKeysSection() {
           <h2 className="text-xl font-bold text-gray-900">API Keys</h2>
           <p className="text-sm text-gray-500 mt-0.5">Manage access tokens for the Analytics Workbench API</p>
         </div>
-        <button
+        <Button
           onClick={() => { setForm({ name: '', permissions: 'read', expiresAt: '' }); setError(''); setShowModal(true); }}
-          className="flex items-center gap-2 px-3.5 h-9 bg-blue-600 text-white text-[14px] font-medium rounded-lg hover:bg-blue-700 whitespace-nowrap"
+          leftIcon={<Plus size={16} />}
         >
-          <Plus size={16} /> New API Key
-        </button>
+          New API Key
+        </Button>
       </div>
 
       {newKey && (
@@ -548,19 +514,19 @@ function ApiKeysSection() {
           <p className="text-sm font-medium text-green-800 mb-2">API key created. Copy it now — it won't be shown again.</p>
           <div className="flex items-center gap-2">
             <code className="flex-1 text-xs font-mono bg-white border border-green-200 rounded px-3 py-2 text-green-900 truncate">{newKey}</code>
-            <button onClick={() => copyKey(newKey)} className="p-2 rounded-lg bg-green-600 text-white hover:bg-green-700">
+            <IconButton kind="primary" size="sm" label="Copy key" onClick={() => copyKey(newKey)}>
               {copied ? <Check size={16} /> : <Copy size={16} />}
-            </button>
-            <button onClick={() => setNewKey(null)} className="p-2 rounded-lg text-green-700 hover:bg-green-100">
+            </IconButton>
+            <IconButton kind="ghost" size="sm" label="Dismiss" onClick={() => setNewKey(null)}>
               <X size={16} />
-            </button>
+            </IconButton>
           </div>
         </div>
       )}
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="animate-spin text-blue-500" size={28} />
+          <Loading withOverlay={false} small={false} description="Loading" />
         </div>
       ) : keys.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-gray-400">
@@ -570,7 +536,7 @@ function ApiKeysSection() {
       ) : (
         <div className="space-y-3">
           {keys.map(k => (
-            <div key={k.id} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+            <div key={k.id} className="cds--tile app-tile p-4">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -578,21 +544,21 @@ function ApiKeysSection() {
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${PERMISSION_COLORS[k.permissions]}`}>
                       {k.permissions}
                     </span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${k.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                    <Tag size="sm" type={k.isActive ? 'green' : 'gray'}>
                       {k.isActive ? 'Active' : 'Inactive'}
-                    </span>
+                    </Tag>
                   </div>
                   <div className="flex items-center gap-2 mt-2">
                     <code className="text-xs font-mono text-gray-500 bg-gray-50 px-2 py-1 rounded">
                       {revealed[k.id] ? k.key : maskKey(k.key)}
                     </code>
-                    <button onClick={() => setRevealed(r => ({ ...r, [k.id]: !r[k.id] }))} className="text-gray-400 hover:text-gray-600">
+                    <IconButton kind="ghost" size="sm" label={revealed[k.id] ? 'Hide key' : 'Reveal key'} onClick={() => setRevealed(r => ({ ...r, [k.id]: !r[k.id] }))}>
                       {revealed[k.id] ? <EyeOff size={14} /> : <Eye size={14} />}
-                    </button>
+                    </IconButton>
                     {revealed[k.id] && (
-                      <button onClick={() => copyKey(k.key)} className="text-gray-400 hover:text-blue-600">
+                      <IconButton kind="ghost" size="sm" label="Copy key" onClick={() => copyKey(k.key)}>
                         <Copy size={14} />
-                      </button>
+                      </IconButton>
                     )}
                   </div>
                   {k.expiresAt && (
@@ -600,16 +566,12 @@ function ApiKeysSection() {
                   )}
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  <button
-                    onClick={() => handleToggle(k)}
-                    title={k.isActive ? 'Deactivate' : 'Activate'}
-                    className={`p-2 rounded-lg text-sm ${k.isActive ? 'text-green-600 hover:bg-green-50' : 'text-gray-400 hover:bg-gray-50'}`}
-                  >
-                    <RefreshCw size={16} />
-                  </button>
-                  <button onClick={() => setDeleteTarget(k)} className="p-2 rounded-lg text-gray-500 hover:text-red-600 hover:bg-red-50">
+                  <IconButton kind="ghost" size="sm" label={k.isActive ? 'Deactivate' : 'Activate'} onClick={() => handleToggle(k)}>
+                    <RefreshCw size={16} className={k.isActive ? 'text-green-600' : 'text-gray-400'} />
+                  </IconButton>
+                  <IconButton kind="ghost" size="sm" label="Delete" onClick={() => setDeleteTarget(k)}>
                     <Trash2 size={16} />
-                  </button>
+                  </IconButton>
                 </div>
               </div>
             </div>
@@ -621,9 +583,7 @@ function ApiKeysSection() {
         <Modal title="New API Key" onClose={() => setShowModal(false)}>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
-              <input
-                className="w-full border border-gray-300 rounded-lg px-3 h-9 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              <TextInput id="wb-name-9" labelText={<>Name <span className="text-red-500">*</span></>}
                 value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                 placeholder="My application key"
@@ -651,33 +611,24 @@ function ApiKeysSection() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Expires At (optional)</label>
-              <input
+              <TextInput id="wb-expires-at-optional-10" labelText="Expires At (optional)"
                 type="date"
-                className="w-full border border-gray-300 rounded-lg px-3 h-9 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={form.expiresAt}
                 onChange={e => setForm(f => ({ ...f, expiresAt: e.target.value }))}
               />
             </div>
 
             {error && (
-              <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">
-                <AlertCircle size={14} /> {error}
-              </div>
+              <InlineNotification kind="error" lowContrast hideCloseButton title={error} />
             )}
 
             <div className="flex justify-end gap-3 pt-2">
-              <button onClick={() => setShowModal(false)} className="inline-flex items-center justify-center px-3.5 h-9 text-[14px] rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 whitespace-nowrap">
+              <Button variant="secondary" onClick={() => setShowModal(false)}>
                 Cancel
-              </button>
-              <button
-                onClick={handleCreate}
-                disabled={submitting}
-                className="px-3 h-9 text-[14px] rounded-lg disabled:opacity-60 flex items-center gap-2 whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700"
-              >
-                {submitting && <Loader2 size={14} className="animate-spin" />}
+              </Button>
+              <Button onClick={handleCreate} isLoading={submitting}>
                 Create Key
-              </button>
+              </Button>
             </div>
           </div>
         </Modal>
@@ -795,14 +746,14 @@ function DatasetsSection() {
           <h2 className="text-xl font-bold text-gray-900">Datasets</h2>
           <p className="text-sm text-gray-500 mt-0.5">Register tables from connected databases as datasets</p>
         </div>
-        <button onClick={openModal} className="flex items-center gap-2 px-3 h-9 text-[14px] font-medium rounded-lg whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700">
-          <Plus size={16} /> Add Dataset
-        </button>
+        <Button onClick={openModal} leftIcon={<Plus size={16} />}>
+          Add Dataset
+        </Button>
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="animate-spin text-blue-500" size={28} />
+          <Loading withOverlay={false} small={false} description="Loading" />
         </div>
       ) : datasets.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-gray-400">
@@ -812,7 +763,7 @@ function DatasetsSection() {
       ) : (
         <div className="grid grid-cols-1 gap-3">
           {datasets.map(d => (
-            <div key={d.id} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex items-start justify-between gap-4">
+            <div key={d.id} className="cds--tile app-tile p-4 flex items-start justify-between gap-4">
               <div className="flex items-start gap-3">
                 <Table2 size={18} className="text-blue-500 mt-0.5 shrink-0" />
                 <div>
@@ -829,9 +780,9 @@ function DatasetsSection() {
                   <p className="text-xs text-gray-400 mt-1">Added {new Date(d.createdAt).toLocaleDateString()}</p>
                 </div>
               </div>
-              <button onClick={() => setDeleteTarget(d)} className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 shrink-0">
+              <IconButton kind="ghost" size="sm" label="Delete" onClick={() => setDeleteTarget(d)}>
                 <Trash2 size={16} />
-              </button>
+              </IconButton>
             </div>
           ))}
         </div>
@@ -841,39 +792,42 @@ function DatasetsSection() {
         <Modal title="Add Dataset" onClose={() => setShowModal(false)}>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Connection <span className="text-red-500">*</span></label>
-              <select
-                className="w-full border border-gray-300 rounded-lg px-3 h-9 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              <Select
+                id="wb-dataset-connection"
+                labelText={<>Connection <span className="text-red-500">*</span></>}
                 value={selConnId}
                 onChange={e => { setSelConnId(e.target.value); setTableList([]); setSelectedTable(''); }}
               >
-                <option value="">Select a connection…</option>
+                <SelectItem value="" text="Select a connection…" />
                 {connections.map(c => (
-                  <option key={c.id} value={c.id}>{c.name} ({CONNECTION_TYPE_LABELS[c.type]})</option>
+                  <SelectItem key={c.id} value={c.id} text={`${c.name} (${CONNECTION_TYPE_LABELS[c.type]})`} />
                 ))}
-              </select>
+              </Select>
             </div>
 
             {selConnId && (
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="relative flex-1">
-                    <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input
-                      className="w-full border border-gray-300 rounded-lg pl-8 pr-3 h-8 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  <div className="flex-1">
+                    <CdsSearch
+                      id="wb-dataset-table-search"
+                      size="sm"
+                      labelText="Search tables"
                       placeholder="Search tables…"
                       value={tableSearch}
-                      onChange={e => setTableSearch(e.target.value)}
+                      onChange={(e: any) => setTableSearch(e.target.value)}
+                      onClear={() => setTableSearch('')}
                     />
                   </div>
-                  <button
+                  <Button
+                    variant="tertiary"
+                    size="sm"
                     onClick={browseTables}
                     disabled={loadingTables}
-                    className="flex items-center gap-1.5 px-3 h-9 text-[14px] rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 disabled:opacity-50 whitespace-nowrap"
+                    leftIcon={loadingTables ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
                   >
-                    {loadingTables ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
                     Browse
-                  </button>
+                  </Button>
                 </div>
                 {tableList.length > 0 && (
                   <div className="border border-gray-200 rounded-lg max-h-40 overflow-y-auto">
@@ -898,18 +852,14 @@ function DatasetsSection() {
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Dataset Name <span className="text-red-500">*</span></label>
-              <input
-                className="w-full border border-gray-300 rounded-lg px-3 h-9 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              <TextInput id="wb-dataset-name-11" labelText={<>Dataset Name <span className="text-red-500">*</span></>}
                 value={dsName}
                 onChange={e => setDsName(e.target.value)}
                 placeholder="My Dataset"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description (optional)</label>
-              <textarea
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              <TextArea id="wb-description-optional-15" labelText="Description (optional)"
                 rows={2}
                 value={dsDesc}
                 onChange={e => setDsDesc(e.target.value)}
@@ -917,23 +867,16 @@ function DatasetsSection() {
             </div>
 
             {error && (
-              <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">
-                <AlertCircle size={14} /> {error}
-              </div>
+              <InlineNotification kind="error" lowContrast hideCloseButton title={error} />
             )}
 
             <div className="flex justify-end gap-3 pt-2">
-              <button onClick={() => setShowModal(false)} className="inline-flex items-center justify-center px-3.5 h-9 text-[14px] rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 whitespace-nowrap">
+              <Button variant="secondary" onClick={() => setShowModal(false)}>
                 Cancel
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={submitting}
-                className="px-3 h-9 text-[14px] rounded-lg disabled:opacity-60 flex items-center gap-2 whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700"
-              >
-                {submitting && <Loader2 size={14} className="animate-spin" />}
+              </Button>
+              <Button onClick={handleSubmit} isLoading={submitting}>
                 Add Dataset
-              </button>
+              </Button>
             </div>
           </div>
         </Modal>
@@ -1028,20 +971,24 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
           <div className="flex items-center gap-2 font-bold text-gray-800">
             <Settings size={16} className="text-blue-500" /> Settings
           </div>
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-700">
+          <IconButton kind="ghost" size="sm" label="Close" onClick={onClose}>
             <X size={16} />
-          </button>
+          </IconButton>
         </div>
         {/* Tab bar */}
-        <div className="flex border-b px-6 gap-1">
-          {TABS.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)}
-              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 -mb-px transition-colors ${
-                tab === t.id ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}>
-              {t.icon}{t.label}
-            </button>
-          ))}
+        <div className="border-b px-6">
+          <Tabs
+            selectedIndex={Math.max(0, TABS.findIndex(t => t.id === tab))}
+            onChange={({ selectedIndex }: { selectedIndex: number }) => setTab(TABS[selectedIndex].id)}
+          >
+            <TabList aria-label="Settings sections">
+              {TABS.map(t => (
+                <Tab key={t.id}>
+                  <span className="inline-flex items-center gap-1.5">{t.icon}{t.label}</span>
+                </Tab>
+              ))}
+            </TabList>
+          </Tabs>
         </div>
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
@@ -1132,51 +1079,55 @@ function LeftDatasetPanel({
     <div className="flex flex-col h-full overflow-hidden">
       {/* Search */}
       <div className="p-2 border-b">
-        <div className="relative">
-          <Search size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Search datasets…"
-            className="w-full text-xs pl-6 pr-2 py-1.5 border border-gray-200 rounded-md bg-white focus:outline-none focus:border-blue-400" />
-        </div>
+        <CdsSearch
+          id="wb-left-dataset-search"
+          size="sm"
+          labelText="Search datasets"
+          value={search}
+          onChange={(e: any) => setSearch(e.target.value)}
+          onClear={() => setSearch('')}
+          placeholder="Search datasets…"
+        />
       </div>
 
       {/* Add Dataset compact modal */}
       {showAdd && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl shadow-2xl w-[420px] mx-4">
-            <div className="flex items-center justify-between px-4 py-3 border-b">
-              <span className="text-sm font-semibold text-gray-800 flex items-center gap-1.5"><Plus size={14} className="text-blue-500" /> Add Dataset</span>
-              <button onClick={() => setShowAdd(false)} className="p-1 hover:bg-gray-100 rounded text-gray-400"><X size={14} /></button>
-            </div>
-            <div className="px-4 py-4 space-y-3">
+        <ComposedModal open onClose={() => setShowAdd(false)} size="sm">
+            <ModalHeader title="Add Dataset" />
+            <ModalBody className="space-y-3">
               <div>
-                <label className="text-xs font-medium text-gray-600 block mb-1">Connection</label>
-                <select
-                  className="w-full text-xs border border-gray-200 rounded-lg px-2.5 h-9 bg-gray-50 focus:outline-none focus:border-blue-400"
+                <Select id="wb-connection-2" labelText="Connection"
                   value={addConnId}
                   onChange={e => { setAddConnId(e.target.value); setAddTables([]); setAddSelTable(''); }}
                 >
-                  <option value="">— select —</option>
-                  {addConns.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
+                  <SelectItem value="" text="— select —" />
+                  {addConns.map(c => <SelectItem key={c.id} value={c.id} text={c.name} />)}
+                </Select>
               </div>
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <label className="text-xs font-medium text-gray-600 flex-1">Table</label>
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => addBrowseTables(addConnId)}
                     disabled={!addConnId || addLoadingTables}
-                    className="text-[12px] px-2 py-0.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 disabled:opacity-40 flex items-center gap-1"
+                    leftIcon={addLoadingTables ? <Loader2 size={10} className="animate-spin" /> : <RefreshCw size={10} />}
                   >
-                    {addLoadingTables ? <Loader2 size={10} className="animate-spin" /> : <RefreshCw size={10} />} Browse
-                  </button>
+                    Browse
+                  </Button>
                 </div>
-                <input
-                  className="w-full text-xs border border-gray-200 rounded-lg px-2.5 h-9 focus:outline-none focus:border-blue-400 mb-1.5"
-                  placeholder="Filter tables…"
-                  value={addTableSearch}
-                  onChange={e => setAddTableSearch(e.target.value)}
-                />
+                <div className="mb-1.5">
+                  <TextInput
+                    id="wb-add-table-filter"
+                    labelText="Filter tables"
+                    hideLabel
+                    size="sm"
+                    placeholder="Filter tables…"
+                    value={addTableSearch}
+                    onChange={e => setAddTableSearch(e.target.value)}
+                  />
+                </div>
                 {addTables.length > 0 && (
                   <div className="border border-gray-200 rounded-lg overflow-hidden max-h-32 overflow-y-auto">
                     {addTables.filter(t => t.toLowerCase().includes(addTableSearch.toLowerCase())).map(t => (
@@ -1191,33 +1142,28 @@ function LeftDatasetPanel({
                 {addSelTable && <p className="text-[12px] text-blue-600 mt-1">Selected: <strong>{addSelTable}</strong></p>}
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600 block mb-1">Dataset Name</label>
-                <input
-                  className="w-full text-xs border border-gray-200 rounded-lg px-2.5 h-9 focus:outline-none focus:border-blue-400"
+                <TextInput id="wb-dataset-name-12" labelText="Dataset Name"
                   placeholder="e.g. Budget 2024"
                   value={addName}
                   onChange={e => setAddName(e.target.value)}
                 />
               </div>
-              {addError && <p className="text-xs text-red-500 flex items-center gap-1"><AlertCircle size={11} />{addError}</p>}
-            </div>
-            <div className="flex justify-end gap-2 px-4 pb-4">
-              <button onClick={() => setShowAdd(false)} className="inline-flex items-center justify-center px-3 h-8 text-[13px] border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 whitespace-nowrap">Cancel</button>
-              <button onClick={submitAdd} disabled={addSubmitting} className="px-3 h-9 text-[14px] rounded-lg disabled:opacity-50 flex items-center gap-1.5 whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700">
-                {addSubmitting && <Loader2 size={11} className="animate-spin" />} Add Dataset
-              </button>
-            </div>
-          </div>
-        </div>
+              {addError && <InlineNotification kind="error" lowContrast hideCloseButton title={addError} />}
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="secondary" onClick={() => setShowAdd(false)}>Cancel</Button>
+              <Button onClick={submitAdd} isLoading={addSubmitting}>Add Dataset</Button>
+            </ModalFooter>
+        </ComposedModal>
       )}
 
       <div className="flex-1 overflow-y-auto text-xs">
         {/* Datasets section */}
         <div className="px-3 pt-2 pb-1 flex items-center justify-between">
           <span className="text-[12px] font-bold text-gray-400 uppercase tracking-wider">Datasets</span>
-          <button onClick={openAdd} className="p-0.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Add dataset">
+          <IconButton kind="ghost" size="sm" label="Add dataset" onClick={openAdd}>
             <Plus size={12} />
-          </button>
+          </IconButton>
         </div>
         {filtered.length === 0 && (
           <div className="px-3 py-2 text-gray-400 italic">No datasets yet</div>
@@ -1325,18 +1271,15 @@ function FieldsTab({ schema, fields, onChange }: {
 
         {/* Arrow buttons */}
         <div className="flex flex-col items-center justify-center gap-2 pt-8">
-          <button onClick={() => available[0] && addField(available[0])} title="Add"
-            className="w-7 h-7 flex items-center justify-center border border-gray-200 rounded-md bg-white hover:bg-blue-50 hover:border-blue-300 text-gray-500 hover:text-blue-600 transition-colors">
+          <IconButton kind="tertiary" size="sm" label="Add" onClick={() => available[0] && addField(available[0])}>
             <ArrowRight size={13} />
-          </button>
-          <button onClick={addAll} title="Add all"
-            className="w-7 h-7 flex items-center justify-center border border-gray-200 rounded-md bg-white hover:bg-blue-50 hover:border-blue-300 text-gray-500 hover:text-blue-600 transition-colors text-[12px] font-bold">
-            »
-          </button>
-          <button onClick={removeAll} title="Remove all"
-            className="w-7 h-7 flex items-center justify-center border border-gray-200 rounded-md bg-white hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-500 transition-colors">
+          </IconButton>
+          <IconButton kind="tertiary" size="sm" label="Add all" onClick={addAll}>
+            <span className="text-[12px] font-bold">»</span>
+          </IconButton>
+          <IconButton kind="tertiary" size="sm" label="Remove all" onClick={removeAll}>
             <ArrowLeft size={13} />
-          </button>
+          </IconButton>
         </div>
 
         {/* Selected */}
@@ -1353,9 +1296,9 @@ function FieldsTab({ schema, fields, onChange }: {
                 <GripVertical size={12} className="text-gray-300 group-hover:text-gray-500 flex-shrink-0" />
                 <span className="truncate flex-1 text-blue-800">{f.name}</span>
                 {typeTag(schema.find(c => c.name === f.name)?.type || '')}
-                <button onClick={() => removeField(f.name)} className="ml-1 text-gray-300 hover:text-red-500 flex-shrink-0">
+                <IconButton kind="ghost" size="sm" label="Remove column" onClick={() => removeField(f.name)}>
                   <X size={11} />
-                </button>
+                </IconButton>
               </div>
             ))}
           </div>
@@ -1405,34 +1348,41 @@ function FilterTab({ schema, filters, onChange }: {
           {i === 0 ? (
             <span className="text-[12px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700 min-w-[46px] text-center">WHERE</span>
           ) : (
-            <select value={f.logic} onChange={e => update(f.id, { logic: e.target.value as 'AND' | 'OR' })}
-              className="text-[12px] font-bold px-1 py-0.5 rounded border border-gray-200 bg-green-50 text-green-700 min-w-[46px]">
-              <option>AND</option><option>OR</option>
-            </select>
+            <div className="min-w-[70px]">
+              <Select id={`wb-filter-logic-${f.id}`} labelText="Logic" hideLabel size="sm"
+                value={f.logic} onChange={e => update(f.id, { logic: e.target.value as 'AND' | 'OR' })}>
+                <SelectItem value="AND" text="AND" /><SelectItem value="OR" text="OR" />
+              </Select>
+            </div>
           )}
-          <select value={f.field} onChange={e => update(f.id, { field: e.target.value })}
-            className="text-xs border border-gray-200 rounded-md px-2 py-1 bg-gray-50 min-w-[120px]">
-            {schema.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
-          </select>
-          <select value={f.op} onChange={e => update(f.id, { op: e.target.value })}
-            className="text-xs border border-gray-200 rounded-md px-2 py-1 bg-gray-50 w-[100px]">
-            {FILTER_OPS.map(o => <option key={o}>{o}</option>)}
-          </select>
+          <div className="min-w-[140px]">
+            <Select id={`wb-filter-field-${f.id}`} labelText="Field" hideLabel size="sm"
+              value={f.field} onChange={e => update(f.id, { field: e.target.value })}>
+              {schema.map(c => <SelectItem key={c.name} value={c.name} text={c.name} />)}
+            </Select>
+          </div>
+          <div className="w-[120px]">
+            <Select id={`wb-filter-op-${f.id}`} labelText="Operator" hideLabel size="sm"
+              value={f.op} onChange={e => update(f.id, { op: e.target.value })}>
+              {FILTER_OPS.map(o => <SelectItem key={o} value={o} text={o} />)}
+            </Select>
+          </div>
           {f.op !== 'IS NULL' && f.op !== 'IS NOT NULL' && (
-            <input value={f.value} onChange={e => update(f.id, { value: e.target.value })}
-              className="flex-1 text-xs border border-gray-200 rounded-md px-2 py-1 min-w-0"
-              placeholder="value…" />
+            <div className="flex-1 min-w-0">
+              <TextInput id={`wb-filter-value-${f.id}`} labelText="Value" hideLabel size="sm"
+                value={f.value} onChange={e => update(f.id, { value: e.target.value })}
+                placeholder="value…" />
+            </div>
           )}
-          <button onClick={() => remove(f.id)} className="text-gray-300 hover:text-red-500 flex-shrink-0">
+          <IconButton kind="ghost" size="sm" label="Remove condition" onClick={() => remove(f.id)}>
             <X size={14} />
-          </button>
+          </IconButton>
         </div>
       ))}
 
-      <button onClick={addFilter}
-        className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 py-1 w-fit">
-        <Plus size={13} /> Add Condition
-      </button>
+      <Button variant="ghost" size="sm" className="w-fit" onClick={addFilter} leftIcon={<Plus size={13} />}>
+        Add Condition
+      </Button>
 
       {filters.length > 0 && (
         <pre className="text-[12px] bg-green-50 border border-green-200 rounded-lg p-3 text-green-800 leading-relaxed mt-2 font-mono whitespace-pre-wrap">
@@ -1606,14 +1556,14 @@ function PivotTab({ schema, pivot, onChange, datasetId }: {
 
         {/* Run button + hint */}
         <div className="px-3 pb-2 flex items-center gap-2">
-          <button
+          <Button
+            size="sm"
             disabled={!canRun || pivotLoading}
             onClick={runPivot}
-            className={`flex items-center gap-1.5 px-3 h-9 text-[14px] font-medium rounded-lg transition-colors ${canRun ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-100 text-gray-400 cursor-not-allowed'} whitespace-nowrap`}
+            leftIcon={pivotLoading ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
           >
-            {pivotLoading ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
             Run Pivot
-          </button>
+          </Button>
           {!canRun && schema.length > 0 && (
             <span className="text-[12px] text-gray-400">
               Assign at least one Row and one Value field
@@ -1628,8 +1578,8 @@ function PivotTab({ schema, pivot, onChange, datasetId }: {
 
         {/* Error */}
         {pivotError && (
-          <div className="mx-3 mb-2 px-2 py-1.5 bg-red-50 border border-red-200 rounded text-[12px] text-red-600">
-            {pivotError}
+          <div className="mx-3 mb-2">
+            <InlineNotification kind="error" lowContrast hideCloseButton title={pivotError} />
           </div>
         )}
 
@@ -1803,64 +1753,51 @@ function SaveViewDialog({ onClose, onSave, initialName = '', initialFolderId = '
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-xl shadow-2xl w-[400px] p-6">
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-2 font-bold text-gray-800">
-            <Save size={16} className="text-blue-500" /> Save View
-          </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={16} /></button>
-        </div>
+    <ComposedModal open onClose={onClose} size="sm">
+        <ModalHeader title="Save View" />
 
-        <div className="space-y-3">
+        <ModalBody className="space-y-3">
           <div>
-            <label className="text-xs font-semibold text-gray-600 block mb-1">View Name *</label>
-            <input value={name} onChange={e => setName(e.target.value)}
-              className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-400"
+            <TextInput id="wb-view-name-13" labelText="View Name *" value={name} onChange={e => setName(e.target.value)}
               placeholder="ชื่อ view…" autoFocus />
           </div>
           <div>
-            <label className="text-xs font-semibold text-gray-600 block mb-1">Folder</label>
-            <div className="flex gap-2">
-              <select value={folderId} onChange={e => setFolderId(e.target.value)}
-                className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 focus:outline-none focus:border-blue-400">
-                <option value="">— No Folder —</option>
-                {folders.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
-              </select>
-              <button onClick={() => setShowNewFolder(v => !v)}
-                className="inline-flex items-center justify-center px-3 h-8 border border-gray-200 rounded-lg text-[13px] font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap">
+            <div className="flex gap-2 items-end">
+              <div className="flex-1">
+                <Select id="wb-save-view-folder" labelText="Folder" value={folderId} onChange={e => setFolderId(e.target.value)}>
+                  <SelectItem value="" text="— No Folder —" />
+                  {folders.map(f => <SelectItem key={f.id} value={f.id} text={f.name} />)}
+                </Select>
+              </div>
+              <Button variant="secondary" onClick={() => setShowNewFolder(v => !v)}>
                 + New
-              </button>
+              </Button>
             </div>
             {showNewFolder && (
-              <div className="flex gap-2 mt-1.5">
-                <input value={newFolderName} onChange={e => setNewFolderName(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && createFolder()}
-                  placeholder="ชื่อ folder ใหม่…"
-                  className="flex-1 text-xs border border-blue-400 rounded-lg px-2 py-1.5 focus:outline-none" autoFocus />
-                <button onClick={createFolder} className="inline-flex items-center justify-center px-3 h-9 text-[14px] rounded-lg font-medium whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700">Create</button>
-                <button onClick={() => setShowNewFolder(false)} className="inline-flex items-center justify-center px-2 h-8 border border-gray-200 rounded-lg text-[13px] whitespace-nowrap"><X size={14} /></button>
+              <div className="flex gap-2 mt-1.5 items-center">
+                <div className="flex-1">
+                  <TextInput id="wb-save-view-new-folder" labelText="New folder name" hideLabel
+                    value={newFolderName} onChange={e => setNewFolderName(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && createFolder()}
+                    placeholder="ชื่อ folder ใหม่…" autoFocus />
+                </div>
+                <Button onClick={createFolder}>Create</Button>
+                <IconButton kind="ghost" size="md" label="Cancel new folder" onClick={() => setShowNewFolder(false)}><X size={14} /></IconButton>
               </div>
             )}
           </div>
           <div>
-            <label className="text-xs font-semibold text-gray-600 block mb-1">Description (optional)</label>
-            <input value={description} onChange={e => setDescription(e.target.value)}
-              className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-400"
+            <TextInput id="wb-description-optional-14" labelText="Description (optional)" value={description} onChange={e => setDescription(e.target.value)}
               placeholder="อธิบาย view นี้…" />
           </div>
-          {error && <p className="text-xs text-red-500">{error}</p>}
-        </div>
+          {error && <InlineNotification kind="error" lowContrast hideCloseButton title={error} />}
+        </ModalBody>
 
-        <div className="flex justify-end gap-2 mt-5">
-          <button onClick={onClose} className="inline-flex items-center justify-center px-3 h-9 border border-gray-200 rounded-lg text-[14px] text-gray-600 hover:bg-gray-50 whitespace-nowrap">Cancel</button>
-          <button onClick={handleSave} disabled={saving}
-            className="px-3 h-9 rounded-lg text-[14px] font-medium disabled:opacity-50 flex items-center gap-2 whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700">
-            {saving && <Loader2 size={16} className="animate-spin" />} Save
-          </button>
-        </div>
-      </div>
-    </div>
+        <ModalFooter>
+          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button onClick={handleSave} isLoading={saving}>Save</Button>
+        </ModalFooter>
+    </ComposedModal>
   );
 }
 
@@ -1914,10 +1851,9 @@ function ViewerMode({ tabs, activeTabId, onSetActive, onCloseTab, onAddTab, save
           </div>
         ))}
         <div className="relative ml-1">
-          <button onClick={() => setShowAddMenu(v => !v)}
-            className="flex items-center gap-1 px-3 h-8 text-[13px] text-gray-400 hover:text-gray-600 mt-1.5 whitespace-nowrap">
-            <Plus size={14} /> New Tab
-          </button>
+          <Button variant="ghost" size="sm" className="mt-1.5" onClick={() => setShowAddMenu(v => !v)} leftIcon={<Plus size={14} />}>
+            New Tab
+          </Button>
           {showAddMenu && (
             <div className="absolute top-full left-0 z-20 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg min-w-[200px] py-1">
               {savedViews.map(v => (
@@ -1935,17 +1871,16 @@ function ViewerMode({ tabs, activeTabId, onSetActive, onCloseTab, onAddTab, save
       {/* Toolbar */}
       {activeTab && (
         <div className="flex items-center gap-2 px-3 h-10 bg-white border-b border-gray-100">
-          <button className="flex items-center gap-1.5 text-[14px] px-3 h-9 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 whitespace-nowrap">
-            <Filter size={16} /> Filter
-          </button>
+          <Button variant="secondary" size="sm" leftIcon={<Filter size={16} />}>
+            Filter
+          </Button>
           <div className="w-px h-5 bg-gray-200 mx-1" />
-          {activeTab.loading && <Loader2 size={13} className="animate-spin text-blue-500" />}
-          <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full ml-1">{activeTab.total} rows</span>
+          {activeTab.loading && <InlineLoading description="" className="!w-auto" />}
+          <Tag size="sm" type="gray" className="ml-1">{activeTab.total} rows</Tag>
           <div className="ml-auto flex items-center gap-2">
-            <button onClick={() => exportExcel(activeTab)}
-              className="flex items-center gap-1.5 text-[13px] px-3 h-8 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium whitespace-nowrap">
-              <FileSpreadsheet size={14} /> Export Excel
-            </button>
+            <Button size="sm" onClick={() => exportExcel(activeTab)} leftIcon={<FileSpreadsheet size={14} />}>
+              Export Excel
+            </Button>
           </div>
         </div>
       )}
@@ -1955,7 +1890,7 @@ function ViewerMode({ tabs, activeTabId, onSetActive, onCloseTab, onAddTab, save
         <div className="flex-1 overflow-auto">
           {activeTab.loading ? (
             <div className="flex items-center justify-center h-32 text-gray-400">
-              <Loader2 size={20} className="animate-spin mr-2" /> Loading…
+              <InlineLoading description="Loading…" className="!w-auto" />
             </div>
           ) : (
             <table className="w-full border-collapse text-xs">
@@ -2174,18 +2109,17 @@ function WorkbenchAdmin() {
         </div>
         <div className="flex items-center gap-2">
           {/* Mode switch */}
-          <div className="flex bg-gray-100 rounded-lg p-0.5">
-            {(['builder', 'viewer'] as const).map(m => (
-              <button key={m} onClick={() => setMode(m)}
-                className={`inline-flex items-center justify-center px-3 h-8 text-[13px] font-medium rounded-lg transition-all capitalize ${
-                  mode === m ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-                } whitespace-nowrap`}>{m}</button>
-            ))}
-          </div>
-          <button onClick={() => setShowSettings(true)}
-            className="p-1.5 border border-gray-200 rounded-lg text-gray-500 hover:bg-gray-50 hover:text-gray-700">
+          <ContentSwitcher
+            size="sm"
+            selectedIndex={mode === 'viewer' ? 1 : 0}
+            onChange={({ name }: any) => setMode(name as 'builder' | 'viewer')}
+          >
+            <Switch name="builder" text="Builder" />
+            <Switch name="viewer" text="Viewer" />
+          </ContentSwitcher>
+          <IconButton kind="ghost" size="sm" label="Settings" onClick={() => setShowSettings(true)}>
             <Settings size={15} />
-          </button>
+          </IconButton>
         </div>
       </div>
 
@@ -2209,15 +2143,19 @@ function WorkbenchAdmin() {
             {/* Builder panel */}
             <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
               {/* Tab bar */}
-              <div className="flex border-b border-gray-200 bg-white px-3">
-                {BUILDER_TABS.map(t => (
-                  <button key={t.id} onClick={() => setBuilderTab(t.id)}
-                    className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 -mb-px transition-colors ${
-                      builderTab === t.id ? 'border-blue-500 text-blue-700' : 'border-transparent text-gray-500 hover:text-gray-700'
-                    }`}>
-                    {t.icon}{t.label}
-                  </button>
-                ))}
+              <div className="border-b border-gray-200 bg-white px-3">
+                <Tabs
+                  selectedIndex={Math.max(0, BUILDER_TABS.findIndex(t => t.id === builderTab))}
+                  onChange={({ selectedIndex }: { selectedIndex: number }) => setBuilderTab(BUILDER_TABS[selectedIndex].id)}
+                >
+                  <TabList aria-label="Builder sections">
+                    {BUILDER_TABS.map(t => (
+                      <Tab key={t.id}>
+                        <span className="inline-flex items-center gap-2">{t.icon}{t.label}</span>
+                      </Tab>
+                    ))}
+                  </TabList>
+                </Tabs>
               </div>
 
               {/* Tab content */}
@@ -2231,7 +2169,7 @@ function WorkbenchAdmin() {
                   </div>
                 ) : schemaLoading ? (
                   <div className="flex items-center justify-center h-full text-gray-400">
-                    <Loader2 size={20} className="animate-spin mr-2" /> Loading schema…
+                    <InlineLoading description="Loading schema…" className="!w-auto" />
                   </div>
                 ) : (
                   <>
@@ -2248,12 +2186,9 @@ function WorkbenchAdmin() {
                   {selectedDataset ? selectedDataset.name : 'No dataset selected'}
                 </span>
                 <div className="ml-auto flex items-center gap-2">
-                  <button
-                    disabled={!selectedDataset}
-                    onClick={() => setShowSaveDialog(true)}
-                    className="flex items-center gap-1.5 px-3 h-8 bg-blue-600 text-white text-[13px] font-medium rounded-lg hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap">
-                    <Save size={14} /> Save View
-                  </button>
+                  <Button size="sm" disabled={!selectedDataset} onClick={() => setShowSaveDialog(true)} leftIcon={<Save size={14} />}>
+                    Save View
+                  </Button>
                 </div>
               </div>
             </div>

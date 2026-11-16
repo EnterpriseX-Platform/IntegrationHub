@@ -4,6 +4,11 @@ import { FlowCanvas, NodeData, ConnectionData } from '../components/flow-designe
 import { Play, Save, ArrowLeft, Settings, Plus, Trash2 } from 'lucide-react';
 import { API_URL, apiFetch } from '../config/api';
 import { createId } from '@paralleldrive/cuid2';
+import {
+  TextInput, PasswordInput, Select, SelectItem, TextArea, Checkbox, IconButton,
+  ComposedModal, ModalHeader, ModalBody, ModalFooter,
+} from '@carbon/react';
+import { Button } from '../components/ui/Button';
 
 // Node type definitions
 const nodeTypes = [
@@ -27,39 +32,41 @@ interface NodeConfigProps {
 const BasketNodeConfig = ({ node, onChange, baskets }: NodeConfigProps) => (
   <div className="space-y-3">
     <div>
-      <label className="block text-xs font-medium text-gray-500 mb-1">Select Basket</label>
-      <select
+      <Select
+        id="fds-select-basket-1"
+        labelText="Select Basket"
+        size="sm"
         value={node.config?.basketId || ''}
         onChange={(e) => onChange({ ...node.config, basketId: e.target.value })}
-        className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
       >
-        <option value="">Select basket...</option>
+        <SelectItem value="" text="Select basket..." />
         {baskets.map(b => (
-          <option key={b.id} value={b.id}>{b.name}</option>
+          <SelectItem key={b.id} value={b.id} text={b.name} />
         ))}
-      </select>
+      </Select>
     </div>
     <div>
-      <label className="block text-xs font-medium text-gray-500 mb-1">File Pattern</label>
-      <input
-        type="text"
+      <TextInput
+        id="fd-file-pattern-1"
+        labelText="File Pattern"
+        size="sm"
         value={node.config?.filePattern || '*'}
         onChange={(e) => onChange({ ...node.config, filePattern: e.target.value })}
-        className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
         placeholder="*.pdf, *.txt"
       />
     </div>
     <div>
-      <label className="block text-xs font-medium text-gray-500 mb-1">Action</label>
-      <select
+      <Select
+        id="fds-action-2"
+        labelText="Action"
+        size="sm"
         value={node.config?.action || 'read'}
         onChange={(e) => onChange({ ...node.config, action: e.target.value })}
-        className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
       >
-        <option value="read">Read Files</option>
-        <option value="move">Read & Move to Processed</option>
-        <option value="delete">Read & Delete</option>
-      </select>
+        <SelectItem value="read" text="Read Files" />
+        <SelectItem value="move" text="Read & Move to Processed" />
+        <SelectItem value="delete" text="Read & Delete" />
+      </Select>
     </div>
   </div>
 );
@@ -67,86 +74,89 @@ const BasketNodeConfig = ({ node, onChange, baskets }: NodeConfigProps) => (
 const SFTPNodeConfig = ({ node, onChange, connections }: NodeConfigProps) => (
   <div className="space-y-3">
     <div>
-      <label className="block text-xs font-medium text-gray-500 mb-1">Connection</label>
-      <select
+      <Select
+        id="fds-connection-3"
+        labelText="Connection"
+        size="sm"
         value={node.config?.connectionId || ''}
         onChange={(e) => onChange({ ...node.config, connectionId: e.target.value })}
-        className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
       >
-        <option value="">Select connection...</option>
+        <SelectItem value="" text="Select connection..." />
         {connections.filter(c => c.type === 'sftp').map(c => (
-          <option key={c.id} value={c.id}>{c.name}</option>
+          <SelectItem key={c.id} value={c.id} text={c.name} />
         ))}
-        <option value="custom">Custom Config...</option>
-      </select>
+        <SelectItem value="custom" text="Custom Config..." />
+      </Select>
     </div>
     
     {(!node.config?.connectionId || node.config?.connectionId === 'custom') && (
       <>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Host</label>
-            <input
-              type="text"
+            <TextInput
+              id="fd-host-2"
+              labelText="Host"
+              size="sm"
               value={node.config?.host || ''}
               onChange={(e) => onChange({ ...node.config, host: e.target.value })}
-              className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
               placeholder="localhost"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Port</label>
-            <input
+            <TextInput
+              id="fd-port-3"
+              labelText="Port"
+              size="sm"
               type="number"
               value={node.config?.port || '22'}
               onChange={(e) => onChange({ ...node.config, port: e.target.value })}
-              className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
             />
           </div>
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">Username</label>
-          <input
-            type="text"
+          <TextInput
+            id="fd-username-4"
+            labelText="Username"
+            size="sm"
             value={node.config?.username || ''}
             onChange={(e) => onChange({ ...node.config, username: e.target.value })}
-            className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">Password</label>
-          <input
-            type="password"
+          <PasswordInput
+            id="fd-password-5"
+            labelText="Password"
+            size="sm"
             value={node.config?.password || ''}
             onChange={(e) => onChange({ ...node.config, password: e.target.value })}
-            className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
           />
         </div>
       </>
     )}
     
     <div>
-      <label className="block text-xs font-medium text-gray-500 mb-1">Remote Path</label>
-      <input
-        type="text"
+      <TextInput
+        id="fd-remote-path-6"
+        labelText="Remote Path"
+        size="sm"
         value={node.config?.remotePath || '/upload'}
         onChange={(e) => onChange({ ...node.config, remotePath: e.target.value })}
-        className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
         placeholder="/upload/incoming"
       />
     </div>
     <div>
-      <label className="block text-xs font-medium text-gray-500 mb-1">Operation</label>
-      <select
+      <Select
+        id="fds-operation-4"
+        labelText="Operation"
+        size="sm"
         value={node.config?.operation || 'upload'}
         onChange={(e) => onChange({ ...node.config, operation: e.target.value })}
-        className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
       >
-        <option value="upload">Upload Files</option>
-        <option value="download">Download Files</option>
-        <option value="list">List Files Only</option>
-        <option value="delete">Delete Files</option>
-      </select>
+        <SelectItem value="upload" text="Upload Files" />
+        <SelectItem value="download" text="Download Files" />
+        <SelectItem value="list" text="List Files Only" />
+        <SelectItem value="delete" text="Delete Files" />
+      </Select>
     </div>
   </div>
 );
@@ -154,27 +164,28 @@ const SFTPNodeConfig = ({ node, onChange, connections }: NodeConfigProps) => (
 const TriggerNodeConfig = ({ node, onChange }: NodeConfigProps) => (
   <div className="space-y-3">
     <div>
-      <label className="block text-xs font-medium text-gray-500 mb-1">Schedule Type</label>
-      <select
+      <Select
+        id="fds-schedule-type-5"
+        labelText="Schedule Type"
+        size="sm"
         value={node.config?.scheduleType || 'cron'}
         onChange={(e) => onChange({ ...node.config, scheduleType: e.target.value })}
-        className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
       >
-        <option value="cron">Cron Expression</option>
-        <option value="interval">Interval (minutes)</option>
-        <option value="once">Run Once</option>
-        <option value="manual">Manual Trigger Only</option>
-      </select>
+        <SelectItem value="cron" text="Cron Expression" />
+        <SelectItem value="interval" text="Interval (minutes)" />
+        <SelectItem value="once" text="Run Once" />
+        <SelectItem value="manual" text="Manual Trigger Only" />
+      </Select>
     </div>
     
     {node.config?.scheduleType === 'cron' && (
       <div>
-        <label className="block text-xs font-medium text-gray-500 mb-1">Cron Expression</label>
-        <input
-          type="text"
+        <TextInput
+          id="fd-cron-expression-7"
+          labelText="Cron Expression"
+          size="sm"
           value={node.config?.cron || '0 */5 * * * *'}
           onChange={(e) => onChange({ ...node.config, cron: e.target.value })}
-          className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
           placeholder="0 */5 * * * * (every 5 min)"
         />
         <p className="text-xs text-gray-400 mt-1">sec min hour day month weekday</p>
@@ -183,12 +194,13 @@ const TriggerNodeConfig = ({ node, onChange }: NodeConfigProps) => (
     
     {node.config?.scheduleType === 'interval' && (
       <div>
-        <label className="block text-xs font-medium text-gray-500 mb-1">Interval (minutes)</label>
-        <input
+        <TextInput
+          id="fd-interval-minutes-8"
+          labelText="Interval (minutes)"
+          size="sm"
           type="number"
           value={node.config?.interval || '5'}
           onChange={(e) => onChange({ ...node.config, interval: e.target.value })}
-          className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
           min="1"
         />
       </div>
@@ -199,46 +211,47 @@ const TriggerNodeConfig = ({ node, onChange }: NodeConfigProps) => (
 const HttpNodeConfig = ({ node, onChange }: NodeConfigProps) => (
   <div className="space-y-3">
     <div>
-      <label className="block text-xs font-medium text-gray-500 mb-1">Method</label>
-      <select
+      <Select
+        id="fds-method-6"
+        labelText="Method"
+        size="sm"
         value={node.config?.method || 'GET'}
         onChange={(e) => onChange({ ...node.config, method: e.target.value })}
-        className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
       >
-        <option value="GET">GET</option>
-        <option value="POST">POST</option>
-        <option value="PUT">PUT</option>
-        <option value="DELETE">DELETE</option>
-        <option value="PATCH">PATCH</option>
-      </select>
+        <SelectItem value="GET" text="GET" />
+        <SelectItem value="POST" text="POST" />
+        <SelectItem value="PUT" text="PUT" />
+        <SelectItem value="DELETE" text="DELETE" />
+        <SelectItem value="PATCH" text="PATCH" />
+      </Select>
     </div>
     <div>
-      <label className="block text-xs font-medium text-gray-500 mb-1">URL</label>
-      <input
-        type="text"
+      <TextInput
+        id="fd-url-9"
+        labelText="URL"
+        size="sm"
         value={node.config?.url || ''}
         onChange={(e) => onChange({ ...node.config, url: e.target.value })}
-        className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
         placeholder="https://api.example.com/data"
       />
     </div>
     <div>
-      <label className="block text-xs font-medium text-gray-500 mb-1">Headers (JSON)</label>
-      <textarea
+      <TextArea
+        id="fd-headers-json-16"
+        labelText="Headers (JSON)"
         value={node.config?.headers || '{}'}
         onChange={(e) => onChange({ ...node.config, headers: e.target.value })}
-        className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm font-mono text-xs"
         rows={3}
         placeholder='{"Content-Type": "application/json"}'
       />
     </div>
     {node.config?.method !== 'GET' && (
       <div>
-        <label className="block text-xs font-medium text-gray-500 mb-1">Body (JSON)</label>
-        <textarea
+        <TextArea
+          id="fd-body-json-17"
+          labelText="Body (JSON)"
           value={node.config?.body || ''}
           onChange={(e) => onChange({ ...node.config, body: e.target.value })}
-          className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm font-mono text-xs"
           rows={4}
           placeholder="{}"
         />
@@ -258,18 +271,20 @@ const TransformNodeConfig = ({ node, onChange }: NodeConfigProps) => {
       <div>
         <div className="flex justify-between items-center mb-1">
           <label className="block text-xs font-medium text-gray-700">Transform Logic</label>
-          <button
+          <Button
+            size="sm"
             onClick={() => {
               setTempCode(node.config?.code || '');
               setShowEditor(true);
             }}
-            className="px-2 h-8 bg-blue-600 text-white text-[13px] rounded hover:bg-blue-700 flex items-center gap-1 whitespace-nowrap"
+            leftIcon={
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+            }
           >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-            </svg>
             Open Editor
-          </button>
+          </Button>
         </div>
         
         {/* Preview textarea (read-only, clickable to open editor) */}
@@ -294,23 +309,12 @@ const TransformNodeConfig = ({ node, onChange }: NodeConfigProps) => {
 
       {/* Modal Code Editor */}
       {showEditor && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl h-[80vh] flex flex-col">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Transform Logic Editor</h3>
-                <p className="text-xs text-gray-500">Write JavaScript code to transform data. Press Ctrl+S to save.</p>
-              </div>
-              <button
-                onClick={() => setShowEditor(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
+        <ComposedModal open onClose={() => setShowEditor(false)} size="lg">
+            <ModalHeader
+              title="Transform Logic Editor"
+              label="Write JavaScript code to transform data. Press Ctrl+S to save."
+            />
+            <ModalBody className="flex flex-col h-[60vh] !p-0 !mb-0">
             
             {/* Editor Toolbar */}
             <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 border-b border-gray-200">
@@ -323,7 +327,11 @@ const TransformNodeConfig = ({ node, onChange }: NodeConfigProps) => {
             
             {/* Code Editor */}
             <div className="flex-1 p-4">
-              <textarea
+              <TextArea
+                id="fd-transform-code"
+                labelText="Transform code"
+                hideLabel
+                rows={20}
                 value={tempCode}
                 onChange={(e) => setTempCode(e.target.value)}
                 onKeyDown={(e) => {
@@ -333,7 +341,7 @@ const TransformNodeConfig = ({ node, onChange }: NodeConfigProps) => {
                     setShowEditor(false);
                   }
                 }}
-                className="w-full h-full px-4 py-3 border border-gray-300 rounded-lg text-sm font-mono resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="font-mono"
                 placeholder={`// Transform Logic Examples:
 
 // 1. Simple data transformation
@@ -359,31 +367,24 @@ return { stgCount: stgRecords.length, goalCount: stgGoalRecords.length };`}
               />
             </div>
             
-            {/* Modal Footer */}
-            <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 bg-gray-50">
-              <div className="text-xs text-gray-500">
-                Tip: Use <kbd className="bg-gray-200 px-1 rounded">Ctrl</kbd>+<kbd className="bg-gray-200 px-1 rounded">S</kbd> to save
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setShowEditor(false)}
-                  className="inline-flex items-center justify-center px-3.5 h-9 text-[14px] text-gray-700 hover:bg-gray-100 rounded whitespace-nowrap"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    onChange({ ...node.config, code: tempCode });
-                    setShowEditor(false);
-                  }}
-                  className="inline-flex items-center justify-center px-3.5 h-9 text-[14px] bg-blue-600 text-white rounded hover:bg-blue-700 whitespace-nowrap"
-                >
-                  Save Changes
-                </button>
-              </div>
+            <div className="px-4 pb-2 text-xs text-gray-500">
+              Tip: Use <kbd className="bg-gray-200 px-1 rounded">Ctrl</kbd>+<kbd className="bg-gray-200 px-1 rounded">S</kbd> to save
             </div>
-          </div>
-        </div>
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="secondary" onClick={() => setShowEditor(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  onChange({ ...node.config, code: tempCode });
+                  setShowEditor(false);
+                }}
+              >
+                Save Changes
+              </Button>
+            </ModalFooter>
+        </ComposedModal>
       )}
     </div>
   );
@@ -392,24 +393,25 @@ return { stgCount: stgRecords.length, goalCount: stgGoalRecords.length };`}
 const FileWriteNodeConfig = ({ node, onChange, connections, baskets }: NodeConfigProps) => (
   <div className="space-y-3">
     <div>
-      <label className="block text-xs font-medium text-gray-500 mb-1">Data Source</label>
-      <select
+      <Select
+        id="fds-data-source-7"
+        labelText="Data Source"
+        size="sm"
         value={node.config?.dataSource || 'input'}
         onChange={(e) => onChange({ ...node.config, dataSource: e.target.value })}
-        className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
       >
-        <option value="input">From Input (previous node)</option>
-        <option value="template">Custom Template</option>
-      </select>
+        <SelectItem value="input" text="From Input (previous node)" />
+        <SelectItem value="template" text="Custom Template" />
+      </Select>
     </div>
 
     {node.config?.dataSource === 'template' && (
       <div>
-        <label className="block text-xs font-medium text-gray-500 mb-1">Template Content</label>
-        <textarea
+        <TextArea
+          id="fd-template-content-18"
+          labelText="Template Content"
           value={node.config?.template || ''}
           onChange={(e) => onChange({ ...node.config, template: e.target.value })}
-          className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
           rows={3}
           placeholder="Enter template content..."
         />
@@ -417,54 +419,52 @@ const FileWriteNodeConfig = ({ node, onChange, connections, baskets }: NodeConfi
     )}
 
     <div>
-      <label className="block text-xs font-medium text-gray-500 mb-1">Output Format</label>
-      <select
+      <Select
+        id="fds-output-format-8"
+        labelText="Output Format"
+        size="sm"
         value={node.config?.format || 'csv'}
         onChange={(e) => onChange({ ...node.config, format: e.target.value })}
-        className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
       >
-        <option value="csv">CSV (Comma Separated)</option>
-        <option value="tsv">TSV (Tab Separated)</option>
-        <option value="delimited">Delimited Text</option>
-        <option value="json">JSON</option>
-        <option value="txt">Plain Text</option>
-      </select>
+        <SelectItem value="csv" text="CSV (Comma Separated)" />
+        <SelectItem value="tsv" text="TSV (Tab Separated)" />
+        <SelectItem value="delimited" text="Delimited Text" />
+        <SelectItem value="json" text="JSON" />
+        <SelectItem value="txt" text="Plain Text" />
+      </Select>
     </div>
 
     {node.config?.format === 'delimited' && (
       <div>
-        <label className="block text-xs font-medium text-gray-500 mb-1">Delimiter</label>
-        <select
+        <Select
+          id="fds-delimiter-9"
+          labelText="Delimiter"
+          size="sm"
           value={node.config?.delimiter || '|'}
           onChange={(e) => onChange({ ...node.config, delimiter: e.target.value })}
-          className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
         >
-          <option value="|">Pipe (|)</option>
-          <option value=",">Comma (,)</option>
-          <option value="\t">Tab</option>
-          <option value=";">Semicolon (;)</option>
-        </select>
+          <SelectItem value="|" text="Pipe (|)" />
+          <SelectItem value="," text="Comma (,)" />
+          <SelectItem value="\t" text="Tab" />
+          <SelectItem value=";" text="Semicolon (;)" />
+        </Select>
       </div>
     )}
 
-    <div className="flex items-center gap-2">
-      <input
-        type="checkbox"
-        id="includeHeader"
-        checked={node.config?.includeHeader !== false}
-        onChange={(e) => onChange({ ...node.config, includeHeader: e.target.checked })}
-        className="rounded border-gray-300"
-      />
-      <label htmlFor="includeHeader" className="text-xs text-gray-600">Include Header Row</label>
-    </div>
+    <Checkbox
+      id="includeHeader"
+      labelText="Include Header Row"
+      checked={node.config?.includeHeader !== false}
+      onChange={(_e, { checked }) => onChange({ ...node.config, includeHeader: checked })}
+    />
 
     <div>
-      <label className="block text-xs font-medium text-gray-500 mb-1">File Name</label>
-      <input
-        type="text"
+      <TextInput
+        id="fd-file-name-10"
+        labelText="File Name"
+        size="sm"
         value={node.config?.fileName || 'output_{{date}}.txt'}
         onChange={(e) => onChange({ ...node.config, fileName: e.target.value })}
-        className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
         placeholder="output_{{date}}.txt"
       />
       <p className="text-xs text-gray-400 mt-1">
@@ -473,28 +473,33 @@ const FileWriteNodeConfig = ({ node, onChange, connections, baskets }: NodeConfi
     </div>
 
     <div className="border-t border-gray-200 pt-3">
-      <label className="block text-xs font-medium text-gray-500 mb-1">Destination</label>
-      <select
+      <Select
+        id="fds-destination-10"
+        labelText="Destination"
+        size="sm"
         value={node.config?.destination || 'basket'}
         onChange={(e) => onChange({ ...node.config, destination: e.target.value })}
-        className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
       >
-        <option value="basket">Basket (with Auto Session)</option>
-        <option value="sftp">SFTP Server</option>
-        <option value="local">Local Storage</option>
-      </select>
+        <SelectItem value="basket" text="Basket (with Auto Session)" />
+        <SelectItem value="sftp" text="SFTP Server" />
+        <SelectItem value="local" text="Local Storage" />
+      </Select>
     </div>
 
     {node.config?.destination === 'basket' && (
       <>
         <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">
-            Select Basket 
-            {baskets.length > 0 && (
-              <span className="text-gray-400 font-normal">({baskets.length} available)</span>
-            )}
-          </label>
-          <select
+          <Select
+            id="fd-file-write-basket"
+            size="sm"
+            labelText={
+              <>
+                Select Basket{' '}
+                {baskets.length > 0 && (
+                  <span className="text-gray-400 font-normal">({baskets.length} available)</span>
+                )}
+              </>
+            }
             value={node.config?.basketId || ''}
             onChange={(e) => {
               const selectedBasket = baskets.find(b => b.id === e.target.value);
@@ -504,16 +509,17 @@ const FileWriteNodeConfig = ({ node, onChange, connections, baskets }: NodeConfi
                 basketType: selectedBasket?.type === 'shares' ? 'shares' : 'batch'
               });
             }}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
             disabled={baskets.length === 0}
           >
-            <option value="">{baskets.length === 0 ? 'Loading baskets...' : 'Select a basket...'}</option>
+            <SelectItem value="" text={baskets.length === 0 ? 'Loading baskets...' : 'Select a basket...'} />
             {baskets.map(b => (
-              <option key={b.id} value={b.id}>
-                {b.name} {b.type === 'shares' ? '(Shares)' : (b.type === 'batch' ? '(Session)' : '')}
-              </option>
+              <SelectItem
+                key={b.id}
+                value={b.id}
+                text={`${b.name} ${b.type === 'shares' ? '(Shares)' : (b.type === 'batch' ? '(Session)' : '')}`}
+              />
             ))}
-          </select>
+          </Select>
           {baskets.length === 0 && (
             <p className="text-xs text-amber-600 mt-1">
               No baskets found. Please create a basket first.
@@ -524,12 +530,12 @@ const FileWriteNodeConfig = ({ node, onChange, connections, baskets }: NodeConfi
         {/* Show Folder selection for Shares basket */}
         {node.config?.basketId && node.config?.basketType === 'shares' && (
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Target Folder</label>
-            <input
-              type="text"
+            <TextInput
+              id="fd-target-folder-11"
+              labelText="Target Folder"
+              size="sm"
               value={node.config?.targetFolder || ''}
               onChange={(e) => onChange({ ...node.config, targetFolder: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="e.g., /incoming, /data/2024"
             />
             <p className="text-xs text-gray-400 mt-1">
@@ -541,16 +547,17 @@ const FileWriteNodeConfig = ({ node, onChange, connections, baskets }: NodeConfi
         {/* Show Session Mode for Batch basket */}
         {node.config?.basketId && node.config?.basketType !== 'shares' && (
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Session Mode</label>
-            <select
+            <Select
+              id="fds-session-mode-11"
+              labelText="Session Mode"
+              size="sm"
               value={node.config?.sessionMode || 'always_new'}
               onChange={(e) => onChange({ ...node.config, sessionMode: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
             >
-              <option value="always_new">Always Create New Session</option>
-              <option value="existing_or_new">Use Existing or Create New</option>
-              <option value="reuse_existing">Reuse Existing Only</option>
-            </select>
+              <SelectItem value="always_new" text="Always Create New Session" />
+              <SelectItem value="existing_or_new" text="Use Existing or Create New" />
+              <SelectItem value="reuse_existing" text="Reuse Existing Only" />
+            </Select>
             <p className="text-xs text-gray-400 mt-1">
               {node.config?.sessionMode === 'always_new' && 'Create a new session every time'}
               {node.config?.sessionMode === 'existing_or_new' && 'Use open session if available, else create new'}
@@ -565,25 +572,26 @@ const FileWriteNodeConfig = ({ node, onChange, connections, baskets }: NodeConfi
     {node.config?.destination === 'sftp' && (
       <>
         <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">SFTP Connection</label>
-          <select
+          <Select
+            id="fds-sftp-connection-12"
+            labelText="SFTP Connection"
+            size="sm"
             value={node.config?.sftpConnectionId || ''}
             onChange={(e) => onChange({ ...node.config, sftpConnectionId: e.target.value })}
-            className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
           >
-            <option value="">Select connection...</option>
+            <SelectItem value="" text="Select connection..." />
             {connections.filter(c => c.type === 'sftp').map(c => (
-              <option key={c.id} value={c.id}>{c.name}</option>
+              <SelectItem key={c.id} value={c.id} text={c.name} />
             ))}
-          </select>
+          </Select>
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">Remote Path</label>
-          <input
-            type="text"
+          <TextInput
+            id="fd-remote-path-12"
+            labelText="Remote Path"
+            size="sm"
             value={node.config?.sftpRemotePath || '/upload'}
             onChange={(e) => onChange({ ...node.config, sftpRemotePath: e.target.value })}
-            className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
             placeholder="/upload/outgoing"
           />
         </div>
@@ -592,12 +600,12 @@ const FileWriteNodeConfig = ({ node, onChange, connections, baskets }: NodeConfi
 
     {node.config?.destination === 'local' && (
       <div>
-        <label className="block text-xs font-medium text-gray-500 mb-1">Local Path</label>
-        <input
-          type="text"
+        <TextInput
+          id="fd-local-path-13"
+          labelText="Local Path"
+          size="sm"
           value={node.config?.localPath || '/tmp'}
           onChange={(e) => onChange({ ...node.config, localPath: e.target.value })}
-          className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
           placeholder="/data/outgoing"
         />
       </div>
@@ -798,42 +806,24 @@ export const FlowDesigner = () => {
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <button 
-            onClick={() => navigate(-1)}
-            className="p-2 hover:bg-gray-100 rounded-lg"
-          >
+          <IconButton kind="ghost" size="md" label="Back" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-5 w-5 text-gray-600" />
-          </button>
+          </IconButton>
           <div>
             <h1 className="text-lg font-semibold text-gray-900">{flowName}</h1>
             <p className="text-xs text-gray-500">Drag nodes, connect handles from any side</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={deleteSelectedNode}
-            disabled={!selectedNodeId}
-            className="flex items-center gap-2 px-3 h-9 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 disabled:opacity-50 whitespace-nowrap"
-          >
-            <Trash2 className="h-4 w-4" />
+          <Button variant="danger" onClick={deleteSelectedNode} disabled={!selectedNodeId} leftIcon={<Trash2 className="h-4 w-4" />}>
             Delete Node
-          </button>
-          <button
-            onClick={saveFlow}
-            disabled={saving}
-            className="flex items-center gap-2 px-3 h-9 border border-gray-300 rounded-lg hover:bg-gray-50 whitespace-nowrap"
-          >
-            <Save className="h-4 w-4" />
+          </Button>
+          <Button variant="secondary" onClick={saveFlow} disabled={saving} leftIcon={<Save className="h-4 w-4" />}>
             {saving ? 'Saving...' : 'Save'}
-          </button>
-          <button
-            onClick={runFlow}
-            disabled={running}
-            className="flex items-center gap-2 px-3 h-9 rounded-lg whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700"
-          >
-            <Play className="h-4 w-4" />
+          </Button>
+          <Button onClick={runFlow} disabled={running} leftIcon={<Play className="h-4 w-4" />}>
             {running ? 'Running...' : 'Run'}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -893,18 +883,17 @@ export const FlowDesigner = () => {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">ID</label>
-                  <input
-                    type="text"
+                  <TextInput
+                    id="fd-id-14"
+                    labelText="ID"
+                    size="sm"
                     value={selectedNode.config?.varName || ''}
                     onChange={(e) => {
                       const val = e.target.value.replace(/[^a-zA-Z0-9]/g, '');
                       updateNodeConfig(selectedNode.id, { ...selectedNode.config, varName: val });
                     }}
-                    className={`w-full px-2 py-1.5 border border-gray-300 rounded text-sm font-mono ${
-                      selectedNode.config?.varName && nodes.some(n => n.id !== selectedNode.id && n.config?.varName === selectedNode.config?.varName)
-                        ? 'border-red-400 bg-red-50' : ''
-                    }`}
+                    className="font-mono"
+                    invalid={!!(selectedNode.config?.varName && nodes.some(n => n.id !== selectedNode.id && n.config?.varName === selectedNode.config?.varName))}
                     placeholder="e.g. db1, http1"
                   />
                   {selectedNode.config?.varName && nodes.some(n => n.id !== selectedNode.id && n.config?.varName === selectedNode.config?.varName) && (
@@ -913,16 +902,16 @@ export const FlowDesigner = () => {
                   <p className="text-[12px] text-gray-400 mt-0.5">ใช้อ้างอิง: <code className="bg-gray-100 px-1">{`{{${selectedNode.config?.varName || 'id'}.rows}}`}</code></p>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Label</label>
-                  <input
-                    type="text"
+                  <TextInput
+                    id="fd-label-15"
+                    labelText="Label"
+                    size="sm"
                     value={selectedNode.label}
                     onChange={(e) => {
                       setNodes(nodes.map(n =>
                         n.id === selectedNode.id ? { ...n, label: e.target.value } : n
                       ));
                     }}
-                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
                   />
                 </div>
 

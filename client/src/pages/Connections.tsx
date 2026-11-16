@@ -2,14 +2,13 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { 
   PlusIcon, 
-  MagnifyingGlassIcon, 
   LinkIcon,
   TrashIcon,
   PencilIcon,
   PlayIcon,
-  CheckCircleIcon,
-  ExclamationCircleIcon,
 } from '../components/icons';
+import { Search, InlineNotification, InlineLoading, Tag, IconButton } from '@carbon/react';
+import { Button } from '../components/ui/Button';
 import ConnectionModal from '../components/modals/ConnectionModal';
 import type { Connection, DatabaseConfig, SFTPConfig, HTTPConfig, GoogleDriveConfig } from '../types';
 import { apiFetch } from '../config/api';
@@ -303,59 +302,54 @@ export default function Connections() {
           <h1 className="text-2xl font-semibold text-gray-900">Connections</h1>
           <p className="mt-1 text-sm text-gray-500">Manage your database, API, and file transfer connections</p>
         </div>
-        <button 
+        <Button
+          variant="primary"
           onClick={() => {
             console.log('[Connections] Button clicked!');
             handleNew();
           }}
-          className="btn-primary"
-          type="button"
+          leftIcon={<PlusIcon className="w-5 h-5" />}
         >
-          <PlusIcon className="w-5 h-5 mr-2" />
           New Connection
-        </button>
+        </Button>
       </div>
 
       {/* Alerts */}
       {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-md flex items-center gap-3 text-red-700">
-          <ExclamationCircleIcon className="w-5 h-5" />
-          <span>{error}</span>
-          <button onClick={() => setError(null)} className="ml-auto text-red-500 hover:text-red-700">
-            <i className="fas fa-times"></i>
-          </button>
-        </div>
+        <InlineNotification
+          kind="error"
+          lowContrast
+          title={error}
+          onClose={() => { setError(null); return false; }}
+        />
       )}
 
       {successMessage && (
-        <div className="p-4 bg-green-50 border border-green-200 rounded-md flex items-center gap-3 text-green-700">
-          <CheckCircleIcon className="w-5 h-5" />
-          <span>{successMessage}</span>
-          <button onClick={() => setSuccessMessage(null)} className="ml-auto text-green-500 hover:text-green-700">
-            <i className="fas fa-times"></i>
-          </button>
-        </div>
+        <InlineNotification
+          kind="success"
+          lowContrast
+          title={successMessage}
+          onClose={() => { setSuccessMessage(null); return false; }}
+        />
       )}
 
       {/* Search */}
-      <div className="relative max-w-md">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
-        </div>
-        <input
-          type="text"
+      <div className="max-w-md">
+        <Search
+          id="connections-search"
+          size="md"
+          labelText="Search connections"
           placeholder="Search connections..."
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+          onChange={(e) => setSearchQuery((e.target as HTMLInputElement).value)}
+          onClear={() => setSearchQuery('')}
         />
       </div>
 
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <i className="fas fa-spinner fa-spin text-2xl text-primary-500"></i>
-          <span className="ml-3 text-gray-500">Loading connections...</span>
+          <InlineLoading description="Loading connections..." />
         </div>
       ) : null}
 
@@ -374,17 +368,16 @@ export default function Connections() {
               : 'Create your first connection to start integrating with external services'}
           </p>
           {!searchQuery && (
-            <button 
+            <Button
+              variant="primary"
               onClick={() => {
                 console.log('[Connections] Create Connection button clicked!');
                 handleNew();
               }}
-              className="btn-primary"
-              type="button"
+              leftIcon={<PlusIcon className="w-5 h-5" />}
             >
-              <PlusIcon className="w-5 h-5 mr-2 inline" />
               Create Connection
-            </button>
+            </Button>
           )}
         </div>
       )}
@@ -396,8 +389,8 @@ export default function Connections() {
             const typeInfo = connectionTypeLabels[connection.type] || connectionTypeLabels['custom'];
             
             return (
-              <div key={connection.id} className="card hover:border-blue-300 transition-colors border border-gray-200">
-                <div className="p-6">
+              <div key={connection.id} className="cds--tile app-tile">
+                <div className="p-2">
                   {/* Header */}
                   <div className="flex items-start">
                     <div className="flex-shrink-0">
@@ -420,30 +413,22 @@ export default function Connections() {
                   
                   {/* Status Badges */}
                   <div className="mt-4 flex items-center gap-2 flex-wrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      connection.isActive
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
+                    <Tag size="sm" type={connection.isActive ? 'green' : 'gray'}>
                       {connection.isActive ? (
                         <><i className="fas fa-check-circle mr-1"></i> Active</>
                       ) : (
                         <><i className="fas fa-pause-circle mr-1"></i> Inactive</>
                       )}
-                    </span>
+                    </Tag>
                     
                     {connection.lastTestStatus && (
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        connection.lastTestStatus === 'success'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}>
+                      <Tag size="sm" type={connection.lastTestStatus === 'success' ? 'green' : 'red'}>
                         {connection.lastTestStatus === 'success' ? (
                           <><i className="fas fa-check mr-1"></i> Test OK</>
                         ) : (
                           <><i className="fas fa-times mr-1"></i> Test Failed</>
                         )}
-                      </span>
+                      </Tag>
                     )}
                   </div>
                   
@@ -453,42 +438,31 @@ export default function Connections() {
                       <span className="text-xs text-gray-400">
                         Updated {connection.updatedAt.toLocaleString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}
                       </span>
-                      <div className="flex gap-2">
+                      <div className="flex gap-1">
                         {connection.type === 'sftp' && (
-                          <button
-                            onClick={() => setBrowsing(connection)}
-                            className="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                            title="Browse files"
-                          >
+                          <IconButton kind="ghost" size="sm" label="Browse files" onClick={() => setBrowsing(connection)}>
                             <i className="fas fa-folder-open"></i>
-                          </button>
+                          </IconButton>
                         )}
-                        <button
+                        <IconButton
+                          kind="ghost"
+                          size="sm"
+                          label="Test Connection"
                           onClick={() => handleTest(connection.id)}
                           disabled={testingId === connection.id}
-                          className="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50"
-                          title="Test Connection"
                         >
                           {testingId === connection.id ? (
-                            <i className="fas fa-spinner fa-spin"></i>
+                            <InlineLoading />
                           ) : (
                             <PlayIcon className="w-4 h-4" />
                           )}
-                        </button>
-                        <button
-                          onClick={() => handleEdit(connection)}
-                          className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="Edit"
-                        >
+                        </IconButton>
+                        <IconButton kind="ghost" size="sm" label="Edit" onClick={() => handleEdit(connection)}>
                           <PencilIcon className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(connection.id)}
-                          className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Delete"
-                        >
+                        </IconButton>
+                        <IconButton kind="ghost" size="sm" label="Delete" onClick={() => handleDelete(connection.id)}>
                           <TrashIcon className="w-4 h-4" />
-                        </button>
+                        </IconButton>
                       </div>
                     </div>
                   </div>

@@ -4,7 +4,7 @@ import {
   Eye, EyeOff, Copy, Check, X, RefreshCw,
   AlertCircle, Loader2, Upload,
   FolderOpen, FolderPlus, ChevronRight, ChevronDown,
-  Table2, Download, Settings, Search,
+  Table2, Download, Settings,
   GripVertical, Columns, Clock, Terminal, Hash, Code, MoreVertical, Eraser, Menu,
   Filter, ListFilter, Star, ChevronLeft, ChevronsLeft, ChevronsRight, Save, Users
 } from 'lucide-react';
@@ -13,6 +13,13 @@ import { useCurrentUser, isAdminUser } from '../lib/currentUser';
 import * as XLSX from 'xlsx';
 import { API_URL, apiFetch } from '../config/api';
 import { UPLOAD_B64_CONTENT_TYPE, fileToBase64, uploadB64Url } from '../utils/uploadB64';
+import {
+  Button as CdsButton, IconButton, ComposedModal, ModalHeader, ModalBody, ModalFooter,
+  TextInput, PasswordInput, Search as CdsSearch, Select, SelectItem, SelectItemGroup, TextArea, Checkbox,
+  RadioButton, RadioButtonGroup, Tabs, TabList, Tab, Tag, Loading, InlineLoading, InlineNotification,
+  Table, TableHead, TableRow, TableHeader, TableBody, TableCell,
+} from '@carbon/react';
+import { Button } from '../components/ui/Button';
 
 // ─── Auth helper ──────────────────────────────────────────────────────────────
 
@@ -99,22 +106,24 @@ const CONNECTION_TYPE_LABELS: Record<ConnectionType, string> = {
   oracle: 'Oracle',
 };
 
-const CONNECTION_TYPE_COLORS: Record<ConnectionType, string> = {
-  postgresql: 'bg-blue-100 text-blue-700',
-  mysql: 'bg-orange-100 text-orange-700',
-  oracle: 'bg-red-100 text-red-700',
+type TagType = 'blue' | 'warm-gray' | 'red' | 'green' | 'gray' | 'purple' | 'teal' | 'magenta' | 'cyan' | 'cool-gray' | 'high-contrast' | 'outline';
+
+const CONNECTION_TYPE_TAGS: Record<ConnectionType, TagType> = {
+  postgresql: 'blue',
+  mysql: 'warm-gray',
+  oracle: 'red',
 };
 
-const STATUS_COLORS: Record<ConnectionStatus, string> = {
-  Connected: 'bg-green-100 text-green-700',
-  Disconnected: 'bg-gray-100 text-gray-600',
-  Error: 'bg-red-100 text-red-700',
+const STATUS_TAGS: Record<ConnectionStatus, TagType> = {
+  Connected: 'green',
+  Disconnected: 'gray',
+  Error: 'red',
 };
 
-const PERMISSION_COLORS: Record<Permission, string> = {
-  read: 'bg-blue-100 text-blue-700',
-  write: 'bg-amber-100 text-amber-700',
-  admin: 'bg-red-100 text-red-700',
+const PERMISSION_TAGS: Record<Permission, TagType> = {
+  read: 'blue',
+  write: 'warm-gray',
+  admin: 'red',
 };
 
 const DEFAULT_PORTS: Record<ConnectionType, string> = {
@@ -131,17 +140,10 @@ function Modal({ title, onClose, children }: {
   children: React.ReactNode;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
-          <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 rounded">
-            <X size={20} />
-          </button>
-        </div>
-        <div className="px-6 py-5">{children}</div>
-      </div>
-    </div>
+    <ComposedModal open onClose={() => { onClose(); return false; }} size="sm">
+      <ModalHeader title={title} closeModal={onClose} />
+      <ModalBody className="app-modal__body">{children}</ModalBody>
+    </ComposedModal>
   );
 }
 
@@ -153,23 +155,18 @@ function ConfirmDialog({ message, onConfirm, onCancel }: {
   onCancel: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 p-6">
-        <p className="text-gray-800 mb-6">{message}</p>
-        <div className="flex justify-end gap-3">
-          <button onClick={onCancel} className="inline-flex items-center justify-center px-3 h-9 text-[14px] rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 whitespace-nowrap">
-            Cancel
-          </button>
-          <button onClick={onConfirm} className="inline-flex items-center justify-center px-3 h-9 text-[14px] rounded-lg whitespace-nowrap bg-red-600 text-white hover:bg-red-700">
-            Delete
-          </button>
-        </div>
-      </div>
-    </div>
+    <ComposedModal open onClose={() => { onCancel(); return false; }} size="xs">
+      <ModalHeader title="Confirm" closeModal={onCancel} />
+      <ModalBody><p>{message}</p></ModalBody>
+      <ModalFooter>
+        <CdsButton kind="secondary" onClick={onCancel}>Cancel</CdsButton>
+        <CdsButton kind="danger" onClick={onConfirm}>Delete</CdsButton>
+      </ModalFooter>
+    </ComposedModal>
   );
 }
 
-// ─── Custom Select ───────────────────────────────────────────────────────────
+// ─── Custom Select (Carbon Select) ───────────────────────────────────────────
 
 interface SelectOption {
   value: string;
@@ -177,6 +174,8 @@ interface SelectOption {
   icon?: React.ReactNode;
   description?: string;
 }
+
+let customSelectSeq = 0;
 
 function CustomSelect({
   value, onChange, options, placeholder, label, compact = false,
@@ -186,71 +185,25 @@ function CustomSelect({
   options: SelectOption[];
   placeholder?: string;
   label?: string;
-  /** Toolbar height — same 28px as the buttons beside it. */
+  /** Toolbar height — same 32px as the buttons beside it. */
   compact?: boolean;
 }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const handle = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setIsOpen(false);
-    };
-    document.addEventListener('mousedown', handle);
-    return () => document.removeEventListener('mousedown', handle);
-  }, [isOpen]);
-
-  const selected = options.find(o => o.value === value);
-
+  const [id] = useState(() => `repo-select-${++customSelectSeq}`);
+  const hasValue = options.some(o => o.value === value);
   return (
-    <div ref={ref} className="relative">
-      {label && <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>}
-      <button
-        type="button"
-        onClick={() => setIsOpen(o => !o)}
-        className={`w-full flex items-center justify-between bg-white border rounded-lg transition-all ${
-          compact ? 'h-8 px-2 text-[13px]' : 'px-3 py-2 text-[13px]'
-        } ${
-          isOpen
-            ? 'border-teal-500 ring-2 ring-teal-100'
-            : 'border-gray-300 hover:border-teal-400'
-        }`}
-      >
-        <span className={`flex items-center truncate ${compact ? 'gap-1.5' : 'gap-2'}`}>
-          {selected?.icon}
-          <span className={selected ? 'text-gray-900' : 'text-gray-400'}>
-            {selected?.label ?? placeholder ?? 'Select...'}
-          </span>
-        </span>
-        <ChevronDown size={14} className={`text-gray-400 transition-transform duration-200 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
-      </button>
-
-      {isOpen && (
-        <div className="absolute z-[60] w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto py-1">
-          {options.map(opt => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => { onChange(opt.value); setIsOpen(false); }}
-              className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors ${
-                value === opt.value ? 'bg-teal-50 text-teal-700' : 'text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              {opt.icon}
-              <div className="flex-1 min-w-0">
-                <div className="truncate">{opt.label}</div>
-                {opt.description && <div className="text-[12px] text-gray-400">{opt.description}</div>}
-              </div>
-              {value === opt.value && <Check size={13} className="text-teal-500 flex-shrink-0" />}
-            </button>
-          ))}
-          {options.length === 0 && (
-            <div className="px-3 py-4 text-xs text-gray-400 text-center">No options</div>
-          )}
-        </div>
-      )}
-    </div>
+    <Select
+      id={id}
+      labelText={label ?? placeholder ?? 'Select'}
+      hideLabel={!label}
+      size={compact ? 'sm' : 'md'}
+      value={hasValue ? value : ''}
+      onChange={e => onChange(e.target.value)}
+    >
+      {!hasValue && <SelectItem value="" text={placeholder ?? 'Select...'} />}
+      {options.map(opt => (
+        <SelectItem key={opt.value} value={opt.value} text={opt.description ? `${opt.label} — ${opt.description}` : opt.label} />
+      ))}
+    </Select>
   );
 }
 
@@ -379,14 +332,12 @@ function ConnectionsSection() {
           <h2 className="text-xl font-bold text-gray-900">Connections</h2>
           <p className="text-sm text-gray-500 mt-0.5">Manage database connections for data import and sync</p>
         </div>
-        <button onClick={openCreate} className="flex items-center gap-2 px-3 h-9 text-[14px] font-medium rounded-lg whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700">
-          <Plus size={16} /> New Connection
-        </button>
+        <Button onClick={openCreate} leftIcon={<Plus size={16} />}>New Connection</Button>
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="animate-spin text-teal-500" size={28} />
+          <Loading withOverlay={false} small description="Loading connections" />
         </div>
       ) : connections.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-gray-400">
@@ -396,24 +347,20 @@ function ConnectionsSection() {
       ) : (
         <div className="space-y-2">
           {connections.map(c => (
-            <div key={c.id} className="bg-white border border-gray-200 rounded-lg px-3 py-2.5 hover:border-gray-300 transition-colors">
+            <div key={c.id} className="cds--tile app-tile">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2.5 min-w-0 flex-1">
                   <Database size={15} className="text-teal-500 shrink-0" />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-medium text-gray-900 truncate">{c.name}</span>
-                      <span className={`text-[12px] px-1.5 py-px rounded font-medium leading-tight ${CONNECTION_TYPE_COLORS[c.type]}`}>
-                        {CONNECTION_TYPE_LABELS[c.type]}
-                      </span>
-                      <span className={`text-[12px] px-1.5 py-px rounded font-medium leading-tight ${STATUS_COLORS[c.status]}`}>
-                        {c.status}
-                      </span>
+                      <Tag size="sm" type={CONNECTION_TYPE_TAGS[c.type]}>{CONNECTION_TYPE_LABELS[c.type]}</Tag>
+                      <Tag size="sm" type={STATUS_TAGS[c.status]}>{c.status}</Tag>
                       {testResults[c.id] && (
-                        <span className={`text-[12px] px-1.5 py-px rounded font-medium leading-tight ${testResults[c.id].ok ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                        <Tag size="sm" type={testResults[c.id].ok ? 'green' : 'red'}>
                           {testResults[c.id].ok ? <Check size={10} className="inline mr-0.5" /> : <AlertCircle size={10} className="inline mr-0.5" />}
                           {testResults[c.id].msg}
-                        </span>
+                        </Tag>
                       )}
                     </div>
                     <p className="text-[12px] text-gray-400 truncate mt-0.5">
@@ -422,20 +369,15 @@ function ConnectionsSection() {
                   </div>
                 </div>
                 <div className="flex items-center gap-0.5 shrink-0">
-                  <button
-                    onClick={() => handleTest(c)}
-                    disabled={testingId === c.id}
-                    title="Test connection"
-                    className="p-1.5 rounded-md text-gray-400 hover:text-green-600 hover:bg-green-50 disabled:opacity-50"
-                  >
+                  <IconButton kind="ghost" size="sm" label="Test connection" onClick={() => handleTest(c)} disabled={testingId === c.id}>
                     {testingId === c.id ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
-                  </button>
-                  <button onClick={() => openEdit(c)} title="Edit" className="p-1.5 rounded-md text-gray-400 hover:text-teal-600 hover:bg-teal-50">
+                  </IconButton>
+                  <IconButton kind="ghost" size="sm" label="Edit" onClick={() => openEdit(c)}>
                     <Pencil size={14} />
-                  </button>
-                  <button onClick={() => setDeleteTarget(c)} title="Delete" className="p-1.5 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50">
+                  </IconButton>
+                  <IconButton kind="ghost" size="sm" label="Delete" onClick={() => setDeleteTarget(c)}>
                     <Trash2 size={14} />
-                  </button>
+                  </IconButton>
                 </div>
               </div>
             </div>
@@ -446,15 +388,13 @@ function ConnectionsSection() {
       {showModal && (
         <Modal title={editTarget ? 'Edit Connection' : 'New Connection'} onClose={() => setShowModal(false)}>
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
-              <input
-                className="w-full border border-gray-300 rounded-lg px-3 h-9 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                value={form.name}
-                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                placeholder="My Database"
-              />
-            </div>
+            <TextInput
+              id="repo-conn-name"
+              labelText={<>Name <span className="text-red-500">*</span></>}
+              value={form.name}
+              onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+              placeholder="My Database"
+            />
             <CustomSelect
               label="Type"
               value={form.type}
@@ -463,86 +403,65 @@ function ConnectionsSection() {
                 setForm(f => ({ ...f, type: t, port: DEFAULT_PORTS[t] }));
               }}
               options={[
-                { value: 'postgresql', label: 'PostgreSQL', icon: <Database size={14} className="text-blue-500" /> },
-                { value: 'mysql', label: 'MySQL', icon: <Database size={14} className="text-orange-500" /> },
-                { value: 'oracle', label: 'Oracle', icon: <Database size={14} className="text-red-500" /> },
+                { value: 'postgresql', label: 'PostgreSQL' },
+                { value: 'mysql', label: 'MySQL' },
+                { value: 'oracle', label: 'Oracle' },
               ]}
             />
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Host <span className="text-red-500">*</span></label>
-                <input
-                  className="w-full border border-gray-300 rounded-lg px-3 h-9 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                <TextInput
+                  id="repo-conn-host"
+                  labelText={<>Host <span className="text-red-500">*</span></>}
                   value={form.host}
                   onChange={e => setForm(f => ({ ...f, host: e.target.value }))}
                   placeholder="localhost"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Port</label>
-                <input
-                  className="w-full border border-gray-300 rounded-lg px-3 h-9 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  value={form.port}
-                  onChange={e => setForm(f => ({ ...f, port: e.target.value }))}
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Database <span className="text-red-500">*</span></label>
-              <input
-                className="w-full border border-gray-300 rounded-lg px-3 h-9 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                value={form.database}
-                onChange={e => setForm(f => ({ ...f, database: e.target.value }))}
-                placeholder="mydb"
+              <TextInput
+                id="repo-conn-port"
+                labelText="Port"
+                value={form.port}
+                onChange={e => setForm(f => ({ ...f, port: e.target.value }))}
               />
             </div>
+            <TextInput
+              id="repo-conn-database"
+              labelText={<>Database <span className="text-red-500">*</span></>}
+              value={form.database}
+              onChange={e => setForm(f => ({ ...f, database: e.target.value }))}
+              placeholder="mydb"
+            />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Username <span className="text-red-500">*</span></label>
-                <input
-                  className="w-full border border-gray-300 rounded-lg px-3 h-9 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  value={form.username}
-                  onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                <input
-                  type="password"
-                  className="w-full border border-gray-300 rounded-lg px-3 h-9 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  value={form.password}
-                  onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                />
-              </div>
-            </div>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                className="w-4 h-4 accent-teal-600"
-                checked={form.ssl}
-                onChange={e => setForm(f => ({ ...f, ssl: e.target.checked }))}
+              <TextInput
+                id="repo-conn-username"
+                labelText={<>Username <span className="text-red-500">*</span></>}
+                value={form.username}
+                onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
               />
-              <span className="text-sm text-gray-700">Enable SSL</span>
-            </label>
+              <PasswordInput
+                id="repo-conn-password"
+                labelText="Password"
+                value={form.password}
+                onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+              />
+            </div>
+            <Checkbox
+              id="repo-conn-ssl"
+              labelText="Enable SSL"
+              checked={form.ssl}
+              onChange={(_, { checked }) => setForm(f => ({ ...f, ssl: checked }))}
+            />
 
             {error && (
-              <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">
-                <AlertCircle size={14} /> {error}
-              </div>
+              <InlineNotification kind="error" lowContrast hideCloseButton title={error} />
             )}
 
             <div className="flex justify-end gap-3 pt-2">
-              <button onClick={() => setShowModal(false)} className="inline-flex items-center justify-center px-3.5 h-9 text-[14px] rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 whitespace-nowrap">
-                Cancel
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={submitting}
-                className="px-3 h-9 text-[14px] rounded-lg disabled:opacity-60 flex items-center gap-2 whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700"
-              >
-                {submitting && <Loader2 size={14} className="animate-spin" />}
+              <Button variant="secondary" onClick={() => setShowModal(false)}>Cancel</Button>
+              <Button onClick={handleSubmit} disabled={submitting} isLoading={submitting}>
                 {editTarget ? 'Save Changes' : 'Create'}
-              </button>
+              </Button>
             </div>
           </div>
         </Modal>
@@ -646,12 +565,12 @@ function ApiKeysSection() {
           <h2 className="text-xl font-bold text-gray-900">API Keys</h2>
           <p className="text-sm text-gray-500 mt-0.5">Manage access tokens for the Data Repository API</p>
         </div>
-        <button
+        <Button
           onClick={() => { setForm({ name: '', permissions: 'read', expiresAt: '' }); setError(''); setShowModal(true); }}
-          className="flex items-center gap-2 px-3.5 h-9 bg-teal-600 text-white text-[14px] font-medium rounded-lg hover:bg-teal-700 whitespace-nowrap"
+          leftIcon={<Plus size={16} />}
         >
-          <Plus size={16} /> New API Key
-        </button>
+          New API Key
+        </Button>
       </div>
 
       {newKey && (
@@ -659,19 +578,19 @@ function ApiKeysSection() {
           <p className="text-sm font-medium text-green-800 mb-2">API key created. Copy it now — it won't be shown again.</p>
           <div className="flex items-center gap-2">
             <code className="flex-1 text-xs font-mono bg-white border border-green-200 rounded px-3 py-2 text-green-900 truncate">{newKey}</code>
-            <button onClick={() => copyKey(newKey)} className="p-2 rounded-lg bg-green-600 text-white hover:bg-green-700">
+            <IconButton kind="primary" size="sm" label={copied ? 'Copied' : 'Copy key'} onClick={() => copyKey(newKey)}>
               {copied ? <Check size={16} /> : <Copy size={16} />}
-            </button>
-            <button onClick={() => setNewKey(null)} className="p-2 rounded-lg text-green-700 hover:bg-green-100">
+            </IconButton>
+            <IconButton kind="ghost" size="sm" label="Dismiss" onClick={() => setNewKey(null)}>
               <X size={16} />
-            </button>
+            </IconButton>
           </div>
         </div>
       )}
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="animate-spin text-teal-500" size={28} />
+          <Loading withOverlay={false} small description="Loading API keys" />
         </div>
       ) : keys.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-gray-400">
@@ -681,29 +600,25 @@ function ApiKeysSection() {
       ) : (
         <div className="space-y-3">
           {keys.map(k => (
-            <div key={k.id} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+            <div key={k.id} className="cds--tile app-tile">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-medium text-gray-900">{k.name}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded font-medium ${PERMISSION_COLORS[k.permissions]}`}>
-                      {k.permissions}
-                    </span>
-                    <span className={`text-xs px-2 py-0.5 rounded font-medium ${k.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                      {k.isActive ? 'Active' : 'Inactive'}
-                    </span>
+                    <Tag size="sm" type={PERMISSION_TAGS[k.permissions]}>{k.permissions}</Tag>
+                    <Tag size="sm" type={k.isActive ? 'green' : 'gray'}>{k.isActive ? 'Active' : 'Inactive'}</Tag>
                   </div>
                   <div className="flex items-center gap-2 mt-2">
                     <code className="text-xs font-mono text-gray-500 bg-gray-50 px-2 py-1 rounded">
                       {revealed[k.id] ? k.key : maskKey(k.key)}
                     </code>
-                    <button onClick={() => setRevealed(r => ({ ...r, [k.id]: !r[k.id] }))} className="text-gray-400 hover:text-gray-600">
+                    <IconButton kind="ghost" size="sm" label={revealed[k.id] ? 'Hide key' : 'Reveal key'} onClick={() => setRevealed(r => ({ ...r, [k.id]: !r[k.id] }))}>
                       {revealed[k.id] ? <EyeOff size={14} /> : <Eye size={14} />}
-                    </button>
+                    </IconButton>
                     {revealed[k.id] && (
-                      <button onClick={() => copyKey(k.key)} className="text-gray-400 hover:text-teal-600">
+                      <IconButton kind="ghost" size="sm" label="Copy key" onClick={() => copyKey(k.key)}>
                         <Copy size={14} />
-                      </button>
+                      </IconButton>
                     )}
                   </div>
                   {k.expiresAt && (
@@ -711,16 +626,12 @@ function ApiKeysSection() {
                   )}
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  <button
-                    onClick={() => handleToggle(k)}
-                    title={k.isActive ? 'Deactivate' : 'Activate'}
-                    className={`p-2 rounded-lg ${k.isActive ? 'text-green-600 hover:bg-green-50' : 'text-gray-400 hover:bg-gray-50'}`}
-                  >
-                    <RefreshCw size={16} />
-                  </button>
-                  <button onClick={() => setDeleteTarget(k)} className="p-2 rounded-lg text-gray-500 hover:text-red-600 hover:bg-red-50">
+                  <IconButton kind="ghost" size="sm" label={k.isActive ? 'Deactivate' : 'Activate'} onClick={() => handleToggle(k)}>
+                    <RefreshCw size={16} className={k.isActive ? 'text-green-600' : 'text-gray-400'} />
+                  </IconButton>
+                  <IconButton kind="ghost" size="sm" label="Delete" onClick={() => setDeleteTarget(k)}>
                     <Trash2 size={16} />
-                  </button>
+                  </IconButton>
                 </div>
               </div>
             </div>
@@ -731,64 +642,44 @@ function ApiKeysSection() {
       {showModal && (
         <Modal title="New API Key" onClose={() => setShowModal(false)}>
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
-              <input
-                className="w-full border border-gray-300 rounded-lg px-3 h-9 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                value={form.name}
-                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                placeholder="My app key"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Permissions</label>
-              <div className="space-y-2">
-                {(['read', 'write', 'admin'] as Permission[]).map(p => (
-                  <label key={p} className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="repo-permissions"
-                      value={p}
-                      checked={form.permissions === p}
-                      onChange={() => setForm(f => ({ ...f, permissions: p }))}
-                      className="accent-teal-600"
-                    />
-                    <span className={`text-xs px-2 py-0.5 rounded font-medium ${PERMISSION_COLORS[p]}`}>{p}</span>
-                    <span className="text-sm text-gray-600">
-                      {p === 'read' ? 'Read-only access to tables' : p === 'write' ? 'Read and write access' : 'Full admin access'}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Expires At (optional)</label>
-              <input
-                type="date"
-                className="w-full border border-gray-300 rounded-lg px-3 h-9 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                value={form.expiresAt}
-                onChange={e => setForm(f => ({ ...f, expiresAt: e.target.value }))}
-              />
-            </div>
+            <TextInput
+              id="repo-key-name"
+              labelText={<>Name <span className="text-red-500">*</span></>}
+              value={form.name}
+              onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+              placeholder="My app key"
+            />
+            <RadioButtonGroup
+              legendText="Permissions"
+              name="repo-permissions"
+              orientation="vertical"
+              valueSelected={form.permissions}
+              onChange={v => setForm(f => ({ ...f, permissions: v as Permission }))}
+            >
+              {(['read', 'write', 'admin'] as Permission[]).map(p => (
+                <RadioButton
+                  key={p}
+                  id={`repo-perm-${p}`}
+                  value={p}
+                  labelText={`${p} — ${p === 'read' ? 'Read-only access to tables' : p === 'write' ? 'Read and write access' : 'Full admin access'}`}
+                />
+              ))}
+            </RadioButtonGroup>
+            <TextInput
+              id="repo-key-expires"
+              type="date"
+              labelText="Expires At (optional)"
+              value={form.expiresAt}
+              onChange={e => setForm(f => ({ ...f, expiresAt: e.target.value }))}
+            />
 
             {error && (
-              <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">
-                <AlertCircle size={14} /> {error}
-              </div>
+              <InlineNotification kind="error" lowContrast hideCloseButton title={error} />
             )}
 
             <div className="flex justify-end gap-3 pt-2">
-              <button onClick={() => setShowModal(false)} className="inline-flex items-center justify-center px-3.5 h-9 text-[14px] rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 whitespace-nowrap">
-                Cancel
-              </button>
-              <button
-                onClick={handleCreate}
-                disabled={submitting}
-                className="px-3 h-9 text-[14px] rounded-lg disabled:opacity-60 flex items-center gap-2 whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700"
-              >
-                {submitting && <Loader2 size={14} className="animate-spin" />}
-                Create Key
-              </button>
+              <Button variant="secondary" onClick={() => setShowModal(false)}>Cancel</Button>
+              <Button onClick={handleCreate} disabled={submitting} isLoading={submitting}>Create Key</Button>
             </div>
           </div>
         </Modal>
@@ -842,7 +733,7 @@ function buildFolderTree(folders: RepoFolder[]): RepoFolder[] {
 //   optionsFrom  SCHEMA.TABLE.CODE.NAME — read the dropdown from a small
 //                registry table instead of scanning the real one.  Add
 //                "@PARENT_COL=parentField" to narrow it by another filter:
-//                  DEPT:Department::APP.V_DEPT.CODE.NAME@PARENT_CODE=PARENT
+//                  AGC:Department::APP.V_AGC.CODE.NAME@MIN_CODE=MIN
 //   default      value selected when the screen opens.  Big tables want one —
 //                without it the first query runs completely unfiltered.
 
@@ -1034,16 +925,16 @@ function FilterSelect({ spec, value, options, loading, error, onChange }: {
       {open && (
         <div className="absolute z-[70] w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl">
           <div className="p-1.5 border-b border-gray-100">
-            <div className="relative">
-              <Search size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-300" />
-              <input
-                autoFocus
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Search code or name…"
-                className="w-full pl-6 pr-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-teal-400"
-              />
-            </div>
+            <CdsSearch
+              id={`filter-select-search-${spec.column}`}
+              labelText="Search code or name"
+              size="sm"
+              autoFocus
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              onClear={() => setSearch('')}
+              placeholder="Search code or name…"
+            />
           </div>
           <div className="max-h-64 overflow-y-auto py-1">
             <button
@@ -1171,17 +1062,17 @@ function ColumnFilterMenu({ column, options, loading, truncated, filter, default
       {open && (
         <div className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} top-full mt-1 z-40 w-[250px] bg-white border border-gray-200 rounded-lg shadow-2xl font-normal`}>
           <div className="p-2 border-b border-gray-100">
-            <div className="relative">
-              <Search size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-300" />
-              <input
-                autoFocus
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter' && search.trim()) applyContains(search.trim()); if (e.key === 'Escape') setOpen(false); }}
-                placeholder="Search values…"
-                className="w-full pl-6 pr-2 py-1 text-[12px] border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-teal-400"
-              />
-            </div>
+            <CdsSearch
+              id={`col-filter-search-${column}`}
+              labelText="Search values"
+              size="sm"
+              autoFocus
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              onClear={() => setSearch('')}
+              onKeyDown={e => { if (e.key === 'Enter' && search.trim()) applyContains(search.trim()); if (e.key === 'Escape') setOpen(false); }}
+              placeholder="Search values…"
+            />
             {search.trim() && (
               <button
                 onClick={() => applyContains(search.trim())}
@@ -1210,9 +1101,10 @@ function ColumnFilterMenu({ column, options, loading, truncated, filter, default
               <div className="px-3 py-4 text-[12px] text-gray-400">No values</div>
             ) : (
               <>
-                <label className="flex items-center gap-2 px-3 h-7 text-[12px] text-gray-700 hover:bg-gray-50 cursor-pointer font-medium whitespace-nowrap">
-                  <input
-                    type="checkbox"
+                <div className="px-3 text-[12px] font-medium whitespace-nowrap">
+                  <Checkbox
+                    id={`col-filter-all-${column}`}
+                    labelText={`(Select all${needle ? ' matching' : ''})`}
                     checked={allShownChecked}
                     onChange={() => setChecked(prev => {
                       const next = new Set(prev);
@@ -1220,16 +1112,17 @@ function ColumnFilterMenu({ column, options, loading, truncated, filter, default
                       else shown.forEach(o => next.add(o.value));
                       return next;
                     })}
-                    className="accent-teal-600"
                   />
-                  (Select all{needle ? ' matching' : ''})
-                </label>
+                </div>
                 {shown.map(o => (
-                  <label key={o.value} className="flex items-center gap-2 px-3 h-7 text-[12px] text-gray-700 hover:bg-gray-50 cursor-pointer whitespace-nowrap">
-                    <input type="checkbox" checked={checked.has(o.value)} onChange={() => toggle(o.value)} className="accent-teal-600" />
-                    <span className="font-mono shrink-0">{o.value}</span>
-                    {o.label && o.label !== o.value && <span className="text-gray-400 truncate">{o.label}</span>}
-                  </label>
+                  <div key={o.value} className="px-3 text-[12px] whitespace-nowrap">
+                    <Checkbox
+                      id={`col-filter-${column}-${o.value}`}
+                      labelText={<><span className="font-mono">{o.value}</span>{o.label && o.label !== o.value && <span className="text-gray-400 ml-2">{o.label}</span>}</>}
+                      checked={checked.has(o.value)}
+                      onChange={() => toggle(o.value)}
+                    />
+                  </div>
                 ))}
                 {shown.length === 0 && <div className="px-3 py-3 text-[12px] text-gray-400">Nothing matches</div>}
               </>
@@ -1249,13 +1142,9 @@ function ColumnFilterMenu({ column, options, loading, truncated, filter, default
               <div className="flex items-center gap-1.5 text-[12px] text-teal-700">
                 <Star size={10} className="text-teal-500 shrink-0" fill="currentColor" />
                 <span className="truncate">Opens filtered to <span className="font-mono">{defaultValue}</span></span>
-                <button
-                  onClick={() => onSetDefault(null)}
-                  disabled={savingDefault}
-                  className="ml-auto px-1.5 py-0.5 rounded text-gray-500 hover:bg-gray-200/70 disabled:opacity-40 shrink-0"
-                >
+                <Button variant="ghost" size="sm" className="ml-auto shrink-0" onClick={() => onSetDefault(null)} disabled={savingDefault}>
                   Clear default
-                </button>
+                </Button>
               </div>
             ) : (
               <button
@@ -1273,20 +1162,12 @@ function ColumnFilterMenu({ column, options, loading, truncated, filter, default
           </div>
 
           <div className="flex items-center justify-between gap-2 px-2 py-1.5 border-t border-gray-100">
-            <button
-              onClick={() => { onApply({ values: [], contains: '' }); setOpen(false); }}
-              disabled={!active}
-              className="text-[12px] px-2 py-1 rounded text-gray-500 hover:bg-gray-100 disabled:opacity-40"
-            >
+            <Button variant="ghost" size="sm" onClick={() => { onApply({ values: [], contains: '' }); setOpen(false); }} disabled={!active}>
               Clear
-            </button>
+            </Button>
             <div className="flex items-center gap-1.5">
-              <button onClick={() => setOpen(false)} className="text-[12px] px-2 py-1 rounded border border-gray-200 text-gray-600 hover:bg-gray-50">
-                Cancel
-              </button>
-              <button onClick={apply} className="inline-flex items-center justify-center text-[13px] px-3 h-8 rounded whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700">
-                OK
-              </button>
+              <Button variant="secondary" size="sm" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button size="sm" onClick={apply}>OK</Button>
             </div>
           </div>
         </div>
@@ -1686,7 +1567,7 @@ function TableDataSection({ table, onRegistryChange, reloadKey }: {
       <div className="flex items-center justify-between gap-2 mb-2 flex-shrink-0 flex-wrap">
         <div className="flex items-center gap-1.5 flex-wrap min-w-0">
           <span className="text-xs text-gray-400 flex items-center gap-1.5">
-            {loading && <Loader2 size={11} className="animate-spin text-teal-500" />}
+            {loading && <InlineLoading className="!w-auto !min-h-0" />}
             {/* Counting 300k rows takes seconds; saying "0 rows" until the count
                 lands reads as an empty table. */}
             {loading && totalCount === 0
@@ -1720,58 +1601,37 @@ function TableDataSection({ table, onRegistryChange, reloadKey }: {
             );
           })}
           {activeCount > 1 && (
-            <button onClick={clearFilters} className="text-[12px] text-gray-400 hover:text-red-500 underline underline-offset-2">
-              Clear all
-            </button>
+            <Button variant="ghost" size="sm" onClick={clearFilters}>Clear all</Button>
           )}
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {filterSpecs.length > 0 && (
-            <button
+            <Button
+              variant={filterOpen || activeCount > 0 ? 'tertiary' : 'secondary'}
+              size="sm"
               onClick={openFilterPanel}
-              className={`flex items-center gap-1.5 px-2.5 h-8 text-[13px] font-medium rounded-lg border transition-colors ${
-                filterOpen || activeCount > 0
-                  ? 'border-teal-300 bg-teal-50 text-teal-700'
-                  : 'border-gray-200 text-gray-600 hover:bg-gray-50'
-              } whitespace-nowrap`}
               title="Filters"
+              leftIcon={<Filter size={13} />}
             >
-              <Filter size={13} />
               Filters
               {activeCount > 0 && (
-                <span className="ml-0.5 px-1.5 rounded bg-teal-600 text-white text-[12px] leading-4">{activeCount}</span>
+                <Tag size="sm" type="teal" className="ml-1">{activeCount}</Tag>
               )}
-            </button>
+            </Button>
           )}
-          <button
-            onClick={() => loadData(page)}
-            className="p-2 text-gray-500 hover:text-teal-600 rounded-lg hover:bg-teal-50"
-            title="Refresh"
-          >
+          <IconButton kind="ghost" size="sm" label="Refresh" onClick={() => loadData(page)}>
             <RefreshCw size={14} />
-          </button>
-          <div className="flex items-center gap-1 border border-gray-200 rounded-lg overflow-hidden">
-            <button
-              onClick={exportCSV}
-              disabled={exporting !== null}
-              className="flex items-center gap-1 px-2.5 h-8 text-[13px] font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 whitespace-nowrap"
-              title="Export CSV"
-            >
-              {exporting === 'csv' ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
-              CSV
-            </button>
-            <div className="w-px h-5 bg-gray-200" />
-            <button
-              onClick={exportXLSX}
-              disabled={exporting !== null}
-              className="flex items-center gap-1 px-2.5 h-8 text-[13px] font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 whitespace-nowrap"
-              title="Export Excel"
-            >
-              {exporting === 'xlsx' ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
-              XLSX
-            </button>
-          </div>
-          <button
+          </IconButton>
+          <Button variant="secondary" size="sm" onClick={exportCSV} disabled={exporting !== null} isLoading={exporting === 'csv'}
+            title="Export CSV" leftIcon={<Download size={14} />}>
+            CSV
+          </Button>
+          <Button variant="secondary" size="sm" onClick={exportXLSX} disabled={exporting !== null} isLoading={exporting === 'xlsx'}
+            title="Export Excel" leftIcon={<Download size={14} />}>
+            XLSX
+          </Button>
+          <Button
+            size="sm"
             onClick={() => {
               const init: Record<string, any> = {};
               columns.forEach(c => { init[c.name] = ''; });
@@ -1779,11 +1639,11 @@ function TableDataSection({ table, onRegistryChange, reloadKey }: {
               setShowAddRow(true);
               setEditRid(null);
             }}
-            className="flex items-center gap-1.5 px-3 h-9 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 whitespace-nowrap"
             title="Add Row"
+            leftIcon={<Plus size={14} />}
           >
-            <Plus size={14} /> <span className="hidden sm:inline">Add Row</span>
-          </button>
+            <span className="hidden sm:inline">Add Row</span>
+          </Button>
         </div>
       </div>
 
@@ -1792,14 +1652,14 @@ function TableDataSection({ table, onRegistryChange, reloadKey }: {
           here instead of stretching the toolbar.  Rendered inline (not as a
           dropdown) because the data pane clips absolutely-positioned children. */}
       {filterOpen && filterSpecs.length > 0 && (
-        <div className="mb-2 flex-shrink-0 bg-white border border-gray-200 rounded-xl shadow-sm">
+        <div className="mb-2 flex-shrink-0 cds--tile app-tile !p-0">
           <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100">
             <span className="text-xs font-semibold text-gray-700 flex items-center gap-1.5">
               <ListFilter size={12} className="text-teal-500" /> Filters
             </span>
-            <button onClick={() => setFilterOpen(false)} className="p-1 text-gray-400 hover:text-gray-600" title="Close">
+            <IconButton kind="ghost" size="sm" label="Close" onClick={() => setFilterOpen(false)}>
               <X size={13} />
-            </button>
+            </IconButton>
           </div>
           <div className="p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
             {filterSpecs.map(sp => (
@@ -1820,31 +1680,25 @@ function TableDataSection({ table, onRegistryChange, reloadKey }: {
                 ? `${activeCount} filter(s) applied — exports follow them too`
                 : 'No filter applied'}
             </span>
-            <button
-              onClick={clearFilters}
-              disabled={activeCount === 0}
-              className="inline-flex items-center justify-center text-[13px] px-2 h-8 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 whitespace-nowrap"
-            >
+            <Button variant="secondary" size="sm" onClick={clearFilters} disabled={activeCount === 0}>
               Clear all
-            </button>
+            </Button>
           </div>
         </div>
       )}
 
       {error && (
-        <div className="mb-3 flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 flex-shrink-0">
-          <AlertCircle size={14} /> {error}
-        </div>
+        <InlineNotification kind="error" lowContrast hideCloseButton title={error} className="mb-3 flex-shrink-0" />
       )}
 
       {/* Table */}
       <div className="flex-1 overflow-auto rounded-xl border border-gray-200 bg-white shadow-sm min-h-0">
         {loading && columns.length === 0 ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="animate-spin text-teal-500" size={28} />
+            <Loading withOverlay={false} small description="Loading data" />
           </div>
         ) : (
-          <table className="w-full text-sm border-collapse">
+          <table className="cds--data-table cds--data-table--sm w-full text-sm border-collapse">
             <thead className="sticky top-0 z-20">
               {/* One line per column: name, type, and the filter funnel — the
                   header stays as short as it can while every column is
@@ -2027,54 +1881,39 @@ function TableDataSection({ table, onRegistryChange, reloadKey }: {
         {/* Icon paging — with thousands of pages, stepping one at a time is not
             enough, so the page number is a box you can type into. */}
         <div className="flex items-center gap-1">
-          <button
-            onClick={() => goPage(0)}
-            disabled={page === 0 || loading}
-            className="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-teal-600 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-            title="First page"
-          >
+          <IconButton kind="ghost" size="sm" label="First page" onClick={() => goPage(0)} disabled={page === 0 || loading}>
             <ChevronsLeft size={14} />
-          </button>
-          <button
-            onClick={() => goPage(page - 1)}
-            disabled={page === 0 || loading}
-            className="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-teal-600 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-            title="Previous page"
-          >
+          </IconButton>
+          <IconButton kind="ghost" size="sm" label="Previous page" onClick={() => goPage(page - 1)} disabled={page === 0 || loading}>
             <ChevronLeft size={14} />
-          </button>
+          </IconButton>
           <div className="flex items-center gap-1 px-1">
-            <input
-              value={pageInput}
-              onChange={e => setPageInput(e.target.value.replace(/[^0-9]/g, ''))}
-              onKeyDown={e => {
-                if (e.key === 'Enter') jumpToPage();
-                if (e.key === 'Escape') setPageInput(String(page + 1));
-              }}
-              onBlur={jumpToPage}
-              disabled={loading}
-              aria-label="Page number"
-              title={`Type a page and press Enter (1–${Math.max(1, totalPages)})`}
-              className="w-12 px-1 py-1 text-center text-xs border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-teal-400 tabular-nums"
-            />
+            <div className="w-16">
+              <TextInput
+                id="repo-page-input"
+                labelText="Page number"
+                hideLabel
+                size="sm"
+                value={pageInput}
+                onChange={e => setPageInput(e.target.value.replace(/[^0-9]/g, ''))}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') jumpToPage();
+                  if (e.key === 'Escape') setPageInput(String(page + 1));
+                }}
+                onBlur={jumpToPage}
+                disabled={loading}
+                title={`Type a page and press Enter (1–${Math.max(1, totalPages)})`}
+                className="text-center tabular-nums"
+              />
+            </div>
             <span className="tabular-nums text-gray-400">/ {Math.max(1, totalPages).toLocaleString()}</span>
           </div>
-          <button
-            onClick={() => goPage(page + 1)}
-            disabled={page >= totalPages - 1 || loading}
-            className="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-teal-600 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-            title="Next page"
-          >
+          <IconButton kind="ghost" size="sm" label="Next page" onClick={() => goPage(page + 1)} disabled={page >= totalPages - 1 || loading}>
             <ChevronRight size={14} />
-          </button>
-          <button
-            onClick={() => goPage(totalPages - 1)}
-            disabled={page >= totalPages - 1 || loading}
-            className="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-teal-600 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-            title="Last page"
-          >
+          </IconButton>
+          <IconButton kind="ghost" size="sm" label="Last page" onClick={() => goPage(totalPages - 1)} disabled={page >= totalPages - 1 || loading}>
             <ChevronsRight size={14} />
-          </button>
+          </IconButton>
         </div>
       </div>
 
@@ -2099,35 +1938,22 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
     { id: 'apikeys', label: 'API Keys', icon: <Key size={13} /> },
   ];
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-xl shadow-2xl w-[900px] max-w-[95vw] flex flex-col" style={{ height: '80vh' }}>
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <div className="flex items-center gap-2 font-bold text-gray-800">
-            <Settings size={16} className="text-teal-500" /> Settings
-          </div>
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-700">
-            <X size={16} />
-          </button>
-        </div>
-        {/* Tab bar */}
-        <div className="flex border-b px-6 gap-1">
-          {TABS.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)}
-              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 -mb-px transition-colors ${
-                tab === t.id ? 'border-teal-500 text-teal-600' : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}>
-              {t.icon}{t.label}
-            </button>
-          ))}
-        </div>
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+    <ComposedModal open onClose={() => { onClose(); return false; }} size="lg">
+      <ModalHeader title="Settings" closeModal={onClose} />
+      <ModalBody className="app-modal__body" style={{ height: '70vh' }}>
+        <Tabs selectedIndex={TABS.findIndex(t => t.id === tab)} onChange={({ selectedIndex }) => setTab(TABS[selectedIndex].id)}>
+          <TabList aria-label="Settings tabs">
+            {TABS.map(t => (
+              <Tab key={t.id} renderIcon={() => <>{t.icon}</>}>{t.label}</Tab>
+            ))}
+          </TabList>
+        </Tabs>
+        <div className="pt-6">
           {tab === 'connections' && <ConnectionsSection />}
           {tab === 'apikeys' && <ApiKeysSection />}
         </div>
-      </div>
-    </div>
+      </ModalBody>
+    </ComposedModal>
   );
 }
 
@@ -2395,20 +2221,16 @@ function LeftTreePanel({
           <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Repository</h3>
           <div className="flex items-center gap-0.5">
             {canManage && (
-            <button onClick={onCreateFolder} className="p-1 rounded-md text-gray-400 hover:text-amber-600 hover:bg-amber-50" title="New Folder">
+            <IconButton kind="ghost" size="sm" label="New Folder" onClick={onCreateFolder}>
               <FolderPlus size={13} />
-            </button>
+            </IconButton>
             )}
             {/* One "new" button for both kinds of thing this panel holds */}
             {canManage && (
             <div className="relative" ref={newMenuRef}>
-              <button
-                onClick={() => onCreateSql ? setNewMenuOpen(o => !o) : onCreateTable()}
-                className="p-1 rounded-md text-teal-600 hover:bg-teal-50"
-                title="Add new"
-              >
+              <IconButton kind="ghost" size="sm" label="Add new" onClick={() => onCreateSql ? setNewMenuOpen(o => !o) : onCreateTable()}>
                 <Plus size={13} />
-              </button>
+              </IconButton>
               {newMenuOpen && onCreateSql && (
                 <div className="absolute right-0 top-full mt-1 z-50 w-40 bg-white border border-gray-200 rounded-lg shadow-xl py-1">
                   <button
@@ -2428,21 +2250,21 @@ function LeftTreePanel({
             </div>
             )}
             {isMobile && (
-              <button onClick={onClose} className="p-1 ml-0.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100" title="Close">
+              <IconButton kind="ghost" size="sm" label="Close" onClick={onClose}>
                 <X size={13} />
-              </button>
+              </IconButton>
             )}
           </div>
         </div>
-        <div className="relative">
-          <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            className="w-full pl-7 pr-3 h-8 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-500 bg-gray-50"
-            placeholder="Search..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-        </div>
+        <CdsSearch
+          id="repo-tree-search"
+          labelText="Search repository"
+          size="sm"
+          placeholder="Search..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          onClear={() => setSearch('')}
+        />
       </div>
 
       {/* Tree list */}
@@ -2466,7 +2288,7 @@ function LeftTreePanel({
         </button>
         {!tablesOpen ? null : loading ? (
           <div className="flex items-center justify-center py-10">
-            <Loader2 size={16} className="animate-spin text-teal-400" />
+            <Loading withOverlay={false} small description="Loading tables" />
           </div>
         ) : rootItems.length === 0 && search ? (
           <div className="py-10 text-center text-gray-400 text-xs">No match</div>
@@ -2977,35 +2799,31 @@ function SqlEditorPanel({ connections, saved, onSavedChanged, openRequest, onOpe
         </div>
         {/* Kept clickable with nothing selected: a dead grey button is why this
             editor reads as broken.  runQuery() says what is missing instead. */}
-        <button
+        <Button
+          size="sm"
           onClick={() => runQuery()}
           disabled={activeTab.running}
-          className={`flex items-center gap-1.5 h-8 px-3 rounded-lg text-[13px] font-medium transition-colors ${
-            connId && activeTab.sql.trim()
-              ? 'bg-teal-600 text-white hover:bg-teal-700'
-              : 'bg-teal-600/40 text-white hover:bg-teal-600/60'
-          } disabled:opacity-50`}
+          isLoading={activeTab.running}
+          className={connId && activeTab.sql.trim() ? '' : 'opacity-60'}
           title={!connId ? 'Choose a connection first' : !activeTab.sql.trim() ? 'Type a SQL statement first' : 'Run (Ctrl+Enter)'}
+          leftIcon={<Play size={14} />}
         >
-          {activeTab.running ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
           Run
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => updateTab(activeTab.id, { sql: formatSql(activeTab.sql) })}
           disabled={!activeTab.sql.trim()}
-          className="flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-40 transition-colors"
           title="Format SQL"
+          leftIcon={<Code size={12} />}
         >
-          <Code size={12} /> Format
-        </button>
+          Format
+        </Button>
         <div className="relative" ref={historyRef}>
-          <button
-            onClick={() => setShowHistory(!showHistory)}
-            className="flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-100 transition-colors"
-            title="Query History"
-          >
-            <Clock size={12} /> History
-          </button>
+          <Button variant="ghost" size="sm" onClick={() => setShowHistory(!showHistory)} title="Query History" leftIcon={<Clock size={12} />}>
+            History
+          </Button>
           {showHistory && history.length > 0 && (
             <div className="absolute top-full left-0 mt-1 w-96 max-h-72 overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-xl z-50">
               <div className="px-3 py-2 border-b border-gray-100 text-[12px] font-semibold text-gray-400 uppercase tracking-wider">Recent Queries</div>
@@ -3017,7 +2835,7 @@ function SqlEditorPanel({ connections, saved, onSavedChanged, openRequest, onOpe
                 >
                   <div className="flex items-center gap-2 mb-0.5">
                     <span className="text-[12px] text-gray-400">{h.time}</span>
-                    <span className="text-[12px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">{h.connName}</span>
+                    <Tag size="sm" type="gray">{h.connName}</Tag>
                   </div>
                   <div className="text-xs font-mono text-gray-700 truncate">{h.sql}</div>
                 </button>
@@ -3028,54 +2846,55 @@ function SqlEditorPanel({ connections, saved, onSavedChanged, openRequest, onOpe
         {/* Naming happens on this line, not in an OS prompt box. */}
         {savingName !== null ? (
           <div className="flex items-center gap-1">
-            <input
-              autoFocus
-              onFocus={e => e.currentTarget.select()} // typing replaces the suggested "Query N"
-              value={savingName}
-              onChange={e => setSavingName(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter') saveActive(savingName);
-                if (e.key === 'Escape') setSavingName(null);
-              }}
-              placeholder="Name it and press Enter"
-              className="w-40 h-8 px-2 text-xs border border-teal-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-400"
-            />
-            <button
-              onClick={() => saveActive(savingName)}
-              disabled={savingBusy || !savingName.trim()}
-              className="h-8 px-2.5 rounded-lg text-[13px] bg-teal-600 text-white disabled:opacity-40"
-            >
-              {savingBusy ? <Loader2 size={14} className="animate-spin" /> : 'Save'}
-            </button>
-            <button onClick={() => setSavingName(null)} className="h-8 px-2.5 rounded-lg text-[13px] border border-gray-200 text-gray-600">Cancel</button>
+            <div className="w-40">
+              <TextInput
+                id="sql-save-name"
+                labelText="Query name"
+                hideLabel
+                size="sm"
+                autoFocus
+                onFocus={e => e.currentTarget.select()} // typing replaces the suggested "Query N"
+                value={savingName}
+                onChange={e => setSavingName(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') saveActive(savingName);
+                  if (e.key === 'Escape') setSavingName(null);
+                }}
+                placeholder="Name it and press Enter"
+              />
+            </div>
+            <Button size="sm" onClick={() => saveActive(savingName)} disabled={savingBusy || !savingName.trim()} isLoading={savingBusy}>
+              Save
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => setSavingName(null)}>Cancel</Button>
           </div>
         ) : (
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => saveActive()}
             disabled={savingBusy}
-            className="flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-xs font-medium whitespace-nowrap shrink-0 text-gray-600 hover:bg-gray-100 disabled:opacity-50 transition-colors"
+            isLoading={savingBusy}
             title={activeTab.savedId ? 'Overwrite the saved query' : 'Save it to the left panel'}
+            leftIcon={<Save size={12} />}
           >
-            {savingBusy ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
             {activeTab.savedId ? 'Save' : 'Save as'}
-          </button>
+          </Button>
         )}
-        <button
+        <Button
+          variant={showSchema ? 'tertiary' : 'ghost'}
+          size="sm"
           onClick={() => setShowSchema(s => !s)}
-          className={`flex items-center gap-1.5 h-8 px-2.5 rounded-lg text-[13px] font-medium transition-colors ${showSchema ? 'text-teal-600 bg-teal-50' : 'text-gray-600 hover:bg-gray-100'}`}
           title="Toggle Schema Browser"
+          leftIcon={<Table2 size={14} />}
         >
-          <Table2 size={14} /> Schema
-        </button>
+          Schema
+        </Button>
         <div className="flex-1" />
         {activeTab.result && !activeTab.result.error && activeTab.result.columns.length > 0 && (
           <div className="flex items-center gap-1">
-            <button onClick={exportCsv} className="flex items-center gap-1 h-7 px-2 rounded-lg text-[12px] font-medium text-gray-500 hover:bg-gray-100 transition-colors" title="Export CSV">
-              <Download size={11} /> CSV
-            </button>
-            <button onClick={exportXlsx} className="flex items-center gap-1 h-7 px-2 rounded-lg text-[12px] font-medium text-gray-500 hover:bg-gray-100 transition-colors" title="Export XLSX">
-              <Download size={11} /> XLSX
-            </button>
+            <Button variant="ghost" size="sm" onClick={exportCsv} title="Export CSV" leftIcon={<Download size={11} />}>CSV</Button>
+            <Button variant="ghost" size="sm" onClick={exportXlsx} title="Export XLSX" leftIcon={<Download size={11} />}>XLSX</Button>
           </div>
         )}
         {activeTab.result?.time != null && (
@@ -3109,9 +2928,9 @@ function SqlEditorPanel({ connections, saved, onSavedChanged, openRequest, onOpe
             )}
           </div>
         ))}
-        <button onClick={addTab} className="p-1 text-gray-400 hover:text-teal-600 hover:bg-gray-100 rounded transition-colors ml-1" title="New Tab">
+        <IconButton kind="ghost" size="sm" label="New Tab" onClick={addTab} className="ml-1">
           <Plus size={12} />
-        </button>
+        </IconButton>
       </div>
       )}
 
@@ -3125,20 +2944,20 @@ function SqlEditorPanel({ connections, saved, onSavedChanged, openRequest, onOpe
             ) : (
               <>
             <div className="px-2 py-2 border-b border-gray-100">
-              <div className="relative">
-                <Search size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  className="w-full pl-7 pr-2 py-1 text-[12px] border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-teal-500 bg-gray-50"
-                  placeholder="Filter tables..."
-                  value={schemaSearch}
-                  onChange={e => setSchemaSearch(e.target.value)}
-                />
-              </div>
+              <CdsSearch
+                id="sql-schema-search"
+                labelText="Filter tables"
+                size="sm"
+                placeholder="Filter tables..."
+                value={schemaSearch}
+                onChange={e => setSchemaSearch(e.target.value)}
+                onClear={() => setSchemaSearch('')}
+              />
             </div>
             <div className="flex-1 overflow-y-auto py-1">
               {schemaLoading ? (
                 <div className="flex items-center justify-center py-6">
-                  <Loader2 size={14} className="animate-spin text-teal-400" />
+                  <Loading withOverlay={false} small description="Loading schema" />
                 </div>
               ) : filteredSchema.length === 0 ? (
                 <div className="text-center py-6 text-[12px] text-gray-400">No tables found</div>
@@ -3230,30 +3049,27 @@ function SqlEditorPanel({ connections, saved, onSavedChanged, openRequest, onOpe
           <div className="flex-1 flex flex-col overflow-hidden bg-white">
             {/* Results/Messages tabs */}
             <div className="flex-shrink-0 flex items-center gap-0 px-3 border-b border-gray-200 bg-gray-50">
-              <button
-                onClick={() => updateTab(activeTab.id, { resultTab: 'results' })}
-                className={`px-3 py-1.5 text-[12px] font-medium border-b-2 transition-colors ${
-                  activeTab.resultTab === 'results' ? 'border-teal-500 text-teal-700' : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
+              <Tabs
+                selectedIndex={activeTab.resultTab === 'messages' ? 1 : 0}
+                onChange={({ selectedIndex }) => updateTab(activeTab.id, { resultTab: selectedIndex === 1 ? 'messages' : 'results' })}
               >
-                <Table2 size={10} className="inline mr-1 -mt-0.5" />
-                Results
-                {activeTab.result && !activeTab.result.error && (
-                  <span className="ml-1.5 text-[12px] px-1.5 py-0.5 rounded bg-gray-200 text-gray-600">{activeTab.result.rowCount ?? 0}</span>
-                )}
-              </button>
-              <button
-                onClick={() => updateTab(activeTab.id, { resultTab: 'messages' })}
-                className={`px-3 py-1.5 text-[12px] font-medium border-b-2 transition-colors ${
-                  activeTab.resultTab === 'messages' ? 'border-teal-500 text-teal-700' : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <Terminal size={10} className="inline mr-1 -mt-0.5" />
-                Messages
-                {activeTab.messages.length > 0 && activeTab.result?.error && (
-                  <span className="ml-1.5 w-1.5 h-1.5 rounded-full bg-red-500 inline-block" />
-                )}
-              </button>
+                <TabList aria-label="Result tabs" contained={false}>
+                  <Tab>
+                    <Table2 size={10} className="inline mr-1 -mt-0.5" />
+                    Results
+                    {activeTab.result && !activeTab.result.error && (
+                      <Tag size="sm" type="gray" className="ml-1.5">{activeTab.result.rowCount ?? 0}</Tag>
+                    )}
+                  </Tab>
+                  <Tab>
+                    <Terminal size={10} className="inline mr-1 -mt-0.5" />
+                    Messages
+                    {activeTab.messages.length > 0 && activeTab.result?.error && (
+                      <span className="ml-1.5 w-1.5 h-1.5 rounded-full bg-red-500 inline-block" />
+                    )}
+                  </Tab>
+                </TabList>
+              </Tabs>
               <div className="flex-1" />
               {activeTab.result?.time != null && (
                 <span className="text-[12px] text-gray-400">
@@ -3280,8 +3096,7 @@ function SqlEditorPanel({ connections, saved, onSavedChanged, openRequest, onOpe
                 </div>
               ) : activeTab.running ? (
                 <div className="flex items-center justify-center py-16">
-                  <Loader2 size={20} className="animate-spin text-teal-400" />
-                  <span className="ml-2 text-xs text-gray-400">Executing query...</span>
+                  <InlineLoading description="Executing query..." className="!w-auto" />
                 </div>
               ) : activeTab.result?.error ? (
                 <div className="px-4 py-3 text-xs text-red-600 bg-red-50 flex items-start gap-2 m-3 rounded-lg">
@@ -3289,7 +3104,7 @@ function SqlEditorPanel({ connections, saved, onSavedChanged, openRequest, onOpe
                   <pre className="whitespace-pre-wrap font-mono">{activeTab.result.error}</pre>
                 </div>
               ) : activeTab.result && activeTab.result.columns.length > 0 ? (
-                <table className="w-full text-xs border-collapse">
+                <table className="cds--data-table cds--data-table--sm w-full text-xs border-collapse">
                   <thead className="sticky top-0 bg-gray-50 z-10">
                     <tr>
                       <th className="px-3 py-2 text-left font-medium text-gray-400 border-b border-gray-200 w-10 text-[12px]">#</th>
@@ -3499,48 +3314,29 @@ function ImportMappingModal(props: ImportMappingModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2">
-      <div className="bg-white rounded-lg shadow-xl w-[96vw] max-w-[1500px] h-[94vh] flex flex-col">
+    <ComposedModal open onClose={() => { onCancel(); return false; }} size="lg" preventCloseOnClickOutside className="import-mapping-modal">
         {/* Header */}
-        <div className="px-6 py-4 border-b flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-semibold flex items-center gap-2">
-              <Upload size={20} className="text-blue-600" />
-              Import to <code className="bg-gray-100 px-2 py-0.5 rounded text-lg">{tableName}</code>
-            </h2>
-            <p className="text-sm text-gray-500 mt-1">
-              File: <strong>{file.name}</strong> · {(file.size / 1024).toFixed(1)} KB · table currently has {rowCount.toLocaleString()} row(s)
-            </p>
-          </div>
-          <button onClick={onCancel} className="p-2 hover:bg-gray-100 rounded"><X size={20} /></button>
-        </div>
+        <ModalHeader closeModal={onCancel} title={`Import to ${tableName}`}>
+          <p className="text-sm text-gray-500 mt-1">
+            File: <strong>{file.name}</strong> · {(file.size / 1024).toFixed(1)} KB · table currently has {rowCount.toLocaleString()} row(s)
+          </p>
+        </ModalHeader>
+        <ModalBody className="!p-0 !mb-0 flex flex-col" style={{ height: '70vh' }}>
 
         {/* Mode selector — replaces the old browser prompt() */}
         <div className="px-6 py-3 bg-blue-50/50 border-b">
           <div className="flex items-center gap-3">
             <span className="text-sm font-medium text-gray-700">Import mode:</span>
-            <div className="inline-flex rounded-md border border-gray-300 overflow-hidden text-sm">
-              <button
-                type="button"
-                onClick={() => setMode('append')}
-                className={`inline-flex items-center justify-center px-3.5 h-9 ${mode === 'append' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'} whitespace-nowrap`}
-              >
+            <div className="inline-flex">
+              <Button size="sm" variant={mode === 'append' ? 'primary' : 'secondary'} onClick={() => setMode('append')}>
                 Append
-              </button>
-              <button
-                type="button"
-                onClick={() => setMode('merge')}
-                className={`inline-flex items-center justify-center px-3.5 h-9 border-l border-gray-300 ${mode === 'merge' ? 'bg-emerald-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'} whitespace-nowrap`}
-              >
+              </Button>
+              <Button size="sm" variant={mode === 'merge' ? 'primary' : 'secondary'} onClick={() => setMode('merge')}>
                 Merge by key
-              </button>
-              <button
-                type="button"
-                onClick={() => setMode('replace')}
-                className={`inline-flex items-center justify-center px-3.5 h-9 border-l border-gray-300 ${mode === 'replace' ? 'bg-red-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'} whitespace-nowrap`}
-              >
+              </Button>
+              <Button size="sm" variant={mode === 'replace' ? 'danger' : 'secondary'} onClick={() => setMode('replace')}>
                 Replace
-              </button>
+              </Button>
             </div>
             <span className="text-xs text-gray-600 flex-1">
               {mode === 'append'
@@ -3562,20 +3358,15 @@ function ImportMappingModal(props: ImportMappingModalProps) {
                 {dbColumns.map(c => {
                   const sel = mergeKeys.includes(c.name);
                   return (
-                    <button
+                    <Tag
                       key={c.name}
-                      type="button"
+                      size="sm"
+                      as="button"
+                      type={sel ? (mode === 'merge' ? 'green' : 'red') : 'outline'}
                       onClick={() => toggleMergeKey(c.name)}
-                      className={`text-[12px] px-2 py-0.5 rounded border ${
-                        sel
-                          ? mode === 'merge'
-                            ? 'bg-emerald-100 border-emerald-400 text-emerald-800 font-medium'
-                            : 'bg-red-100 border-red-400 text-red-800 font-medium'
-                          : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
-                      }`}
                     >
                       {sel && '✓ '}{c.name}
-                    </button>
+                    </Tag>
                   );
                 })}
               </div>
@@ -3590,16 +3381,20 @@ function ImportMappingModal(props: ImportMappingModalProps) {
           <span className="text-green-700">from file: <strong>{stats.file}</strong></span>
           <span className="text-amber-700">default: <strong>{stats.def}</strong></span>
           <span className="text-gray-500">skip: <strong>{stats.skip}</strong></span>
-          <button onClick={() => setMapping(autoMap())}
-            className="inline-flex items-center justify-center ml-auto px-3 h-8 text-[13px] bg-white border rounded hover:bg-gray-50 whitespace-nowrap">
+          <Button variant="secondary" size="sm" className="ml-auto" onClick={() => setMapping(autoMap())}>
             Auto-map all
-          </button>
-          <input
-            placeholder="Filter columns…"
-            value={filter}
-            onChange={e => setFilter(e.target.value)}
-            className="px-3 py-1.5 text-sm border rounded w-56"
-          />
+          </Button>
+          <div className="w-56">
+            <CdsSearch
+              id="import-map-filter"
+              labelText="Filter columns"
+              size="sm"
+              placeholder="Filter columns…"
+              value={filter}
+              onChange={e => setFilter(e.target.value)}
+              onClear={() => setFilter('')}
+            />
+          </div>
         </div>
 
         {/* Ignored file columns — each row has a dropdown: Ignore (default) or
@@ -3620,7 +3415,11 @@ function ImportMappingModal(props: ImportMappingModalProps) {
                 return (
                   <div key={fc} className="contents">
                     <span className="font-mono text-amber-900 truncate self-center" title={fc}>{fc}</span>
-                    <select
+                    <Select
+                      id={`import-ignored-${fc}`}
+                      labelText={`Action for ${fc}`}
+                      hideLabel
+                      size="sm"
                       value={pending ? pending.type : '__ignore__'}
                       onChange={e => {
                         const v = e.target.value;
@@ -3637,27 +3436,18 @@ function ImportMappingModal(props: ImportMappingModalProps) {
                         });
                         setMapping(prev => ({ ...prev, [colName]: { source: 'file', fileCol: fc } }));
                       }}
-                      className={`text-[12px] border rounded px-2 py-0.5 ${pending ? 'bg-emerald-50 border-emerald-300 text-emerald-800' : 'bg-white border-amber-200 text-amber-700'}`}
                       title={pending ? `Will ALTER TABLE ADD ${colName} ${pending.type}` : 'File column will be dropped silently'}
                     >
-                      <option value="__ignore__">Ignore (drop)</option>
-                      <optgroup label="Create new column as…">
-                        <option value="VARCHAR2(500)">VARCHAR2(500)</option>
-                        <option value="VARCHAR2(50)">VARCHAR2(50)</option>
-                        <option value="VARCHAR2(255)">VARCHAR2(255)</option>
-                        <option value="VARCHAR2(4000)">VARCHAR2(4000)</option>
-                        <option value="CLOB">CLOB</option>
-                        <option value="NUMBER">NUMBER</option>
-                        <option value="NUMBER(10)">NUMBER(10)</option>
-                        <option value="NUMBER(10,2)">NUMBER(10,2)</option>
-                        <option value="INTEGER">INTEGER</option>
-                        <option value="DATE">DATE</option>
-                        <option value="TIMESTAMP">TIMESTAMP</option>
-                        <option value="VARCHAR(255)">VARCHAR(255) (PG/MySQL)</option>
-                        <option value="TEXT">TEXT (PG/MySQL)</option>
-                        <option value="BOOLEAN">BOOLEAN (PG)</option>
-                      </optgroup>
-                    </select>
+                      <SelectItem value="__ignore__" text="Ignore (drop)" />
+                      <SelectItemGroup label="Create new column as…">
+                        {['VARCHAR2(500)', 'VARCHAR2(50)', 'VARCHAR2(255)', 'VARCHAR2(4000)', 'CLOB', 'NUMBER', 'NUMBER(10)', 'NUMBER(10,2)', 'INTEGER', 'DATE', 'TIMESTAMP'].map(t => (
+                          <SelectItem key={t} value={t} text={t} />
+                        ))}
+                        <SelectItem value="VARCHAR(255)" text="VARCHAR(255) (PG/MySQL)" />
+                        <SelectItem value="TEXT" text="TEXT (PG/MySQL)" />
+                        <SelectItem value="BOOLEAN" text="BOOLEAN (PG)" />
+                      </SelectItemGroup>
+                    </Select>
                   </div>
                 );
               })}
@@ -3674,30 +3464,41 @@ function ImportMappingModal(props: ImportMappingModalProps) {
             <span className="font-semibold text-emerald-800 flex items-center gap-1">
               <Plus size={12} /> Create new destination column:
             </span>
-            <input
-              value={newColName}
-              onChange={e => setNewColName(e.target.value)}
-              placeholder="column name (e.g. RECORD_ID)"
-              className="px-2 py-1 border border-emerald-300 rounded text-xs uppercase tracking-wide w-56 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-              maxLength={64}
-            />
-            <input
-              list="col-type-presets"
-              value={newColType}
-              onChange={e => setNewColType(e.target.value)}
-              placeholder="VARCHAR2(500)"
-              className="px-2 py-1 border border-emerald-300 rounded text-xs w-40 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-            />
+            <div className="w-56">
+              <TextInput
+                id="import-new-col-name"
+                labelText="New column name"
+                hideLabel
+                size="sm"
+                value={newColName}
+                onChange={e => setNewColName(e.target.value)}
+                placeholder="column name (e.g. RECORD_ID)"
+                className="uppercase tracking-wide"
+                maxLength={64}
+              />
+            </div>
+            <div className="w-40">
+              <TextInput
+                id="import-new-col-type"
+                labelText="New column type"
+                hideLabel
+                size="sm"
+                list="col-type-presets"
+                value={newColType}
+                onChange={e => setNewColType(e.target.value)}
+                placeholder="VARCHAR2(500)"
+              />
+            </div>
             <datalist id="col-type-presets">
               {TYPE_PRESETS.map(t => <option key={t} value={t} />)}
             </datalist>
-            <button
+            <Button
               type="submit"
+              size="sm"
               disabled={!newColName.trim() || !newColType.trim() || dbColumnsAll.some(c => c.name.toUpperCase() === newColName.trim().toUpperCase())}
-              className="inline-flex items-center justify-center px-3 h-8 text-[13px] bg-emerald-600 text-white rounded hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
             >
               Add
-            </button>
+            </Button>
             <span className="text-[12px] text-gray-500 italic">Server will <code className="bg-white px-1 rounded">ALTER TABLE ADD</code> before insert. Duplicates are skipped.</span>
           </form>
         </div>
@@ -3706,68 +3507,66 @@ function ImportMappingModal(props: ImportMappingModalProps) {
         <div className="flex-1 overflow-y-auto">
           {loadingPrev ? (
             <div className="flex items-center justify-center h-full text-gray-500">
-              <Loader2 size={20} className="animate-spin mr-2" /> Loading last mapping…
+              <InlineLoading description="Loading last mapping…" className="!w-auto" />
             </div>
           ) : (
-            <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-white border-b text-xs uppercase text-gray-500">
-                <tr>
-                  <th className="text-left px-4 py-2 w-1/4">DB column</th>
-                  <th className="text-left px-2 py-2 w-32">Source</th>
-                  <th className="text-left px-2 py-2 w-1/4">File column / default</th>
-                  <th className="text-left px-2 py-2">Sample value</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table size="sm">
+              <TableHead>
+                <TableRow>
+                  <TableHeader className="w-1/4">DB column</TableHeader>
+                  <TableHeader className="w-40">Source</TableHeader>
+                  <TableHeader className="w-1/4">File column / default</TableHeader>
+                  <TableHeader>Sample value</TableHeader>
+                </TableRow>
+              </TableHead>
+              <TableBody>
                 {filtered.map(db => {
                   const m = mapping[db.name] || { source: 'skip' };
                   const sample = m.source === 'file' && m.fileCol ? String(sampleRow[m.fileCol] ?? '') : '';
                   const isNew = (db as any).isNew === true;
                   return (
-                    <tr key={db.name} className={`border-b hover:bg-gray-50 ${isNew ? 'bg-emerald-50/40' : ''}`}>
-                      <td className="px-4 py-1.5 align-middle">
+                    <TableRow key={db.name} className={isNew ? 'bg-emerald-50/40' : ''}>
+                      <TableCell className="align-middle">
                         <div className="font-medium flex items-center gap-1.5">
                           {db.name}
                           {isNew && (
                             <>
-                              <span className="text-[12px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-emerald-600 text-white">NEW</span>
-                              <button
-                                onClick={() => removeNewCol(db.name)}
-                                className="ml-auto text-gray-300 hover:text-red-600 p-0.5"
-                                title="Remove this pending new column"
-                              >
+                              <Tag size="sm" type="green">NEW</Tag>
+                              <IconButton kind="ghost" size="sm" className="ml-auto" label="Remove this pending new column" onClick={() => removeNewCol(db.name)}>
                                 <X size={11} />
-                              </button>
+                              </IconButton>
                             </>
                           )}
                         </div>
                         <div className="text-[12px] text-gray-400 font-mono">{db.type}</div>
-                      </td>
-                      <td className="px-2 py-1.5 align-middle">
-                        <select
+                      </TableCell>
+                      <TableCell className="align-middle">
+                        <Select
+                          id={`import-src-${db.name}`}
+                          labelText={`Source for ${db.name}`}
+                          hideLabel
+                          size="sm"
                           value={m.source}
                           onChange={e => setOne(db.name, { source: e.target.value as any })}
-                          className={`text-xs border rounded px-2 py-1 w-full ${
-                            m.source === 'file' ? 'bg-green-50' :
-                            m.source === 'default' ? 'bg-amber-50' :
-                            'bg-gray-50 text-gray-500'
-                          }`}
                         >
-                          <option value="file">From file</option>
-                          <option value="default">Default value</option>
-                          <option value="skip">Skip (NULL)</option>
-                        </select>
-                      </td>
-                      <td className="px-2 py-1.5 align-middle">
+                          <SelectItem value="file" text="From file" />
+                          <SelectItem value="default" text="Default value" />
+                          <SelectItem value="skip" text="Skip (NULL)" />
+                        </Select>
+                      </TableCell>
+                      <TableCell className="align-middle">
                         {m.source === 'file' ? (
-                          <select
+                          <Select
+                            id={`import-filecol-${db.name}`}
+                            labelText={`File column for ${db.name}`}
+                            hideLabel
+                            size="sm"
                             value={m.fileCol || ''}
                             onChange={e => setOne(db.name, { fileCol: e.target.value })}
-                            className="text-xs border rounded px-2 py-1 w-full"
                           >
-                            <option value="">(pick…)</option>
-                            {fileColumns.map(fc => <option key={fc} value={fc}>{fc}</option>)}
-                          </select>
+                            <SelectItem value="" text="(pick…)" />
+                            {fileColumns.map(fc => <SelectItem key={fc} value={fc} text={fc} />)}
+                          </Select>
                         ) : m.source === 'default' ? (
                           (() => {
                             // Preset templates resolved at import time on the server.
@@ -3787,34 +3586,43 @@ function ImportMappingModal(props: ImportMappingModalProps) {
                             const isCustom = v !== '' && !preset;
                             return (
                               <div className="flex items-center gap-1">
-                                <select
-                                  value={preset ? preset.value : (isCustom ? '__custom__' : '')}
-                                  onChange={e => {
-                                    const sv = e.target.value;
-                                    if (sv === '') setOne(db.name, { defaultValue: '' });
-                                    else if (sv === '__custom__') setOne(db.name, { defaultValue: ' ' }); // trigger custom mode
-                                    else setOne(db.name, { defaultValue: sv });
-                                  }}
-                                  className="text-xs border rounded px-2 py-1 bg-white max-w-[180px]"
-                                  title="Pick a preset value, or choose Custom to type your own"
-                                >
-                                  <option value="">— pick —</option>
-                                  <optgroup label="Auto-generated">
-                                    {PRESETS.map(p => (
-                                      <option key={p.value} value={p.value} title={p.hint}>{p.label}</option>
-                                    ))}
-                                  </optgroup>
-                                  <option value="__custom__">Custom value…</option>
-                                </select>
+                                <div className="max-w-[180px]">
+                                  <Select
+                                    id={`import-default-${db.name}`}
+                                    labelText={`Default for ${db.name}`}
+                                    hideLabel
+                                    size="sm"
+                                    value={preset ? preset.value : (isCustom ? '__custom__' : '')}
+                                    onChange={e => {
+                                      const sv = e.target.value;
+                                      if (sv === '') setOne(db.name, { defaultValue: '' });
+                                      else if (sv === '__custom__') setOne(db.name, { defaultValue: ' ' }); // trigger custom mode
+                                      else setOne(db.name, { defaultValue: sv });
+                                    }}
+                                    title="Pick a preset value, or choose Custom to type your own"
+                                  >
+                                    <SelectItem value="" text="— pick —" />
+                                    <SelectItemGroup label="Auto-generated">
+                                      {PRESETS.map(p => (
+                                        <SelectItem key={p.value} value={p.value} text={p.label} title={p.hint} />
+                                      ))}
+                                    </SelectItemGroup>
+                                    <SelectItem value="__custom__" text="Custom value…" />
+                                  </Select>
+                                </div>
                                 {isCustom && (
-                                  <input
-                                    type="text"
-                                    autoFocus={v === ' '}
-                                    value={v === ' ' ? '' : v}
-                                    onChange={e => setOne(db.name, { defaultValue: e.target.value })}
-                                    placeholder="e.g. 2569, SRC_A, …"
-                                    className="text-xs border rounded px-2 py-1 flex-1 min-w-0"
-                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <TextInput
+                                      id={`import-default-custom-${db.name}`}
+                                      labelText={`Custom default for ${db.name}`}
+                                      hideLabel
+                                      size="sm"
+                                      autoFocus={v === ' '}
+                                      value={v === ' ' ? '' : v}
+                                      onChange={e => setOne(db.name, { defaultValue: e.target.value })}
+                                      placeholder="e.g. 2569, SRC_A, …"
+                                    />
+                                  </div>
                                 )}
                               </div>
                             );
@@ -3822,24 +3630,25 @@ function ImportMappingModal(props: ImportMappingModalProps) {
                         ) : (
                           <span className="text-xs text-gray-400 italic">NULL</span>
                         )}
-                      </td>
-                      <td className="px-2 py-1.5 text-xs text-gray-500 truncate max-w-[300px] align-middle">
+                      </TableCell>
+                      <TableCell className="text-xs text-gray-500 truncate max-w-[300px] align-middle">
                         {m.source === 'default' && m.defaultValue !== undefined && m.defaultValue !== ''
                           ? <span className="text-amber-700">= {String(m.defaultValue)}</span>
                           : sample
                             ? <span className="font-mono">{sample.substring(0, 80)}</span>
                             : <span className="text-gray-300">—</span>}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
                 {filtered.length === 0 && (
-                  <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400">No matching columns</td></tr>
+                  <TableRow><TableCell colSpan={4} className="px-4 py-8 text-center text-gray-400">No matching columns</TableCell></TableRow>
                 )}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           )}
         </div>
+        </ModalBody>
 
         {/* Footer */}
         <div className="px-5 py-3 bg-gray-50 border-t flex items-center justify-between">
@@ -3847,23 +3656,21 @@ function ImportMappingModal(props: ImportMappingModalProps) {
             Mapping will be saved for next-time import
           </span>
           <div className="flex gap-2">
-            <button onClick={onCancel}
-              className="inline-flex items-center justify-center px-3 h-9 text-[14px] border rounded hover:bg-white whitespace-nowrap">
-              Cancel
-            </button>
-            <button onClick={submit}
+            <Button variant="secondary" onClick={onCancel}>Cancel</Button>
+            <Button
+              onClick={submit}
               disabled={loadingPrev || stats.file + stats.def === 0 || ((mode === 'merge' || mode === 'replace') && mergeKeys.length === 0)}
-              className="px-3 h-9 text-[14px] disabled:cursor-not-allowed rounded inline-flex items-center gap-2 whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700">
-              <Upload size={14} /> {
+              leftIcon={<Upload size={14} />}
+            >
+              {
                 mode === 'merge'   ? `Merge by ${mergeKeys.length} key(s)`
                 : mode === 'replace' ? `Replace by ${mergeKeys.length} key(s)`
                                      : `Import ${stats.file + stats.def} field(s)`
               }
-            </button>
+            </Button>
           </div>
         </div>
-      </div>
-    </div>
+    </ComposedModal>
   );
 }
 
@@ -3872,7 +3679,7 @@ function ImportMappingModal(props: ImportMappingModalProps) {
  * All conditions are joined with AND. Within one condition, values are OR'd (IN).
  *
  * Example: 2 conditions, will produce:
- *   DELETE WHERE SOURCE IN ('SRC_A','SRC_B') AND FYEAR IN ('2567')
+ *   DELETE WHERE SOURCE IN ('SRC_A','BBL') AND FYEAR IN ('2567')
  *
  * Each condition card has its own column dropdown + values textarea + chip picker.
  */
@@ -3920,24 +3727,16 @@ function ClearByKeyModal(props: ClearByKeyModalProps) {
   const canSubmit = validConditions.length > 0;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-2xl w-full max-w-3xl flex flex-col max-h-[92vh]">
+    <ComposedModal open onClose={() => { onCancel(); return false; }} size="md" preventCloseOnClickOutside>
         {/* Header */}
-        <div className="px-6 py-4 border-b flex items-center justify-between">
-          <div>
-            <h2 className="text-base font-semibold flex items-center gap-2 text-gray-900">
-              <Eraser size={18} className="text-orange-600" />
-              Delete rows from <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm">{tableName}</code>
-            </h2>
-            <p className="text-xs text-gray-500 mt-0.5">
-              Currently {rowCount.toLocaleString()} rows · all conditions are combined with <strong>AND</strong>
-            </p>
-          </div>
-          <button onClick={onCancel} className="p-1.5 hover:bg-gray-100 rounded"><X size={18} /></button>
-        </div>
+        <ModalHeader closeModal={onCancel} title={`Delete rows from ${tableName}`}>
+          <p className="text-xs text-gray-500 mt-0.5">
+            Currently {rowCount.toLocaleString()} rows · all conditions are combined with <strong>AND</strong>
+          </p>
+        </ModalHeader>
 
         {/* Body — list of condition cards */}
-        <div className="px-6 py-4 space-y-3 overflow-y-auto flex-1">
+        <ModalBody className="space-y-3">
           {conditions.map((c, idx) => (
             <ConditionCard
               key={c.id}
@@ -3951,13 +3750,9 @@ function ClearByKeyModal(props: ClearByKeyModalProps) {
             />
           ))}
 
-          <button
-            type="button"
-            onClick={addCondition}
-            className="w-full py-2 text-sm border-2 border-dashed border-gray-300 hover:border-orange-400 hover:bg-orange-50/40 text-gray-500 hover:text-orange-700 rounded-md transition-colors flex items-center justify-center gap-1.5"
-          >
-            <Plus size={14} /> Add condition (AND)
-          </button>
+          <Button variant="tertiary" fullWidth onClick={addCondition} leftIcon={<Plus size={14} />}>
+            Add condition (AND)
+          </Button>
 
           {/* SQL preview */}
           {canSubmit && (
@@ -3976,7 +3771,7 @@ function ClearByKeyModal(props: ClearByKeyModalProps) {
               <div className="text-[12px] text-red-700/70 mt-1.5"><strong>Permanent — this cannot be undone</strong></div>
             </div>
           )}
-        </div>
+        </ModalBody>
 
         {/* Footer */}
         <div className="px-6 py-3 bg-gray-50 border-t flex items-center justify-between gap-2">
@@ -3984,20 +3779,13 @@ function ClearByKeyModal(props: ClearByKeyModalProps) {
             {validConditions.length}/{conditions.length} conditions ready
           </span>
           <div className="flex gap-2">
-            <button onClick={onCancel} className="inline-flex items-center justify-center px-3 h-9 text-[14px] border rounded-lg hover:bg-white whitespace-nowrap">
-              Cancel
-            </button>
-            <button
-              onClick={() => onConfirmConditions(validConditions)}
-              disabled={!canSubmit}
-              className="px-3.5 h-9 text-[14px] bg-red-600 hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg inline-flex items-center gap-2 font-medium shadow-sm whitespace-nowrap"
-            >
-              <Eraser size={14} /> Delete matching rows
-            </button>
+            <Button variant="secondary" onClick={onCancel}>Cancel</Button>
+            <Button variant="danger" onClick={() => onConfirmConditions(validConditions)} disabled={!canSubmit} leftIcon={<Eraser size={14} />}>
+              Delete matching rows
+            </Button>
           </div>
         </div>
-      </div>
-    </div>
+    </ComposedModal>
   );
 }
 
@@ -4046,7 +3834,7 @@ function ConditionCard({
   };
 
   return (
-    <div className="border border-gray-200 rounded-lg bg-white overflow-hidden">
+    <div className="cds--tile app-tile !p-0 overflow-hidden">
       {/* Card header */}
       <div className="px-3 py-2 bg-gray-50 border-b flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -4059,14 +3847,9 @@ function ConditionCard({
           </span>
         </div>
         {total > 1 && (
-          <button
-            type="button"
-            onClick={onRemove}
-            className="text-gray-400 hover:text-red-600 hover:bg-red-50 rounded p-1"
-            title="Remove this condition"
-          >
+          <IconButton kind="ghost" size="sm" label="Remove this condition" onClick={onRemove}>
             <X size={14} />
-          </button>
+          </IconButton>
         )}
       </div>
 
@@ -4074,17 +3857,18 @@ function ConditionCard({
       <div className="p-3 grid grid-cols-12 gap-3">
         {/* Column dropdown */}
         <div className="col-span-4">
-          <label className="block text-[12px] font-medium text-gray-600 mb-1">Column</label>
-          <select
+          <Select
+            id={`clear-cond-col-${condition.id}`}
+            labelText="Column"
+            size="sm"
             value={condition.column}
             onChange={e => onChange({ column: e.target.value, valuesText: '' })}
-            className="w-full px-2 py-1.5 text-sm border rounded bg-white focus:border-orange-400 focus:ring-1 focus:ring-orange-200"
           >
-            <option value="">— Select —</option>
+            <SelectItem value="" text="— Select —" />
             {dbColumns.map(c => (
-              <option key={c.name} value={c.name}>{c.name}</option>
+              <SelectItem key={c.name} value={c.name} text={c.name} />
             ))}
-          </select>
+          </Select>
           {condition.column && (
             <div className="text-[12px] text-gray-400 mt-1 truncate" title={dbColumns.find(d => d.name === condition.column)?.type || ''}>
               {dbColumns.find(d => d.name === condition.column)?.type || ''}
@@ -4094,17 +3878,18 @@ function ConditionCard({
 
         {/* Values */}
         <div className="col-span-8">
-          <label className="block text-[12px] font-medium text-gray-600 mb-1">
-            Values (IN — one per line)
-            {currentValues.length > 0 && <span className="text-orange-600 ml-1.5">· {currentValues.length} values</span>}
-          </label>
-          <textarea
+          <TextArea
+            id={`clear-cond-values-${condition.id}`}
+            labelText={<>
+              Values (IN — one per line)
+              {currentValues.length > 0 && <span className="text-orange-600 ml-1.5">· {currentValues.length} values</span>}
+            </>}
             value={condition.valuesText}
             onChange={e => onChange({ valuesText: e.target.value })}
             placeholder={condition.column ? `Type values, or click a chip below\ne.g.\nSRC_A\nBBL` : 'Choose a column first'}
             disabled={!condition.column}
             rows={3}
-            className="w-full px-2 py-1.5 text-xs font-mono border rounded focus:border-orange-400 focus:ring-1 focus:ring-orange-200 disabled:bg-gray-50 disabled:text-gray-400 resize-none"
+            className="font-mono"
           />
 
           {/* Click-to-add chips */}
@@ -4112,7 +3897,7 @@ function ConditionCard({
             <div className="mt-1.5">
               {distinctLoading && distinctValues.length === 0 && (
                 <div className="text-[12px] text-gray-400 italic flex items-center gap-1">
-                  <Loader2 size={10} className="animate-spin" /> Loading existing values…
+                  <InlineLoading description="Loading existing values…" />
                 </div>
               )}
               {!distinctLoading && distinctValues.length === 0 && (
@@ -4130,20 +3915,18 @@ function ConditionCard({
                     {distinctValues.map(v => {
                       const alreadyIn = currentValues.includes(v);
                       return (
-                        <button
+                        <Tag
                           key={v}
-                          type="button"
+                          size="sm"
+                          as="button"
+                          type={alreadyIn ? 'red' : 'outline'}
                           onClick={() => addValue(v)}
                           disabled={alreadyIn}
-                          className={`text-[12px] px-1.5 py-0.5 rounded border transition-colors max-w-[200px] truncate ${
-                            alreadyIn
-                              ? 'bg-red-100 border-red-300 text-red-700 cursor-default'
-                              : 'bg-white border-gray-300 text-gray-700 hover:border-orange-400 hover:bg-orange-50'
-                          }`}
+                          className="max-w-[200px] truncate"
                           title={alreadyIn ? `Added: ${v}` : `Add: ${v}`}
                         >
                           {alreadyIn && '✓ '}{v === '' ? '(empty)' : v}
-                        </button>
+                        </Tag>
                       );
                     })}
                   </div>
@@ -4209,21 +3992,23 @@ function FilterRegistryEditor({ table, columns, onSaved }: {
     }
   }
 
-  const field = (label: string, hint: string, value: string, onChange: (v: string) => void, opts?: { list?: string; placeholder?: string }) => (
+  const field = (row: number, label: string, hint: string, value: string, onChange: (v: string) => void, opts?: { list?: string; placeholder?: string }) => (
     <div className="min-w-0">
-      <label className="block text-[12px] font-medium text-gray-500 mb-0.5" title={hint}>{label}</label>
-      <input
+      <TextInput
+        id={`${listId}-${row}-${hint.slice(0, 16).replace(/\W/g, "")}`}
+        labelText={<span title={hint}>{label}</span>}
+        size="sm"
         list={opts?.list}
         value={value}
         placeholder={opts?.placeholder}
         onChange={e => onChange(e.target.value)}
-        className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-teal-400 font-mono"
+        className="font-mono"
       />
     </div>
   );
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
+    <div className="cds--tile app-tile !p-0">
       <datalist id={listId}>
         {columns.map(c => <option key={c.name} value={c.name} />)}
       </datalist>
@@ -4237,19 +4022,12 @@ function FilterRegistryEditor({ table, columns, onSaved }: {
         <div className="flex items-center gap-2">
           {error && <span className="text-[12px] text-red-500">{error}</span>}
           {saved && !dirty && <span className="text-[12px] text-teal-600 flex items-center gap-1"><Check size={11} /> Saved</span>}
-          <button
-            onClick={() => setDraft(d => [...d, { column: '', label: '' }])}
-            className="text-[12px] px-2 py-1 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 flex items-center gap-1"
-          >
-            <Plus size={11} /> Add filter
-          </button>
-          <button
-            onClick={save}
-            disabled={!dirty || saving}
-            className="text-[13px] px-2.5 h-8 rounded-lg disabled:opacity-40 flex items-center gap-1 whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700"
-          >
-            {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} Save
-          </button>
+          <Button variant="secondary" size="sm" onClick={() => setDraft(d => [...d, { column: '', label: '' }])} leftIcon={<Plus size={11} />}>
+            Add filter
+          </Button>
+          <Button size="sm" onClick={save} disabled={!dirty || saving} isLoading={saving} leftIcon={<Check size={14} />}>
+            Save
+          </Button>
         </div>
       </div>
 
@@ -4263,15 +4041,16 @@ function FilterRegistryEditor({ table, columns, onSaved }: {
           {draft.map((sp, i) => (
             <div key={i} className="rounded-lg border border-gray-100 bg-gray-50/40 p-2.5">
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
-                {field('Column', 'Column in this table that gets filtered', sp.column, v => update(i, { column: v }), { list: listId, placeholder: 'DEPT' })}
-                {field('Label', 'Shown on the filter field', sp.label, v => update(i, { label: v }), { placeholder: 'Department' })}
-                {field('Label source', 'Sibling column with the name, or SCHEMA.TABLE.CODE.NAME', sp.labelSource || '', v => update(i, { labelSource: v }), { placeholder: 'DEPT_NAME' })}
-                {field('Options from', 'Small registry table to read the dropdown from: SCHEMA.TABLE.CODE.NAME', sp.optionsFrom || '', v => update(i, { optionsFrom: v }), { placeholder: 'APP.V_DEPT.CODE.NAME' })}
-                {field('Narrow by', 'Column in that registry to match the parent filter against', sp.parentColumn || '', v => update(i, { parentColumn: v }), { placeholder: 'PARENT_CODE' })}
-                {field('Parent filter', 'Which filter on this screen supplies that value', sp.parentField || '', v => update(i, { parentField: v }), { list: listId, placeholder: 'MIN' })}
+                {field(i, 'Column', 'Column in this table that gets filtered', sp.column, v => update(i, { column: v }), { list: listId, placeholder: 'AGC' })}
+                {field(i, 'Label', 'Shown on the filter field', sp.label, v => update(i, { label: v }), { placeholder: 'Department' })}
+                {field(i, 'Label source', 'Sibling column with the name, or SCHEMA.TABLE.CODE.NAME', sp.labelSource || '', v => update(i, { labelSource: v }), { placeholder: 'AGC_NAME' })}
+                {field(i, 'Options from', 'Small registry table to read the dropdown from: SCHEMA.TABLE.CODE.NAME', sp.optionsFrom || '', v => update(i, { optionsFrom: v }), { placeholder: 'APP.V_AGC.CODE.NAME' })}
+                {field(i, 'Narrow by', 'Column in that registry to match the parent filter against', sp.parentColumn || '', v => update(i, { parentColumn: v }), { placeholder: 'MIN_CODE' })}
+                {field(i, 'Parent filter', 'Which filter on this screen supplies that value', sp.parentField || '', v => update(i, { parentField: v }), { list: listId, placeholder: 'MIN' })}
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 mt-2 items-end">
                 {field(
+                  i,
                   sp.defaultValue && /\{\{/.test(sp.defaultValue) ? `Default → ${resolveDefaultValue(sp.defaultValue)}` : 'Default',
                   'Value selected when the view opens — a constant, or {{fy}} = current fiscal year (2569), {{fy2}} = its last 2 digits (69); offsets work, e.g. {{fy2-1}}',
                   sp.defaultValue || '',
@@ -4282,12 +4061,9 @@ function FilterRegistryEditor({ table, columns, onSaved }: {
                   {serializeFilterSpecs([sp])}
                 </div>
                 <div className="flex justify-end pb-0.5">
-                  <button
-                    onClick={() => { setDraft(d => d.filter((_, idx) => idx !== i)); setSaved(false); }}
-                    className="text-[12px] px-2 py-1 rounded-md text-red-500 hover:bg-red-50 flex items-center gap-1"
-                  >
-                    <Trash2 size={11} /> Remove
-                  </button>
+                  <Button variant="ghost" size="sm" onClick={() => { setDraft(d => d.filter((_, idx) => idx !== i)); setSaved(false); }} leftIcon={<Trash2 size={11} />}>
+                    Remove
+                  </Button>
                 </div>
               </div>
             </div>
@@ -4808,23 +4584,16 @@ export default function DataRepository() {
       <header className="h-12 flex-shrink-0 bg-white border-b border-gray-200 flex items-center justify-between px-3 sm:px-5">
         <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
           {isMobile && (
-            <button
-              onClick={() => setSidebarOpen(o => !o)}
-              className="p-1.5 -ml-1 rounded-md text-gray-500 hover:text-teal-600 hover:bg-teal-50 transition-colors"
-              title="Toggle tables sidebar"
-            >
+            <IconButton kind="ghost" size="sm" label="Toggle tables sidebar" onClick={() => setSidebarOpen(o => !o)}>
               <Menu size={16} />
-            </button>
+            </IconButton>
           )}
           <Database size={18} className="text-teal-500 shrink-0" />
           <span className="font-bold text-sm text-gray-800 truncate">Database Tool</span>
         </div>
-        {isAdmin && <button
-          onClick={() => setShowSettings(true)}
-          className="flex items-center gap-1.5 px-2 sm:px-3 h-8 rounded-lg text-gray-500 hover:text-teal-600 hover:bg-teal-50 text-[13px] font-medium transition-colors shrink-0 whitespace-nowrap"
-        >
-          <Settings size={14} /> <span className="hidden sm:inline">Settings</span>
-        </button>}
+        {isAdmin && <Button variant="ghost" size="sm" onClick={() => setShowSettings(true)} leftIcon={<Settings size={14} />}>
+          <span className="hidden sm:inline">Settings</span>
+        </Button>}
       </header>
 
       {/* Main content */}
@@ -4877,21 +4646,16 @@ export default function DataRepository() {
           {/* Tab bar — only for a table; the SQL pane puts its own controls on
               one row instead of spending a second row on a tab bar. */}
           {pane === 'table' && (
-          <div className="flex-shrink-0 bg-white border-b border-gray-200 flex items-center gap-0 px-2 sm:px-4 overflow-x-auto">
-              <>
-                <button
-                  onClick={() => setRightTab('data')}
-                  className={`shrink-0 whitespace-nowrap px-3 py-2 text-xs font-medium border-b-2 transition-colors ${rightTab === 'data' ? 'border-teal-500 text-teal-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-                >
-                  <Table2 size={12} className="inline mr-1 -mt-0.5" /> Data
-                </button>
-                <button
-                  onClick={() => setRightTab('properties')}
-                  className={`shrink-0 whitespace-nowrap px-3 py-2 text-xs font-medium border-b-2 transition-colors ${rightTab === 'properties' ? 'border-teal-500 text-teal-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-                >
-                  <Columns size={12} className="inline mr-1 -mt-0.5" /> Properties
-                </button>
-              </>
+          <div className="flex-shrink-0 bg-white border-b border-gray-200 px-2 sm:px-4 overflow-x-auto">
+            <Tabs
+              selectedIndex={rightTab === 'properties' ? 1 : 0}
+              onChange={({ selectedIndex }) => setRightTab(selectedIndex === 1 ? 'properties' : 'data')}
+            >
+              <TabList aria-label="Table view">
+                <Tab renderIcon={() => <Table2 size={12} />}>Data</Tab>
+                <Tab renderIcon={() => <Columns size={12} />}>Properties</Tab>
+              </TabList>
+            </Tabs>
           </div>
           )}
 
@@ -4905,9 +4669,9 @@ export default function DataRepository() {
                     <Table2 size={14} className="text-teal-500 shrink-0" />
                     <span className="text-sm font-semibold text-gray-900 truncate">{selectedTable.name}</span>
                     {selectedTable.rowCount > 0 && (
-                      <span className="text-[12px] text-gray-500 px-1.5 py-0.5 rounded bg-gray-100 shrink-0">
+                      <Tag size="sm" type="gray" className="shrink-0">
                         {selectedTable.rowCount.toLocaleString()} rows
-                      </span>
+                      </Tag>
                     )}
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
@@ -4915,50 +4679,38 @@ export default function DataRepository() {
                       onChange={e => { const file = e.target.files?.[0]; if (file) handleImport(file); e.target.value = ''; }}
                     />
                     {/* Import — primary button */}
-                    <button
+                    <Button
+                      size="sm"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={importingId !== null}
+                      isLoading={!!importingId}
                       title="Import a CSV / Excel / JSON / ZIP file"
-                      className="group inline-flex items-center gap-1.5 pl-2.5 pr-3 py-1.5 rounded-md text-xs font-semibold text-white
-                                 bg-blue-600 hover:bg-blue-700
-                                 disabled:bg-gray-300 disabled:cursor-not-allowed
-                                 transition-colors"
+                      leftIcon={<Upload size={13} />}
                     >
-                      {importingId ? (
-                        <>
-                          <Loader2 size={13} className="animate-spin" />
-                          <span>Importing…</span>
-                        </>
-                      ) : (
-                        <>
-                          <Upload size={13} />
-                          <span>Import</span>
-                        </>
-                      )}
-                    </button>
+                      {importingId ? 'Importing…' : 'Import'}
+                    </Button>
 
                     {/* Clear by key — outlined orange (label hides on mobile) */}
-                    <button
+                    <Button
+                      variant="tertiary"
+                      size="sm"
                       onClick={() => openClearByKey(selectedTable)}
                       title="Bulk-delete rows by matching a key column"
-                      className="inline-flex items-center gap-1.5 px-2.5 h-8 rounded-lg text-[13px] font-medium
-                                 text-orange-700 bg-orange-50 hover:bg-orange-100
-                                 ring-1 ring-orange-200 hover:ring-orange-300
-                                 transition-all whitespace-nowrap"
+                      leftIcon={<Eraser size={13} />}
                     >
-                      <Eraser size={13} />
                       <span className="hidden sm:inline">Clear by key</span>
-                    </button>
+                    </Button>
 
                     {isAdmin && (
-                      <button
+                      <Button
+                        variant="secondary"
+                        size="sm"
                         onClick={() => setShowAccess(true)}
                         title="Who can see this table"
-                        className="inline-flex items-center gap-1.5 px-2.5 h-8 rounded-lg text-[13px] font-medium text-gray-700 bg-white ring-1 ring-gray-200 hover:bg-gray-50 transition-colors whitespace-nowrap"
+                        leftIcon={<Users size={13} />}
                       >
-                        <Users size={13} />
                         <span className="hidden sm:inline">Access</span>
-                      </button>
+                      </Button>
                     )}
                     {isAdmin && (
                       <AccessModal
@@ -4975,23 +4727,25 @@ export default function DataRepository() {
                     {isAdmin && <span className="hidden sm:inline-block h-5 w-px bg-gray-200 mx-0.5" />}
 
                     {/* Delete — ghost icon */}
-                    {isAdmin && <button
+                    {isAdmin && <IconButton
+                      kind="ghost"
+                      size="sm"
                       onClick={() => setDeleteTarget(selectedTable)}
-                      title="Remove table from this list (does NOT drop the source table)"
-                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-gray-400
-                                 hover:text-red-600 hover:bg-red-50 transition-colors"
+                      label="Remove table from this list (does NOT drop the source table)"
                     >
                       <Trash2 size={13} />
-                    </button>}
+                    </IconButton>}
                   </div>
                 </div>
 
                 {importResult && (
-                  <div className={`flex-shrink-0 px-5 py-1.5 text-xs flex items-center gap-2 ${importResult.ok ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
-                    {importResult.ok ? <Check size={12} /> : <AlertCircle size={12} />}
-                    {importResult.msg}
-                    <button onClick={() => setImportResult(null)} className="ml-auto text-gray-400 hover:text-gray-600"><X size={12} /></button>
-                  </div>
+                  <InlineNotification
+                    kind={importResult.ok ? 'success' : 'error'}
+                    lowContrast
+                    title={importResult.msg}
+                    onClose={() => { setImportResult(null); return false; }}
+                    className="flex-shrink-0 !max-w-none"
+                  />
                 )}
 
                 <div className="flex-1 overflow-hidden flex flex-col px-3 sm:px-5 py-3 min-w-0">
@@ -5020,7 +4774,7 @@ export default function DataRepository() {
                   <div className="flex items-center gap-2 mb-2">
                     <Table2 size={14} className="text-teal-500" />
                     <span className="text-sm font-semibold text-gray-900">{selectedTable.name}</span>
-                    {structureEngine && <span className="text-[12px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 font-medium">{structureEngine}</span>}
+                    {structureEngine && <Tag size="sm" type="gray">{structureEngine}</Tag>}
                   </div>
                   {selectedTable.description && <p className="text-xs text-gray-500">{selectedTable.description}</p>}
                   <div className="flex items-center gap-4 mt-2 text-[12px] text-gray-400">
@@ -5042,50 +4796,48 @@ export default function DataRepository() {
                   />
                   {structureLoading ? (
                     <div className="flex items-center justify-center py-16">
-                      <Loader2 size={20} className="animate-spin text-teal-400" />
+                      <Loading withOverlay={false} small description="Loading structure" />
                     </div>
                   ) : structureError ? (
-                    <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 rounded-lg px-4 py-3">
-                      <AlertCircle size={16} /> {structureError}
-                    </div>
+                    <InlineNotification kind="warning" lowContrast hideCloseButton title={structureError} />
                   ) : structureCols.length === 0 ? (
                     <div className="text-center py-16 text-gray-400 text-sm">No columns found</div>
                   ) : (
-                    <div className="rounded-xl border border-gray-200 overflow-hidden bg-white shadow-sm">
-                      <table className="w-full text-sm border-collapse">
-                        <thead>
-                          <tr className="bg-gray-50 border-b border-gray-200">
-                            <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 w-10">#</th>
-                            <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-700">Column Name</th>
-                            <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-700">Data Type</th>
-                            <th className="px-4 py-2.5 text-center text-xs font-semibold text-gray-700">Nullable</th>
-                            <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-700">Length/Precision</th>
-                          </tr>
-                        </thead>
-                        <tbody>
+                    <div className="cds--tile app-tile !p-0 overflow-hidden">
+                      <Table size="sm" useZebraStyles>
+                        <TableHead>
+                          <TableRow>
+                            <TableHeader className="w-10">#</TableHeader>
+                            <TableHeader>Column Name</TableHeader>
+                            <TableHeader>Data Type</TableHeader>
+                            <TableHeader>Nullable</TableHeader>
+                            <TableHeader>Length/Precision</TableHeader>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
                           {structureCols.map((col, i) => (
-                            <tr key={col.name} className={`border-b border-gray-100 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/40'}`}>
-                              <td className="px-4 py-2 text-xs text-gray-400">{i + 1}</td>
-                              <td className="px-4 py-2">
+                            <TableRow key={col.name}>
+                              <TableCell className="text-xs text-gray-400">{i + 1}</TableCell>
+                              <TableCell>
                                 <code className="text-xs font-mono font-medium text-gray-800">{col.name}</code>
-                              </td>
-                              <td className="px-4 py-2">
-                                <span className="text-xs px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-medium">{col.type}</span>
-                              </td>
-                              <td className="px-4 py-2 text-center">
+                              </TableCell>
+                              <TableCell>
+                                <Tag size="sm" type="blue">{col.type}</Tag>
+                              </TableCell>
+                              <TableCell>
                                 {col.nullable
                                   ? <span className="text-xs text-gray-400">YES</span>
-                                  : <span className="text-xs text-red-500 font-medium">NOT NULL</span>
+                                  : <Tag size="sm" type="red">NOT NULL</Tag>
                                 }
-                              </td>
-                              <td className="px-4 py-2 text-xs text-gray-500">
+                              </TableCell>
+                              <TableCell className="text-xs text-gray-500">
                                 {col.precision != null ? `${col.precision}${col.scale != null ? `,${col.scale}` : ''}` :
                                  col.length != null ? col.length : '—'}
-                              </td>
-                            </tr>
+                              </TableCell>
+                            </TableRow>
                           ))}
-                        </tbody>
-                      </table>
+                        </TableBody>
+                      </Table>
                     </div>
                   )}
                 </div>
@@ -5167,51 +4919,54 @@ export default function DataRepository() {
               <>
                 {discoverLoading && (
                   <div className="flex items-center justify-center py-6 text-gray-400">
-                    <Loader2 size={18} className="animate-spin mr-2" /> Discovering tables...
+                    <InlineLoading description="Discovering tables..." className="!w-auto" />
                   </div>
                 )}
 
                 {discoverError && (
-                  <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
-                    <AlertCircle size={14} /> {discoverError}
-                  </div>
+                  <InlineNotification kind="warning" lowContrast hideCloseButton title={discoverError} />
                 )}
 
                 {!discoverLoading && discoveredTables.length > 0 && (
                   <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">Existing Tables</label>
-                    <div className="relative">
-                      <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                      <input
-                        className="w-full border border-gray-300 rounded-lg pl-9 pr-3 h-8 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                        placeholder="Search tables..."
-                        value={discoverSearch}
-                        onChange={e => setDiscoverSearch(e.target.value)}
-                      />
-                    </div>
+                    <label className="cds--label">Existing Tables</label>
+                    <CdsSearch
+                      id="repo-discover-search"
+                      labelText="Search tables"
+                      size="sm"
+                      placeholder="Search tables..."
+                      value={discoverSearch}
+                      onChange={e => setDiscoverSearch(e.target.value)}
+                      onClear={() => setDiscoverSearch('')}
+                    />
                     <div className="flex items-center justify-between text-xs text-gray-500">
                       <span>{discoveredTables.length} available &middot; {selectedExisting.size} selected</span>
-                      <button
-                        className="text-teal-600 hover:text-teal-700 font-medium"
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => {
                           const filtered = discoveredTables.filter(t => !discoverSearch || t.name.toLowerCase().includes(discoverSearch.toLowerCase()));
                           setSelectedExisting(prev => prev.size === filtered.length ? new Set() : new Set(filtered.map(t => t.name)));
                         }}
                       >
                         {selectedExisting.size === discoveredTables.filter(t => !discoverSearch || t.name.toLowerCase().includes(discoverSearch.toLowerCase())).length ? 'Deselect all' : 'Select all'}
-                      </button>
+                      </Button>
                     </div>
                     <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-100">
                       {discoveredTables
                         .filter(t => !discoverSearch || t.name.toLowerCase().includes(discoverSearch.toLowerCase()))
                         .map(t => (
-                          <label
+                          <div
                             key={t.name}
-                            className={`flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-gray-50 transition-colors ${selectedExisting.has(t.name) ? 'bg-teal-50' : ''}`}
+                            className={`px-3 py-1 hover:bg-gray-50 transition-colors ${selectedExisting.has(t.name) ? 'bg-teal-50' : ''}`}
                           >
-                            <input
-                              type="checkbox"
-                              className="accent-teal-600 w-4 h-4"
+                            <Checkbox
+                              id={`repo-discover-${t.schema ?? ''}-${t.name}`}
+                              labelText={<span className="inline-flex items-center gap-2">
+                                <Table2 size={14} className="text-gray-400 flex-shrink-0" />
+                                <span className="text-sm font-medium text-gray-800">{t.name}</span>
+                                {t.schema && <span className="text-xs text-gray-400">{t.schema}</span>}
+                              </span>}
                               checked={selectedExisting.has(t.name)}
                               onChange={() => {
                                 setSelectedExisting(prev => {
@@ -5221,12 +4976,7 @@ export default function DataRepository() {
                                 });
                               }}
                             />
-                            <Table2 size={14} className="text-gray-400 flex-shrink-0" />
-                            <div className="flex-1 min-w-0">
-                              <span className="text-sm font-medium text-gray-800">{t.name}</span>
-                              {t.schema && <span className="text-xs text-gray-400 ml-2">{t.schema}</span>}
-                            </div>
-                          </label>
+                          </div>
                         ))
                       }
                     </div>
@@ -5245,56 +4995,36 @@ export default function DataRepository() {
             )}
 
             {/* Manual table name + description */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Table Name {!createForm.connectionId && <span className="text-red-500">*</span>}
-              </label>
-              <input
-                className="w-full border border-gray-300 rounded-lg px-3 h-9 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                value={createForm.name}
-                onChange={e => setCreateForm(f => ({ ...f, name: e.target.value }))}
-                placeholder={createForm.connectionId ? 'Type a table name to add manually...' : 'my_table'}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description (optional)</label>
-              <textarea
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none"
-                rows={2}
-                value={createForm.description}
-                onChange={e => setCreateForm(f => ({ ...f, description: e.target.value }))}
-              />
-            </div>
+            <TextInput
+              id="repo-create-table-name"
+              labelText={<>Table Name {!createForm.connectionId && <span className="text-red-500">*</span>}</>}
+              value={createForm.name}
+              onChange={e => setCreateForm(f => ({ ...f, name: e.target.value }))}
+              placeholder={createForm.connectionId ? 'Type a table name to add manually...' : 'my_table'}
+            />
+            <TextArea
+              id="repo-create-table-desc"
+              labelText="Description (optional)"
+              rows={2}
+              value={createForm.description}
+              onChange={e => setCreateForm(f => ({ ...f, description: e.target.value }))}
+            />
 
             {createError && (
-              <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">
-                <AlertCircle size={14} /> {createError}
-              </div>
+              <InlineNotification kind="error" lowContrast hideCloseButton title={createError} />
             )}
 
             {/* Actions */}
             <div className="flex justify-end gap-3 pt-2">
-              <button onClick={() => setShowCreateModal(false)} className="inline-flex items-center justify-center px-3.5 h-9 text-[14px] rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 whitespace-nowrap">
-                Cancel
-              </button>
+              <Button variant="secondary" onClick={() => setShowCreateModal(false)}>Cancel</Button>
               {selectedExisting.size > 0 ? (
-                <button
-                  onClick={handleAddExistingTables}
-                  disabled={createSubmitting}
-                  className="px-3 h-9 text-[14px] rounded-lg disabled:opacity-60 flex items-center gap-2 whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700"
-                >
-                  {createSubmitting && <Loader2 size={14} className="animate-spin" />}
+                <Button onClick={handleAddExistingTables} disabled={createSubmitting} isLoading={createSubmitting}>
                   Add {selectedExisting.size} Table{selectedExisting.size > 1 ? 's' : ''}
-                </button>
+                </Button>
               ) : (
-                <button
-                  onClick={handleCreateTable}
-                  disabled={createSubmitting || !createForm.name}
-                  className="px-3 h-9 text-[14px] rounded-lg disabled:opacity-60 flex items-center gap-2 whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700"
-                >
-                  {createSubmitting && <Loader2 size={14} className="animate-spin" />}
+                <Button onClick={handleCreateTable} disabled={createSubmitting || !createForm.name} isLoading={createSubmitting}>
                   Add Table
-                </button>
+                </Button>
               )}
             </div>
           </div>
@@ -5305,16 +5035,14 @@ export default function DataRepository() {
       {showFolderModal && (
         <Modal title="Create Folder" onClose={() => setShowFolderModal(false)}>
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Folder Name <span className="text-red-500">*</span></label>
-              <input
-                className="w-full border border-gray-300 rounded-lg px-3 h-9 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                value={folderForm.name}
-                onChange={e => setFolderForm(f => ({ ...f, name: e.target.value }))}
-                placeholder="e.g. RESDB Tables"
-                autoFocus
-              />
-            </div>
+            <TextInput
+              id="repo-folder-name"
+              labelText={<>Folder Name <span className="text-red-500">*</span></>}
+              value={folderForm.name}
+              onChange={e => setFolderForm(f => ({ ...f, name: e.target.value }))}
+              placeholder="e.g. RESDB Tables"
+              autoFocus
+            />
             {folders.length > 0 && (
               <CustomSelect
                 label="Parent Folder (optional)"
@@ -5332,22 +5060,13 @@ export default function DataRepository() {
               />
             )}
             {folderError && (
-              <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">
-                <AlertCircle size={14} /> {folderError}
-              </div>
+              <InlineNotification kind="error" lowContrast hideCloseButton title={folderError} />
             )}
             <div className="flex justify-end gap-3 pt-2">
-              <button onClick={() => setShowFolderModal(false)} className="inline-flex items-center justify-center px-3.5 h-9 text-[14px] rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 whitespace-nowrap">
-                Cancel
-              </button>
-              <button
-                onClick={handleCreateFolder}
-                disabled={folderSubmitting || !folderForm.name}
-                className="px-3 h-9 text-[14px] rounded-lg disabled:opacity-60 flex items-center gap-2 whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700"
-              >
-                {folderSubmitting && <Loader2 size={14} className="animate-spin" />}
+              <Button variant="secondary" onClick={() => setShowFolderModal(false)}>Cancel</Button>
+              <Button onClick={handleCreateFolder} disabled={folderSubmitting || !folderForm.name} isLoading={folderSubmitting}>
                 Create
-              </button>
+              </Button>
             </div>
           </div>
         </Modal>

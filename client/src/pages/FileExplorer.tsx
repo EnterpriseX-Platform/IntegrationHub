@@ -9,12 +9,18 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
-  Check, ChevronDown,
+  Check,
   FolderTree, FolderPlus, Folder as FolderIcon, FolderOpen, ChevronRight,
   File as FileIcon, FileSpreadsheet, FileText, Eye, Download, Trash2, MoreVertical,
   ArrowRight, RefreshCw, Database, HardDrive, Inbox, Loader2, FileInput, X, Link2,
-  Upload, Package, Unlink, Plus, Search,
+  Upload, Unlink, Plus,
 } from 'lucide-react';
+import {
+  Button as CdsButton, ComposedModal, ModalHeader, ModalBody, ModalFooter, TextInput, Search, ComboBox, Checkbox,
+  IconButton, InlineLoading, InlineNotification, Tag, Tabs, TabList, Tab, Pagination,
+  TableContainer, Table, TableHead, TableRow, TableHeader, TableBody, TableCell,
+} from '@carbon/react';
+import { Button } from '../components/ui/Button';
 import { API_URL, apiFetch, withAuthToken } from '../config/api';
 import { uploadFileB64 } from '../utils/uploadB64';
 
@@ -107,51 +113,21 @@ function rowIcon(name: string) {
 
 /** Project dropdown with search (replaces the native <select>) */
 function ProjectPicker({ projects, value, onChange }: { projects: Record<string, string>; value: string; onChange: (id: string) => void }) {
-  const [open, setOpen] = useState(false);
-  const [q, setQ] = useState('');
-  const box = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    const close = (e: MouseEvent) => { if (box.current && !box.current.contains(e.target as Node)) setOpen(false); };
-    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
-    document.addEventListener('mousedown', close); document.addEventListener('keydown', esc);
-    return () => { document.removeEventListener('mousedown', close); document.removeEventListener('keydown', esc); };
-  }, [open]);
-  const list = Object.entries(projects).sort(([, a], [, b]) => a.localeCompare(b, 'th')).filter(([, n]) => n.toLowerCase().includes(q.toLowerCase()));
-  const initial = (n: string) => (n.replace(/^[^A-Za-z\u0E00-\u0E7F]+/, '')[0] || '?').toUpperCase();
+  const items = Object.entries(projects).sort(([, a], [, b]) => a.localeCompare(b, 'th')).map(([id, name]) => ({ id, name }));
+  const selected = items.find(i => i.id === value) || null;
   return (
-    <div ref={box} className="relative">
-      <button type="button" onClick={() => setOpen(o => !o)}
-        className={cx('flex h-9 w-full items-center gap-2 rounded-lg border bg-white px-2.5 text-left text-[13px]', open ? 'border-brand ring-2 ring-brand/20' : 'border-slate-200 hover:border-slate-300')}>
-        {value ? <>
-          <span className="grid h-5 w-5 flex-shrink-0 place-items-center rounded bg-brand text-[12px] font-semibold text-white">{initial(projects[value] || '')}</span>
-          <span className="min-w-0 flex-1 truncate">{projects[value]}</span>
-        </> : <span className="flex-1 text-slate-400">Select project…</span>}
-        <ChevronDown className={cx('h-3.5 w-3.5 flex-shrink-0 text-slate-400 transition-transform', open && 'rotate-180')} />
-      </button>
-      {open && (
-        <div className="absolute left-0 right-0 z-20 mt-1 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg">
-          <div className="border-b border-slate-100 p-1.5">
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-              <input autoFocus value={q} onChange={e => setQ(e.target.value)} placeholder="Search project"
-                className="h-8 w-full rounded border border-slate-200 pl-7 pr-2 text-[12.5px] outline-none focus:border-brand" />
-            </div>
-          </div>
-          <div className="max-h-60 overflow-y-auto p-1">
-            {list.length === 0 && <div className="px-2 py-3 text-center text-[12px] text-slate-400">No project found</div>}
-            {list.map(([id, n]) => (
-              <button key={id} type="button" onClick={() => { onChange(id); setOpen(false); setQ(''); }}
-                className={cx('flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[12.5px]', id === value ? 'bg-brand/10 text-brand' : 'hover:bg-slate-50')}>
-                <span className={cx('grid h-5 w-5 flex-shrink-0 place-items-center rounded text-[12px] font-semibold', id === value ? 'bg-brand text-white' : 'bg-slate-200 text-slate-600')}>{initial(n)}</span>
-                <span className="min-w-0 flex-1 truncate">{n}</span>
-                {id === value && <Check className="h-3.5 w-3.5 flex-shrink-0" />}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
+    <ComboBox
+      id="fe-project-picker"
+      titleText="Project"
+      size="md"
+      placeholder="Select project…"
+      items={items}
+      selectedItem={selected}
+      itemToString={(i: { id: string; name: string } | null) => i?.name || ''}
+      shouldFilterItem={({ item, inputValue }: { item: { id: string; name: string }; inputValue: string | null }) =>
+        !inputValue || item.name.toLowerCase().includes(inputValue.toLowerCase())}
+      onChange={({ selectedItem }: { selectedItem?: { id: string; name: string } | null }) => { if (selectedItem) onChange(selectedItem.id); }}
+    />
   );
 }
 
@@ -521,24 +497,18 @@ export function ShareFolderExplorer({ basket: single, readOnly = false, embedded
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px] text-slate-500 text-[13px]">
-        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-        Loading File Explorer…
+        <InlineLoading description="Loading File Explorer…" />
       </div>
     );
   }
   if (error || !cur) {
     return (
       <div className="p-8 max-w-xl">
-        <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4">
-          <h2 className="font-medium mb-2">File Explorer unavailable</h2>
-          <p className="text-sm">{error || 'Could not resolve the File Explorer basket.'}</p>
-          <button
-            onClick={() => setLoadAttempt(n => n + 1)}
-            className="mt-3 inline-flex items-center gap-1.5 h-8 px-3 text-[13px] bg-white border border-red-200 text-red-700 rounded-lg hover:bg-red-100"
-          >
-            <RefreshCw className="w-3.5 h-3.5" /> Retry
-          </button>
-        </div>
+        <InlineNotification kind="error" lowContrast hideCloseButton title="File Explorer unavailable"
+          subtitle={error || 'Could not resolve the File Explorer basket.'} />
+        <Button variant="secondary" size="sm" className="mt-3" onClick={() => setLoadAttempt(n => n + 1)} leftIcon={<RefreshCw className="w-3.5 h-3.5" />}>
+          Retry
+        </Button>
       </div>
     );
   }
@@ -550,8 +520,6 @@ export function ShareFolderExplorer({ basket: single, readOnly = false, embedded
   const shownFiles = inFe ? feFiles : linkFiles;
   const fileBasketId = inFe ? cur.id : (linkBasketId || '');
   const isLoadingList = !inFe && linkLoading;
-  const btn = 'inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded border border-slate-200 bg-white px-2.5 text-[12.5px] text-slate-700 hover:bg-slate-50 disabled:opacity-50';
-  const primary = 'inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded bg-brand px-3 text-[12.5px] font-medium text-white hover:bg-brand/90 disabled:opacity-50';
   const n0 = (n: number) => n.toLocaleString('en-US');
 
   // Search filters the open level (folders and files) by name
@@ -633,20 +601,19 @@ export function ShareFolderExplorer({ basket: single, readOnly = false, embedded
           <div className="flex items-center gap-1 px-3 pb-1 pt-2.5">
             <span className="flex-1 text-[11.5px] font-medium text-slate-400">Baskets</span>
             {!single && (
-              <button type="button" onClick={() => setShowLinkModal(true)} title="Link a project basket" aria-label="Link basket"
-                className="grid h-6 w-6 place-items-center rounded text-slate-400 hover:bg-slate-200 hover:text-brand">
+              <IconButton kind="ghost" size="sm" label="Link a project basket" onClick={() => setShowLinkModal(true)}>
                 <Plus className="h-3.5 w-3.5" />
-              </button>
+              </IconButton>
             )}
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto px-1 pb-1">
             {single
               ? <>{basketEntry('single', inFe && currentFolderId === null, single.name, 'File Explorer', <FolderTree className="h-3.5 w-3.5" />, () => openFeFolder(null),
-                  canWrite ? <button type="button" onClick={() => openAddSubfolder(null)} title="New folder" className="grid h-6 w-6 place-items-center rounded text-slate-400 opacity-0 hover:bg-slate-200 hover:text-brand group-hover:opacity-100"><FolderPlus className="h-3.5 w-3.5" /></button> : undefined)}
+                  canWrite ? <IconButton kind="ghost" size="sm" label="New folder" className="opacity-0 group-hover:opacity-100" onClick={() => openAddSubfolder(null)}><FolderPlus className="h-3.5 w-3.5" /></IconButton> : undefined)}
                   {tree}</>
               : <>
                   {(feHasContent || cur.isFe) && basketEntry('fe', inFe && cur.isFe, 'File Explorer', '', <FolderTree className="h-3.5 w-3.5" />, () => (cur.isFe ? openFeFolder(null) : goFeRoot()),
-                    canWrite && cur.isFe ? <button type="button" onClick={() => openAddSubfolder(null)} title="New folder" className="grid h-6 w-6 place-items-center rounded text-slate-400 opacity-0 hover:bg-slate-200 hover:text-brand group-hover:opacity-100"><FolderPlus className="h-3.5 w-3.5" /></button> : undefined)}
+                    canWrite && cur.isFe ? <IconButton kind="ghost" size="sm" label="New folder" className="opacity-0 group-hover:opacity-100" onClick={() => openAddSubfolder(null)}><FolderPlus className="h-3.5 w-3.5" /></IconButton> : undefined)}
                   {cur.isFe && inFe && tree}
                   {links.map(l => {
                     const on = (source.kind === 'link' && source.link.id === l.id) || (inFe && cur.linkId === l.id);
@@ -659,10 +626,9 @@ export function ShareFolderExplorer({ basket: single, readOnly = false, embedded
                           l.basketType === 'batch' ? <Inbox className="h-3.5 w-3.5" /> : <FileText className="h-3.5 w-3.5" />,
                           () => openLink(l),
                           (
-                            <button type="button" onClick={() => unlinkBasket(l)} title="Unlink (the basket is not deleted)"
-                              className="grid h-6 w-6 flex-shrink-0 place-items-center rounded text-slate-400 hover:bg-slate-200 hover:text-red-600 sm:opacity-0 sm:group-hover:opacity-100">
+                            <IconButton kind="ghost" size="sm" label="Unlink (the basket is not deleted)" className="flex-shrink-0 sm:opacity-0 sm:group-hover:opacity-100" onClick={() => unlinkBasket(l)}>
                               <Unlink className="h-3.5 w-3.5" />
-                            </button>
+                            </IconButton>
                           ))}
                         {inFe && cur.linkId === l.id && tree}
                       </div>
@@ -688,70 +654,68 @@ export function ShareFolderExplorer({ basket: single, readOnly = false, embedded
 
             <div className="flex flex-shrink-0 flex-wrap items-center gap-1.5">
               {copyMessage && (
-                <span className={cx('rounded px-2 py-1 text-[11.5px]', /Copied|Uploaded \d+ file/.test(copyMessage) && !copyMessage.includes(':') ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700')}>
+                <Tag size="sm" type={/Copied|Uploaded \d+ file/.test(copyMessage) && !copyMessage.includes(':') ? 'green' : 'warm-gray'}>
                   {copyMessage}
-                </span>
+                </Tag>
               )}
               <div className="relative w-[160px] lg:w-[200px]">
-                <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-                <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search this folder"
-                  className="h-8 w-full rounded border border-slate-200 bg-white pl-7 pr-7 text-[12.5px] outline-none focus:border-brand" />
-                {q && <button type="button" onClick={() => setQ('')} aria-label="Clear search" className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"><X className="h-3 w-3" /></button>}
+                <Search id="fe-folder-search" size="md" labelText="Search this folder" placeholder="Search this folder"
+                  value={q} onChange={(e: any) => setQ(e.target.value)} onClear={() => setQ('')} />
               </div>
               {sel.size > 0 ? (
                 <>
                   <span className="whitespace-nowrap text-[12px] text-slate-400">Selected <b className="text-slate-800">{n0(sel.size)}</b></span>
-                  <button type="button" onClick={downloadSelected} className={primary}><Download className="h-3.5 w-3.5" /> Download selected</button>
-                  <button type="button" onClick={() => setSel(new Set())} className={btn} title="Clear selection"><X className="h-3.5 w-3.5" /></button>
+                  <Button variant="primary" size="sm" onClick={downloadSelected} leftIcon={<Download className="h-3.5 w-3.5" />}>Download selected</Button>
+                  <IconButton kind="ghost" size="sm" label="Clear selection" onClick={() => setSel(new Set())}><X className="h-3.5 w-3.5" /></IconButton>
                 </>
               ) : (
                 <>
                   {inFe && canWrite && (
-                    <button type="button" onClick={() => openAddSubfolder(currentFolderId)} className={btn} title="New folder">
+                    <IconButton kind="ghost" size="sm" label="New folder" onClick={() => openAddSubfolder(currentFolderId)}>
                       <FolderPlus className="h-3.5 w-3.5" />
-                    </button>
+                    </IconButton>
                   )}
                   {inFe && canWrite && (
-                    <button type="button" onClick={() => setShowCopyModal(true)} className={btn} title="Copy files from a basket">
+                    <IconButton kind="ghost" size="sm" label="Copy files from a basket" onClick={() => setShowCopyModal(true)}>
                       <FileInput className="h-3.5 w-3.5" />
-                    </button>
+                    </IconButton>
                   )}
                   {feOnly && (
-                    <button type="button" onClick={() => copyLink()} className={btn} title="Copy a link to this folder (opening it requires login)">
+                    <IconButton kind="ghost" size="sm" label="Copy a link to this folder (opening it requires login)" onClick={() => copyLink()}>
                       <Link2 className="h-3.5 w-3.5" />
-                    </button>
+                    </IconButton>
                   )}
                   {inFe && canWrite && (
                     <>
                       <input ref={uploadRef} type="file" multiple hidden onChange={onUpload} />
-                      <button type="button" onClick={() => uploadRef.current?.click()} disabled={busy} className={btn} title="Upload">
+                      <IconButton kind="ghost" size="sm" label="Upload" onClick={() => uploadRef.current?.click()} disabled={busy}>
                         {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
-                      </button>
+                      </IconButton>
                     </>
                   )}
                   {inFe && (
-                    <a href={withAuthToken(`${API_URL}/file-explorer/folders/${currentFolderId ?? 'root'}/download?basketId=${cur.id}`)} className={primary}
-                      title="Download every file in this folder (including subfolders) as a ZIP">
-                      <Download className="h-3.5 w-3.5" /><span className="hidden sm:inline">Download ZIP</span>
-                    </a>
+                    <CdsButton kind="primary" size="sm" href={withAuthToken(`${API_URL}/file-explorer/folders/${currentFolderId ?? 'root'}/download?basketId=${cur.id}`)}
+                      title="Download every file in this folder (including subfolders) as a ZIP" renderIcon={Download}>
+                      Download ZIP
+                    </CdsButton>
                   )}
                 </>
               )}
-              <button type="button" onClick={() => (inFe ? reloadFE() : reloadLink())} title="Refresh" className={btn}>
+              <IconButton kind="ghost" size="sm" label="Refresh" onClick={() => (inFe ? reloadFE() : reloadLink())}>
                 <RefreshCw className={cx('h-3.5 w-3.5', isLoadingList && 'animate-spin')} />
-              </button>
+              </IconButton>
             </div>
           </div>
 
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
             {isLoadingList ? (
-              <div className="flex flex-1 items-center justify-center gap-2 text-[13px] text-slate-400"><Loader2 className="h-4 w-4 animate-spin" /> Loading…</div>
+              <div className="flex flex-1 items-center justify-center"><InlineLoading className="w-auto" description="Loading…" /></div>
             ) : folderItems.length === 0 && fileItems.length === 0 ? (
               <div className="flex flex-1 flex-col items-center justify-center gap-2 p-8 text-[13px] text-slate-400">
                 <FolderOpen className="h-10 w-10" strokeWidth={1.2} />
                 {q ? 'No matches' : 'This folder is empty'}
                 {!q && canWrite && inFe && (
-                  <button type="button" onClick={() => uploadRef.current?.click()} className="text-[12.5px] text-brand hover:underline">Upload files</button>
+                  <Button variant="ghost" size="sm" onClick={() => uploadRef.current?.click()} leftIcon={<Upload className="h-3.5 w-3.5" />}>Upload files</Button>
                 )}
               </div>
             ) : (
@@ -770,72 +734,68 @@ export function ShareFolderExplorer({ basket: single, readOnly = false, embedded
                 )}
                 {fileItems.length > 0 && (
                   <div className={cx('flex-1 overflow-x-auto', folderItems.length > 0 && 'border-t border-slate-100')}>
-                    <table className="w-full text-[12.5px]">
-                      <thead className="sticky top-0 bg-white">
-                        <tr className="border-b border-slate-200 text-left text-[11.5px] text-slate-400">
-                          <th className="w-8 py-1.5 pl-3">
-                            <input type="checkbox" checked={allSel} aria-label="Select all" className="h-3.5 w-3.5 accent-brand"
+                    <TableContainer>
+                    <Table size="sm" useZebraStyles={false} stickyHeader={false}>
+                      <TableHead>
+                        <TableRow>
+                          <TableHeader className="w-8">
+                            <Checkbox id="fe-select-all" labelText="Select all" hideLabel checked={allSel}
                               onChange={() => setSel(allSel ? new Set() : new Set(pageItems.map(f => f.id)))} />
-                          </th>
-                          <th className="py-1.5 font-medium">Name</th>
-                          <th className="w-[90px] py-1.5 pr-2 text-right font-medium">Size</th>
-                          <th className="w-[110px] py-1.5 pr-3" />
-                        </tr>
-                      </thead>
-                      <tbody>
+                          </TableHeader>
+                          <TableHeader>Name</TableHeader>
+                          <TableHeader className="w-[90px] text-right">Size</TableHeader>
+                          <TableHeader className="w-[160px]" aria-label="Actions" />
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
                         {pageItems.map(f => {
                           const name = f.originalName || f.fileName;
                           const on = sel.has(f.id);
                           return (
-                            <tr key={f.id} id={`fe-file-${f.id}`}
-                              className={cx('group align-middle', on ? 'bg-brand/10' : feOnly && f.id === highlightFileId ? 'bg-amber-50' : 'hover:bg-slate-50')}>
-                              <td className="py-1.5 pl-3">
-                                <input type="checkbox" checked={on} aria-label={`Select ${name}`} className="h-3.5 w-3.5 accent-brand"
+                            <TableRow key={f.id} id={`fe-file-${f.id}`} isSelected={on}
+                              className={cx('group align-middle', on ? 'bg-brand/10' : feOnly && f.id === highlightFileId ? 'bg-amber-50' : '')}>
+                              <TableCell>
+                                <Checkbox id={`fe-select-${f.id}`} labelText={`Select ${name}`} hideLabel checked={on}
                                   onChange={() => setSel(prev => { const s = new Set(prev); if (s.has(f.id)) s.delete(f.id); else s.add(f.id); return s; })} />
-                              </td>
-                              <td className="py-1.5 pr-2">
+                              </TableCell>
+                              <TableCell>
                                 <button type="button" onClick={() => viewFile(fileBasketId, f.id, name)} className="flex min-w-0 items-center gap-2 text-left hover:text-brand">
                                   {rowIcon(name)}
                                   <span className="min-w-0 break-all leading-snug">{name}{!inFe && <span className="ml-1.5 text-[12px] text-slate-400">{f.status}</span>}</span>
                                 </button>
-                              </td>
-                              <td className="whitespace-nowrap py-1.5 pr-2 text-right text-[12px] tabular-nums text-slate-400">{formatSize(f.size)}</td>
-                              <td className="py-1.5 pr-3">
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap text-right tabular-nums text-slate-500">{formatSize(f.size)}</TableCell>
+                              <TableCell>
                                 <div className="flex justify-end gap-0.5 md:opacity-0 md:group-hover:opacity-100">
-                                  {feOnly && <button type="button" title="Copy link to this file" onClick={() => copyLink(f.id)} className="rounded p-1 text-slate-400 hover:bg-white hover:text-brand"><Link2 className="h-3.5 w-3.5" /></button>}
-                                  <button type="button" title="View" onClick={() => viewFile(fileBasketId, f.id, name)} className="rounded p-1 text-slate-400 hover:bg-white hover:text-brand"><Eye className="h-3.5 w-3.5" /></button>
-                                  <button type="button" title="Download" onClick={() => downloadFile(fileBasketId, f.id, name)} className="rounded p-1 text-slate-400 hover:bg-white hover:text-brand"><Download className="h-3.5 w-3.5" /></button>
-                                  {canWrite && <button type="button" title="Delete" onClick={() => deleteFile(f.id)} className="rounded p-1 text-slate-400 hover:bg-white hover:text-red-600"><Trash2 className="h-3.5 w-3.5" /></button>}
+                                  {feOnly && <IconButton kind="ghost" size="sm" label="Copy link to this file" onClick={() => copyLink(f.id)}><Link2 className="h-3.5 w-3.5" /></IconButton>}
+                                  <IconButton kind="ghost" size="sm" label="View" onClick={() => viewFile(fileBasketId, f.id, name)}><Eye className="h-3.5 w-3.5" /></IconButton>
+                                  <IconButton kind="ghost" size="sm" label="Download" onClick={() => downloadFile(fileBasketId, f.id, name)}><Download className="h-3.5 w-3.5" /></IconButton>
+                                  {canWrite && <IconButton kind="ghost" size="sm" label="Delete" onClick={() => deleteFile(f.id)}><Trash2 className="h-3.5 w-3.5" /></IconButton>}
                                 </div>
-                              </td>
-                            </tr>
+                              </TableCell>
+                            </TableRow>
                           );
                         })}
-                      </tbody>
-                    </table>
+                      </TableBody>
+                    </Table>
+                    </TableContainer>
                   </div>
                 )}
               </>
             )}
           </div>
           {fileItems.length > 0 && (
-            <div className="flex flex-shrink-0 flex-wrap items-center gap-2 border-t border-slate-200 px-3 py-2 text-[11.5px] text-slate-500">
-              <span className="tabular-nums">Showing {n0((pageNo - 1) * pageSize + 1)}–{n0((pageNo - 1) * pageSize + pageItems.length)} of {n0(fileItems.length)} items</span>
-              <span className="ml-2">Per page</span>
-              <div className="flex overflow-hidden rounded border border-slate-200">
-                {[50, 100, 200].map(n => (
-                  <button key={n} type="button" onClick={() => { setPageSize(n); setPage(1); }}
-                    className={cx('px-2.5 py-1 tabular-nums', n === pageSize ? 'bg-brand text-white' : 'hover:bg-slate-50')}>{n}</button>
-                ))}
-              </div>
-              {pages > 1 && (
-                <div className="ml-auto flex items-center gap-1">
-                  <button type="button" disabled={pageNo <= 1} onClick={() => setPage(pageNo - 1)} className="rounded border border-slate-200 px-2 py-1 disabled:opacity-40">‹</button>
-                  <span className="tabular-nums">{pageNo} / {pages}</span>
-                  <button type="button" disabled={pageNo >= pages} onClick={() => setPage(pageNo + 1)} className="rounded border border-slate-200 px-2 py-1 disabled:opacity-40">›</button>
-                </div>
-              )}
-            </div>
+            <Pagination
+              className="flex-shrink-0"
+              size="sm"
+              page={pageNo}
+              pageSize={pageSize}
+              pageSizes={[50, 100, 200]}
+              totalItems={fileItems.length}
+              onChange={({ page, pageSize: ps }: { page: number; pageSize: number }) => {
+                if (ps !== pageSize) { setPageSize(ps); setPage(1); } else setPage(page);
+              }}
+            />
           )}
         </div>
       </div>
@@ -939,49 +899,31 @@ function LinkBasketModal({ linkedIds, onClose, onLinked }: {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-200">
-          <Package className="w-4 h-4 text-brand" />
-          <h2 className="text-[14px] font-medium text-slate-900">Add basket</h2>
-          <button onClick={onClose} className="ml-auto p-1 rounded hover:bg-slate-100"><X className="w-4 h-4 text-slate-500" /></button>
-        </div>
-        <div className="flex gap-1 px-4 pt-3">
-          {([['create', 'Create new'], ['link', 'Link existing basket']] as const).map(([k, label]) => (
-            <button key={k} type="button" onClick={() => { setMode(k); setErr(null); }}
-              className={cx('rounded-lg px-3 py-1.5 text-[12.5px]', mode === k ? 'bg-brand/10 font-medium text-brand' : 'text-slate-500 hover:bg-slate-50')}>
-              {label}
-            </button>
-          ))}
-        </div>
+    <ComposedModal open size="sm" onClose={() => { onClose(); return false; }}>
+      <ModalHeader title="Add basket" />
+      <ModalBody hasForm>
+        <Tabs selectedIndex={mode === 'create' ? 0 : 1} onChange={({ selectedIndex }: { selectedIndex: number }) => { setMode(selectedIndex === 0 ? 'create' : 'link'); setErr(null); }}>
+          <TabList aria-label="Add basket mode">
+            <Tab>Create new</Tab>
+            <Tab>Link existing basket</Tab>
+          </TabList>
+        </Tabs>
         {mode === 'create' ? (
-          <div className="space-y-3 px-4 py-4">
+          <div className="space-y-3 pt-4">
             <div className="block">
-              <span className="mb-1 block text-[12px] text-slate-500">Project</span>
               <ProjectPicker projects={projects} value={newProject} onChange={setNewProject} />
             </div>
-            <label className="block">
-              <span className="mb-1 block text-[12px] text-slate-500">Basket name</span>
-              <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="e.g. Meeting documents"
-                onKeyDown={e => { if (e.key === 'Enter') create(); }}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-brand/30" />
-            </label>
-            <p className="text-[11.5px] text-slate-400">Created as a File Explorer basket in the selected project — everyone with access to that project can see it</p>
-            {err && <div className="text-[12px] text-red-600">{err}</div>}
-            <div className="flex justify-end gap-2">
-              <button type="button" onClick={onClose} className="text-[13px] px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50">Cancel</button>
-              <button type="button" onClick={create} disabled={!newProject || !newName.trim() || saving}
-                className="inline-flex items-center gap-1.5 text-[13px] px-3 py-1.5 rounded-lg bg-brand text-white hover:opacity-90 disabled:opacity-40">
-                {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />} Create basket
-              </button>
-            </div>
+            <TextInput id="fe-new-basket-name" labelText="Basket name" value={newName} onChange={e => setNewName(e.target.value)} placeholder="e.g. Meeting documents"
+              onKeyDown={e => { if (e.key === 'Enter') create(); }}
+              helperText="Created as a File Explorer basket in the selected project — everyone with access to that project can see it" />
+            {err && <InlineNotification kind="error" lowContrast hideCloseButton title="Error" subtitle={err} />}
           </div>
         ) : (<>
-        <div className="px-4 pt-3">
-          <input autoFocus value={filter} onChange={e => setFilter(e.target.value)} placeholder="Search project or basket…"
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-brand/30" />
+        <div className="pt-4">
+          <Search id="fe-link-filter" size="md" labelText="Search project or basket" autoFocus value={filter}
+            onChange={(e: any) => setFilter(e.target.value)} onClear={() => setFilter('')} placeholder="Search project or basket…" />
         </div>
-        <div className="flex-1 overflow-y-auto px-2 py-2">
+        <div className="max-h-[40vh] overflow-y-auto py-2">
           {groups.length === 0 && <div className="px-2 py-6 text-center text-[13px] text-slate-400">No basket found</div>}
           {groups.map(([pn, list]) => (
             <div key={pn} className="mb-2">
@@ -991,7 +933,7 @@ function LinkBasketModal({ linkedIds, onClose, onLinked }: {
                 const on = picked?.id === b.id;
                 return (
                   <button key={b.id} type="button" disabled={linked} onClick={() => setPicked(b)}
-                    className={cx('w-full text-left px-2 py-1.5 rounded-lg flex items-center gap-2.5 text-[13px]',
+                    className={cx('w-full text-left px-2 py-1.5 flex items-center gap-2.5 text-[13px]',
                       on ? 'bg-brand/10 text-brand' : 'hover:bg-slate-50 text-slate-700', linked && 'opacity-40 cursor-not-allowed')}>
                     {basketIcon(b.type)}
                     <span className="flex-1 min-w-0 truncate">{b.name}</span>
@@ -1002,22 +944,26 @@ function LinkBasketModal({ linkedIds, onClose, onLinked }: {
             </div>
           ))}
         </div>
-        <div className="px-4 py-3 border-t border-slate-200 space-y-2">
-          <input value={name} onChange={e => setName(e.target.value)} disabled={!picked}
-            placeholder={picked ? `Display name (blank = ${(picked.projectId && projects[picked.projectId]) ? `${projects[picked.projectId]} · ` : ''}${picked.name})` : 'Select a basket first'}
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:bg-slate-50" />
-          {err && <div className="text-[12px] text-red-600">{err}</div>}
-          <div className="flex justify-end gap-2">
-            <button type="button" onClick={onClose} className="text-[13px] px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50">Cancel</button>
-            <button type="button" onClick={save} disabled={!picked || saving}
-              className="inline-flex items-center gap-1.5 text-[13px] px-3 py-1.5 rounded-lg bg-brand text-white hover:opacity-90 disabled:opacity-40">
-              {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />} Link basket
-            </button>
-          </div>
+        <div className="space-y-2">
+          <TextInput id="fe-link-display-name" labelText="Display name" hideLabel value={name} onChange={e => setName(e.target.value)} disabled={!picked}
+            placeholder={picked ? `Display name (blank = ${(picked.projectId && projects[picked.projectId]) ? `${projects[picked.projectId]} · ` : ''}${picked.name})` : 'Select a basket first'} />
+          {err && <InlineNotification kind="error" lowContrast hideCloseButton title="Error" subtitle={err} />}
         </div>
         </>)}
-      </div>
-    </div>
+      </ModalBody>
+      <ModalFooter>
+        <CdsButton kind="secondary" onClick={onClose}>Cancel</CdsButton>
+        {mode === 'create' ? (
+          <CdsButton kind="primary" onClick={create} disabled={!newProject || !newName.trim() || saving}>
+            {saving ? 'Creating…' : 'Create basket'}
+          </CdsButton>
+        ) : (
+          <CdsButton kind="primary" onClick={save} disabled={!picked || saving}>
+            {saving ? 'Linking…' : 'Link basket'}
+          </CdsButton>
+        )}
+      </ModalFooter>
+    </ComposedModal>
   );
 }
 
@@ -1100,34 +1046,20 @@ function CopyFromBasketModal({ targetBasketId, targetFolderId, targetFolderName,
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3 border-b">
-          <div className="flex items-center gap-2">
-            <FileInput className="w-5 h-5 text-blue-600" />
-            <h2 className="text-lg font-semibold">Copy from Basket</h2>
-            <span className="text-sm text-gray-500 ml-2">→ destination: <strong>{targetFolderName}</strong></span>
-          </div>
-          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
+    <ComposedModal open size="lg" preventCloseOnClickOutside={copying} onClose={() => { onClose(); return false; }}>
+      <ModalHeader title="Copy from Basket" label={`Destination: ${targetFolderName}`} />
+      <ModalBody className="h-[60vh] flex flex-col">
         {/* Body: basket picker + file picker — stacks on mobile, side-by-side on md+ */}
-        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 overflow-hidden">
+        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 overflow-hidden border border-slate-200">
           {/* Source baskets */}
           <div className="border-r overflow-hidden flex flex-col">
             <div className="px-3 py-2 bg-gray-50 border-b flex items-center gap-2 shrink-0">
               <Database className="w-4 h-4 text-gray-500" />
               <span className="text-xs font-medium text-gray-600 uppercase tracking-wide">1. Pick a basket</span>
-              <input
-                type="text"
-                placeholder="Filter…"
-                value={filter}
-                onChange={e => setFilter(e.target.value)}
-                className="ml-auto px-2 py-0.5 text-xs border rounded w-32"
-              />
+              <div className="ml-auto w-40">
+                <Search id="fe-copy-filter" size="sm" labelText="Filter baskets" placeholder="Filter…" value={filter}
+                  onChange={(e: any) => setFilter(e.target.value)} onClear={() => setFilter('')} />
+              </div>
             </div>
             <div className="overflow-y-auto flex-1">
               {filteredSources.length === 0 && (
@@ -1156,70 +1088,68 @@ function CopyFromBasketModal({ targetBasketId, targetFolderId, targetFolderName,
                 2. Pick files{selectedFileIds.length > 0 && ` (${selectedFileIds.length} selected)`}
               </span>
               {files.length > 0 && (
-                <button
-                  className="ml-auto text-xs text-blue-600 hover:underline"
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="ml-auto"
                   onClick={() => setSelectedFileIds(selectedFileIds.length === files.length ? [] : files.map(f => f.id))}
                 >
                   {selectedFileIds.length === files.length ? 'Clear all' : 'Select all'}
-                </button>
+                </Button>
               )}
             </div>
             <div className="overflow-y-auto flex-1">
               {!selectedSource && <div className="px-3 py-4 text-sm text-gray-500">Pick a basket on the left.</div>}
               {selectedSource && loadingFiles && (
-                <div className="px-3 py-4 text-sm text-gray-500 flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" /> Loading…
+                <div className="px-3 py-4">
+                  <InlineLoading description="Loading…" />
                 </div>
               )}
               {selectedSource && !loadingFiles && files.length === 0 && (
                 <div className="px-3 py-4 text-sm text-gray-500">No files in this basket.</div>
               )}
               {files.map(f => (
-                <label
+                <div
                   key={f.id}
-                  className={`flex items-center items-start gap-2 px-3 h-9 border-b text-sm hover:bg-blue-50 cursor-pointer ${selectedFileIds.includes(f.id) ? 'bg-blue-50' : ''} whitespace-nowrap`}
+                  className={`flex items-center gap-2 px-3 py-1 border-b text-sm hover:bg-blue-50 ${selectedFileIds.includes(f.id) ? 'bg-blue-50' : ''} whitespace-nowrap`}
                 >
-                  <input
-                    type="checkbox"
+                  <Checkbox
+                    id={`fe-copy-file-${f.id}`}
+                    labelText={`Select ${f.originalName || f.fileName}`}
+                    hideLabel
                     checked={selectedFileIds.includes(f.id)}
                     onChange={() => setSelectedFileIds(prev => prev.includes(f.id) ? prev.filter(x => x !== f.id) : [...prev, f.id])}
-                    className="mt-0.5"
                   />
                   {fileIcon(f.originalName || f.fileName)}
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-medium">{f.originalName || f.fileName}</div>
                     <div className="text-xs text-gray-500">{formatSize(f.size)} · {f.status}</div>
                   </div>
-                </label>
+                </div>
               ))}
             </div>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="px-5 py-3 border-t bg-gray-50 flex items-center justify-between">
-          <div className="text-sm text-gray-600">
-            {err && <span className="text-red-600">⚠ {err}</span>}
-            {!err && selectedFileIds.length > 0 && (
-              <span>Will copy <strong>{selectedFileIds.length}</strong> file(s) → <strong>{targetFolderName}</strong></span>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <button onClick={onClose} disabled={copying} className="inline-flex items-center justify-center px-3 h-9 text-[14px] border rounded hover:bg-white whitespace-nowrap">
-              Cancel
-            </button>
-            <button
-              onClick={doCopy}
-              disabled={copying || selectedFileIds.length === 0 || !selectedSource}
-              className="inline-flex items-center gap-2 px-3 h-9 text-[14px] disabled:cursor-not-allowed rounded whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700"
-            >
-              {copying ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
-              {copying ? 'Copying…' : `Copy ${selectedFileIds.length || ''}`}
-            </button>
-          </div>
+        <div className="pt-3 text-sm text-gray-600">
+          {err && <InlineNotification kind="error" lowContrast hideCloseButton title="Copy failed" subtitle={err} />}
+          {!err && selectedFileIds.length > 0 && (
+            <span>Will copy <strong>{selectedFileIds.length}</strong> file(s) → <strong>{targetFolderName}</strong></span>
+          )}
         </div>
-      </div>
-    </div>
+      </ModalBody>
+      <ModalFooter>
+        <CdsButton kind="secondary" onClick={onClose} disabled={copying}>Cancel</CdsButton>
+        <CdsButton
+          kind="primary"
+          onClick={doCopy}
+          disabled={copying || selectedFileIds.length === 0 || !selectedSource}
+          renderIcon={copying ? undefined : ArrowRight}
+        >
+          {copying ? 'Copying…' : `Copy ${selectedFileIds.length || ''}`}
+        </CdsButton>
+      </ModalFooter>
+    </ComposedModal>
   );
 }
 
@@ -1273,13 +1203,15 @@ function FolderRow({ folder, rootLabel = 'File Explorer', selected, onSelect, on
       )}
       {/* Kebab — inline, appears on hover. Click to open menu with
           "Add subfolder" + (when empty) "Delete folder". */}
-      {(onAddSubfolder || !isRoot) && <button
-        onClick={e => { e.stopPropagation(); setMenuOpen(o => !o); }}
-        className={`p-0.5 text-gray-400 hover:text-gray-700 hover:bg-gray-200 rounded transition-opacity ${menuOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
-        title="Folder actions"
+      {(onAddSubfolder || !isRoot) && <IconButton
+        kind="ghost"
+        size="sm"
+        label="Folder actions"
+        onClick={(e: any) => { e.stopPropagation(); setMenuOpen(o => !o); }}
+        className={`transition-opacity ${menuOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
       >
         <MoreVertical className="w-3.5 h-3.5" />
-      </button>}
+      </IconButton>}
       {menuOpen && (
         <div
           ref={menuRef}
@@ -1333,33 +1265,29 @@ function InlineNewFolderInput({ level, parentName, value, creating, onChange, on
     >
       <span className="w-4" />
       <FolderPlus className="w-3.5 h-3.5 text-brand shrink-0" />
-      <input
-        autoFocus
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        onKeyDown={e => {
-          if (e.key === 'Enter' && value.trim()) onSubmit();
-          if (e.key === 'Escape') onCancel();
-        }}
-        placeholder={`new folder in ${parentName}`}
-        className="flex-1 min-w-0 text-xs bg-white border border-slate-200 rounded px-1.5 py-1 focus:outline-none focus:ring-2 focus:ring-brand/30"
-        disabled={creating}
-      />
-      <button
-        onClick={onSubmit}
-        disabled={creating || !value.trim()}
-        className="inline-flex items-center justify-center px-2 h-7 text-[12px] rounded disabled:opacity-40 whitespace-nowrap bg-brand text-white hover:opacity-90"
-        title="Create"
-      >
-        ✓
-      </button>
-      <button
-        onClick={onCancel}
-        className="inline-flex items-center justify-center px-1.5 h-7 text-[12px] text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded whitespace-nowrap"
-        title="Cancel (Esc)"
-      >
-        ×
-      </button>
+      <div className="flex-1 min-w-0">
+        <TextInput
+          id={`fe-new-folder-${level}`}
+          labelText="New folder name"
+          hideLabel
+          size="sm"
+          autoFocus
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Enter' && value.trim()) onSubmit();
+            if (e.key === 'Escape') onCancel();
+          }}
+          placeholder={`new folder in ${parentName}`}
+          disabled={creating}
+        />
+      </div>
+      <IconButton kind="primary" size="sm" label="Create" onClick={onSubmit} disabled={creating || !value.trim()}>
+        <Check className="w-3.5 h-3.5" />
+      </IconButton>
+      <IconButton kind="ghost" size="sm" label="Cancel (Esc)" onClick={onCancel}>
+        <X className="w-3.5 h-3.5" />
+      </IconButton>
     </div>
   );
 }

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { File, RefreshCw, Send, CheckCircle, Clock, AlertCircle, Loader2 } from 'lucide-react';
 import { api } from '../config/api';
+import { Button } from './ui/Button';
+import { IconButton, Loading, Tag, Table, TableContainer, TableHead, TableRow, TableHeader, TableBody, TableCell } from '@carbon/react';
 
 interface BasketFile {
   id: string;
@@ -90,17 +92,17 @@ export const BasketFileList = ({ refreshTrigger }: BasketFileListProps) => {
   };
 
   const getStatusBadge = (status: string) => {
-    const styles = {
-      pending: 'bg-yellow-100 text-yellow-700',
-      transferring: 'bg-blue-100 text-blue-700',
-      transferred: 'bg-green-100 text-green-700',
-      failed: 'bg-red-100 text-red-700',
-    };
+    const types = {
+      pending: 'warm-gray',
+      transferring: 'blue',
+      transferred: 'green',
+      failed: 'red',
+    } as const;
 
     return (
-      <span className={`px-2 py-1 text-xs rounded-full ${styles[status as keyof typeof styles]}`}>
+      <Tag size="sm" type={types[status as keyof typeof types] || 'gray'}>
         {status.charAt(0).toUpperCase() + status.slice(1)}
-      </span>
+      </Tag>
     );
   };
 
@@ -109,7 +111,7 @@ export const BasketFileList = ({ refreshTrigger }: BasketFileListProps) => {
   if (loading) {
     return (
       <div className="text-center py-8">
-        <Loader2 className="h-8 w-8 text-blue-500 animate-spin mx-auto" />
+        <Loading withOverlay={false} small className="mx-auto" />
         <p className="mt-2 text-sm text-gray-500">Loading files...</p>
       </div>
     );
@@ -126,26 +128,17 @@ export const BasketFileList = ({ refreshTrigger }: BasketFileListProps) => {
           </p>
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={fetchFiles}
-            className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-            title="Refresh"
-          >
-            <RefreshCw className="h-4 w-4 text-gray-600" />
-          </button>
+          <IconButton kind="ghost" size="md" label="Refresh" onClick={fetchFiles}>
+            <RefreshCw className="h-4 w-4" />
+          </IconButton>
           {pendingFiles.length > 0 && (
-            <button
+            <Button
               onClick={transferAllFiles}
-              disabled={transferring}
-              className="flex items-center gap-2 px-3 h-9 rounded-lg disabled:opacity-50 whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700"
+              isLoading={transferring}
+              leftIcon={<Send className="h-4 w-4" />}
             >
-              {transferring ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
               Transfer All to SFTP
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -158,33 +151,33 @@ export const BasketFileList = ({ refreshTrigger }: BasketFileListProps) => {
           <p className="text-sm text-gray-400">Upload files to see them here</p>
         </div>
       ) : (
-        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">File</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Size</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Uploaded</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
+        <TableContainer>
+          <Table size="md">
+            <TableHead>
+              <TableRow>
+                <TableHeader>File</TableHeader>
+                <TableHeader>Size</TableHeader>
+                <TableHeader>Status</TableHeader>
+                <TableHeader>Uploaded</TableHeader>
+              </TableRow>
+            </TableHead>
+            <TableBody>
               {files.map((file) => (
-                <tr key={file.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3">
+                <TableRow key={file.id}>
+                  <TableCell>
                     <div className="flex items-center gap-2">
                       {getStatusIcon(file.status)}
-                      <span className="text-sm font-medium text-gray-900">{file.filename}</span>
+                      <span className="text-sm font-medium">{file.filename}</span>
                     </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-500">{formatSize(file.size)}</td>
-                  <td className="px-4 py-3">{getStatusBadge(file.status)}</td>
-                  <td className="px-4 py-3 text-sm text-gray-500">{formatDate(file.createdAt)}</td>
-                </tr>
+                  </TableCell>
+                  <TableCell>{formatSize(file.size)}</TableCell>
+                  <TableCell>{getStatusBadge(file.status)}</TableCell>
+                  <TableCell>{formatDate(file.createdAt)}</TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
 
       {/* SFTP Info */}

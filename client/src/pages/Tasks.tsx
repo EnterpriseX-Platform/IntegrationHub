@@ -2,10 +2,15 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Search, RotateCcw, Play, Plus, Trash2, Info, Loader2,
+  RotateCcw, Play, Plus, Trash2, Info, Loader2,
   CheckCircle2, XCircle, Workflow, Pause, BarChart3, Square, ChevronDown,
   GripVertical, Tag as TagIcon, X,
 } from 'lucide-react';
+import {
+  Button as CdsButton, ComposedModal, ModalHeader, ModalBody, ModalFooter, TextInput, Select, SelectItem,
+  Search, IconButton, InlineLoading, InlineNotification,
+} from '@carbon/react';
+import { Button } from '../components/ui/Button';
 import { API_URL, apiFetch } from '../config/api';
 import { resolveDateTimePlaceholders } from '../utils/datetimePlaceholders';
 import ProjectTreeSidebar, { SidebarFilter, SidebarProject } from '../components/operator/ProjectTreeSidebar';
@@ -219,9 +224,9 @@ function RunFlowModal({ flow, isOpen, onClose, onSubmitted }: {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="w-full max-w-xl rounded-xl bg-white shadow-2xl ring-1 ring-slate-900/5" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-4">
+    <ComposedModal open onClose={() => { onClose(); return false; }} size="sm">
+      <ModalHeader>
+        <div className="flex items-center gap-3">
           <span className={`h-2.5 w-2.5 rounded-full ${colors.dot} shrink-0`} />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 text-[12px] uppercase tracking-wide">
@@ -232,12 +237,12 @@ function RunFlowModal({ flow, isOpen, onClose, onSubmitted }: {
             {flow.description && <p className="text-xs text-slate-500 truncate mt-0.5">{flow.description}</p>}
           </div>
         </div>
-        <div className="px-5 py-4 space-y-3">
+      </ModalHeader>
+      <ModalBody hasForm>
+        <div className="space-y-3">
           {/* Declared / auto-detected variables (typed fields) */}
           {loadingFlow ? (
-            <div className="flex items-center gap-2 rounded-md bg-slate-50 px-3 py-2.5 text-xs text-slate-500">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading flow variables…
-            </div>
+            <InlineLoading description="Loading flow variables…" />
           ) : declared.length > 0 ? (
             <div>
               <label className="mb-2 block text-[12px] font-semibold uppercase tracking-wide text-slate-500">Flow Variables</label>
@@ -250,23 +255,29 @@ function RunFlowModal({ flow, isOpen, onClose, onSubmitted }: {
                       {v.required && <span className="text-[12px] text-rose-600">*</span>}
                     </div>
                     {v.type === 'dropdown' && v.options?.length ? (
-                      <select
+                      <Select
+                        id={`run-var-${v.name}`}
+                        labelText={v.label || v.name}
+                        hideLabel
+                        size="sm"
                         value={declaredValues[v.name] || ''}
                         onChange={e => setDeclaredValues(prev => ({ ...prev, [v.name]: e.target.value }))}
-                        className="w-full rounded-md border border-slate-200 px-2.5 py-1.5 text-xs focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-100"
                       >
-                        <option value="">{v.required ? '— Select —' : '— None —'}</option>
+                        <SelectItem value="" text={v.required ? '— Select —' : '— None —'} />
                         {v.options.map(o => (
-                          <option key={o.value} value={o.value}>{o.label || o.value}</option>
+                          <SelectItem key={o.value} value={o.value} text={o.label || o.value} />
                         ))}
-                      </select>
+                      </Select>
                     ) : (
-                      <input
+                      <TextInput
+                        id={`run-var-${v.name}`}
+                        labelText={v.label || v.name}
+                        hideLabel
+                        size="sm"
                         type={v.type === 'number' ? 'number' : v.type === 'date' ? 'date' : 'text'}
                         value={declaredValues[v.name] || ''}
                         onChange={e => setDeclaredValues(prev => ({ ...prev, [v.name]: e.target.value }))}
                         placeholder={v.default || v.description || ''}
-                        className="w-full rounded-md border border-slate-200 px-2.5 py-1.5 text-xs focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-100"
                       />
                     )}
                     {v.description && <p className="mt-0.5 text-[10.5px] text-slate-400">{v.description}</p>}
@@ -282,9 +293,9 @@ function RunFlowModal({ flow, isOpen, onClose, onSubmitted }: {
               <label className="text-[12px] font-semibold uppercase tracking-wide text-slate-500">
                 {declared.length > 0 ? 'Extra Parameters' : 'Parameters'}
               </label>
-              <button onClick={() => setParams([...params, { name: '', value: '' }])} className="inline-flex items-center gap-1 text-xs text-slate-700 hover:text-slate-900">
-                <Plus className="h-3.5 w-3.5" /> Add
-              </button>
+              <Button variant="ghost" size="sm" onClick={() => setParams([...params, { name: '', value: '' }])} leftIcon={<Plus className="h-3.5 w-3.5" />}>
+                Add
+              </Button>
             </div>
             {params.length === 0 ? (
               declared.length === 0 ? (
@@ -296,9 +307,9 @@ function RunFlowModal({ flow, isOpen, onClose, onSubmitted }: {
               <div className="space-y-2">
                 {params.map((p, i) => (
                   <div key={i} className="flex gap-2">
-                    <input type="text" placeholder="name" value={p.name} onChange={e => setParams(prev => prev.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} className="w-32 rounded-md border border-slate-200 px-2.5 py-1.5 text-xs font-mono focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-100" />
-                    <input type="text" placeholder="value" value={p.value} onChange={e => setParams(prev => prev.map((x, j) => j === i ? { ...x, value: e.target.value } : x))} className="flex-1 rounded-md border border-slate-200 px-2.5 py-1.5 font-mono text-xs focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-100" />
-                    <button onClick={() => setParams(params.filter((_, j) => j !== i))} className="rounded p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
+                    <div className="w-32"><TextInput id={`run-param-name-${i}`} labelText="Parameter name" hideLabel size="sm" placeholder="name" value={p.name} onChange={e => setParams(prev => prev.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} className="font-mono" /></div>
+                    <div className="flex-1"><TextInput id={`run-param-value-${i}`} labelText="Parameter value" hideLabel size="sm" placeholder="value" value={p.value} onChange={e => setParams(prev => prev.map((x, j) => j === i ? { ...x, value: e.target.value } : x))} className="font-mono" /></div>
+                    <IconButton kind="ghost" size="sm" label="Remove parameter" onClick={() => setParams(params.filter((_, j) => j !== i))}><Trash2 className="h-3.5 w-3.5" /></IconButton>
                   </div>
                 ))}
               </div>
@@ -310,16 +321,16 @@ function RunFlowModal({ flow, isOpen, onClose, onSubmitted }: {
               </div>
             </div>
           </div>
-          {error && <div className="rounded-md bg-rose-50 ring-1 ring-rose-200/60 px-3 py-2 text-sm text-rose-700">{error}</div>}
+          {error && <InlineNotification kind="error" lowContrast hideCloseButton title="Error" subtitle={error} />}
         </div>
-        <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50 px-5 py-3 rounded-b-xl">
-          <button onClick={onClose} className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-3 h-9 text-[14px] font-medium text-slate-700 hover:bg-slate-50 whitespace-nowrap">Cancel</button>
-          <button onClick={handleRun} disabled={submitting} className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 h-9 text-[14px] font-medium text-white hover:bg-blue-700 disabled:opacity-50 transition-colors whitespace-nowrap">
-            {submitting ? <><Loader2 className="h-4 w-4 animate-spin" /> Starting…</> : <><Play className="h-4 w-4" /> Run now</>}
-          </button>
-        </div>
-      </div>
-    </div>
+      </ModalBody>
+      <ModalFooter>
+        <CdsButton kind="secondary" onClick={onClose}>Cancel</CdsButton>
+        <CdsButton kind="primary" onClick={handleRun} disabled={submitting} renderIcon={submitting ? undefined : Play}>
+          {submitting ? 'Starting…' : 'Run now'}
+        </CdsButton>
+      </ModalFooter>
+    </ComposedModal>
   );
 }
 
@@ -741,7 +752,7 @@ export default function Tasks() {
 
   if (loading) return (
     <div className="flex h-full items-center justify-center text-slate-500">
-      <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading…
+      <InlineLoading description="Loading…" />
     </div>
   );
 
@@ -769,22 +780,20 @@ export default function Tasks() {
                 </div>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
-                <div className="relative w-72 max-w-full">
-                  <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-                  <input
+                <div className="w-72 max-w-full">
+                  <Search
+                    id="run-flow-search"
+                    size="md"
+                    labelText="Search flows"
                     value={search}
-                    onChange={e => setSearch(e.target.value)}
+                    onChange={(e: any) => setSearch(e.target.value)}
+                    onClear={() => setSearch('')}
                     placeholder="Search by name, project, description…"
-                    className="w-full rounded-md border border-slate-200 bg-white pl-8 pr-3 py-1.5 text-sm placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-100 transition-colors"
                   />
                 </div>
-                <button
-                  onClick={() => fetchData()}
-                  className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors"
-                  title="Refresh"
-                >
+                <IconButton kind="ghost" size="md" label="Refresh" onClick={() => fetchData()}>
                   <RotateCcw className="h-4 w-4" />
-                </button>
+                </IconButton>
               </div>
             </div>
           </div>
@@ -921,27 +930,17 @@ export default function Tasks() {
 
                       {/* Actions — Run morphs into Kill when running */}
                       <div className="flex shrink-0 items-center gap-0 pl-1">
-                        <button
-                          onClick={() => navigate(`/schedulers/${f.id}/logs`)}
-                          className="inline-flex items-center justify-center h-7 w-7 rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
-                          title="View execution log"
-                        >
+                        <IconButton kind="ghost" size="sm" label="View execution log" onClick={() => navigate(`/schedulers/${f.id}/logs`)}>
                           <BarChart3 className="h-3.5 w-3.5" />
-                        </button>
+                        </IconButton>
                         {(lastExec?.status || '').toLowerCase() === 'running' ? (
-                          <button
-                            onClick={() => { setKillTarget(f); setKillError(null); }}
-                            className="inline-flex items-center gap-1 rounded-md bg-rose-600 text-white px-2.5 py-1 text-[12px] font-medium hover:bg-rose-700 transition-colors ml-1"
-                          >
-                            <Square className="h-3 w-3 fill-current" /> Kill
-                          </button>
+                          <Button variant="danger" size="sm" className="ml-1" onClick={() => { setKillTarget(f); setKillError(null); }} leftIcon={<Square className="h-3 w-3 fill-current" />}>
+                            Kill
+                          </Button>
                         ) : (
-                          <button
-                            onClick={() => setRunFlow(f)}
-                            className="inline-flex items-center gap-1 rounded-lg bg-blue-600 text-white px-2.5 py-1 text-[12px] font-medium hover:bg-blue-700 transition-colors ml-1"
-                          >
-                            <Play className="h-3 w-3" /> Run
-                          </button>
+                          <Button variant="primary" size="sm" className="ml-1" onClick={() => setRunFlow(f)} leftIcon={<Play className="h-3 w-3" />}>
+                            Run
+                          </Button>
                         )}
                       </div>
                     </li>
@@ -970,7 +969,11 @@ export default function Tasks() {
                                 className="inline-flex items-center gap-1 rounded-md ring-1 ring-slate-300 bg-white pl-2 pr-1 py-0.5"
                               >
                                 <TagIcon className="h-3 w-3 text-slate-400" />
-                                <input
+                                <TextInput
+                                  id={`new-tag-${proj.id}`}
+                                  labelText="New tag name"
+                                  hideLabel
+                                  size="sm"
                                   autoFocus
                                   value={newTagName}
                                   onChange={(e) => setNewTagName(e.target.value)}
@@ -979,17 +982,19 @@ export default function Tasks() {
                                     if (e.key === 'Escape') { setAddingTagFor(null); setNewTagName(''); }
                                   }}
                                   placeholder="new tag name…"
-                                  className="w-32 text-[11.5px] py-0.5 focus:outline-none placeholder:text-slate-400"
+                                  className="w-32"
                                 />
                               </form>
                             ) : (
-                              <button
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 onClick={() => { setAddingTagFor(proj.id); setNewTagName(''); }}
-                                className="inline-flex items-center gap-1 rounded-md ring-1 ring-slate-200 bg-white px-2 py-0.5 text-[12px] font-medium text-slate-600 hover:bg-slate-50 transition-colors"
                                 title={`Add a tag group under ${proj.name}`}
+                                leftIcon={<Plus className="h-3 w-3" />}
                               >
-                                <Plus className="h-3 w-3" /> Tag
-                              </button>
+                                Tag
+                              </Button>
                             )}
                           </header>
 
@@ -1025,13 +1030,15 @@ export default function Tasks() {
                                     <h3 className="text-[12.5px] font-semibold text-slate-700">{tg.name}</h3>
                                     <span className="text-[10.5px] tabular-nums text-slate-400">{tg.items.length}</span>
                                     {canRemove && (
-                                      <button
+                                      <IconButton
+                                        kind="ghost"
+                                        size="sm"
+                                        label="Remove this empty tag group"
+                                        className="opacity-0 group-hover/header:opacity-100"
                                         onClick={() => handleRemoveTagGroup(proj.id, tg.id)}
-                                        className="opacity-0 group-hover/header:opacity-100 inline-flex items-center justify-center h-4 w-4 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all"
-                                        title="Remove this empty tag group"
                                       >
                                         <X className="h-3 w-3" />
-                                      </button>
+                                      </IconButton>
                                     )}
                                   </header>
                                   <ul className={`space-y-1.5 min-h-[8px] ${isEmpty ? `rounded-md border-2 border-dashed ${isDropTargetEmpty ? 'border-blue-400 bg-blue-50/40' : 'border-slate-200 bg-slate-50/40'} px-3 py-3 text-center text-[12px] text-slate-400` : ''}`}>
@@ -1063,31 +1070,23 @@ export default function Tasks() {
 
       {/* Kill confirm dialog */}
       {killTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4" onClick={() => !killing && setKillTarget(null)}>
-          <div className="w-full max-w-md rounded-xl bg-white shadow-2xl ring-1 ring-slate-900/5 overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="px-5 py-4 border-b border-slate-100 flex items-start gap-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-rose-50 ring-1 ring-rose-200/60">
-                <Square className="h-4 w-4 text-rose-600 fill-current" />
-              </div>
-              <div className="min-w-0">
-                <h3 className="text-[14px] font-semibold text-slate-900">Terminate execution?</h3>
-                <p className="text-[12px] text-slate-500 mt-0.5">
-                  This will stop the running execution of <span className="font-medium text-slate-700">{killTarget.name}</span>. Partial work may be lost.
-                </p>
-              </div>
-            </div>
+        <ComposedModal open size="sm" danger onClose={() => { if (!killing) setKillTarget(null); return false; }}>
+          <ModalHeader title="Terminate execution?" label="Run Flow" />
+          <ModalBody>
+            <p className="text-[13px] text-slate-600">
+              This will stop the running execution of <span className="font-medium text-slate-800">{killTarget.name}</span>. Partial work may be lost.
+            </p>
             {killError && (
-              <div className="px-5 py-2.5 bg-rose-50 border-b border-rose-100 text-[12px] text-rose-700">{killError}</div>
+              <InlineNotification kind="error" lowContrast hideCloseButton title="Error" subtitle={killError} className="mt-3" />
             )}
-            <div className="flex justify-end gap-2 px-5 py-3 bg-slate-50">
-              <button onClick={() => setKillTarget(null)} disabled={killing} className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-3 h-9 text-[12px] font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 whitespace-nowrap">Cancel</button>
-              <button onClick={handleKillConfirm} disabled={killing} className="inline-flex items-center gap-1.5 rounded-lg px-3 h-9 text-[12px] font-medium disabled:opacity-50 whitespace-nowrap bg-red-600 text-white hover:bg-red-700">
-                {killing && <Loader2 className="h-3 w-3 animate-spin" />}
-                {killing ? 'Terminating…' : 'Terminate'}
-              </button>
-            </div>
-          </div>
-        </div>
+          </ModalBody>
+          <ModalFooter>
+            <CdsButton kind="secondary" onClick={() => setKillTarget(null)} disabled={killing}>Cancel</CdsButton>
+            <CdsButton kind="danger" onClick={handleKillConfirm} disabled={killing}>
+              {killing ? 'Terminating…' : 'Terminate'}
+            </CdsButton>
+          </ModalFooter>
+        </ComposedModal>
       )}
 
       {/* Toast */}
@@ -1098,7 +1097,7 @@ export default function Tasks() {
           }`}>
             {toast.type === 'success' ? <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" /> : <XCircle className="h-4 w-4 text-rose-600 shrink-0" />}
             <span className="text-[12.5px] font-medium">{toast.message}</span>
-            <button onClick={() => setToast(null)} className="ml-2 text-slate-400 hover:text-slate-700">×</button>
+            <IconButton kind="ghost" size="sm" label="Dismiss" className="ml-2" onClick={() => setToast(null)}><X className="h-3.5 w-3.5" /></IconButton>
           </div>
         </div>
       )}

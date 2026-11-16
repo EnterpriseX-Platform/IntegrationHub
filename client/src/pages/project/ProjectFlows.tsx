@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Globe, Clock, Plus, Calendar, Workflow, Pencil, Trash2, AlertCircle, X, ChevronDown, ChevronRight, Layers, Search } from 'lucide-react';
+import { Globe, Clock, Plus, Calendar, Workflow, Pencil, Trash2, AlertCircle, ChevronDown, ChevronRight, Layers } from 'lucide-react';
+import { Tabs, TabList, Tab, Search, Tag, Loading, IconButton } from '@carbon/react';
 import { CreateFlowModal } from '../../components/modals/CreateFlowModal';
 import { Button } from '../../components/ui/Button';
+import { Modal } from '../../components/ui/Modal';
 import ApiFlowDesigner from '../ApiFlowDesigner';
 import EventFlowDesigner from '../EventFlowDesigner';
 
@@ -55,12 +57,14 @@ const GroupHeader = ({ title, count, isExpanded, onToggle, icon }: GroupHeaderPr
       
       <span className="text-gray-700 font-medium text-sm flex-1">{title}</span>
       
-      <span className="text-xs bg-white text-gray-600 border border-gray-200 px-2 py-0.5 rounded-full">
+      <Tag type="gray" size="sm">
         {count}
-      </span>
+      </Tag>
     </div>
   );
 };
+
+const FLOW_TABS = ['all', 'api', 'trigger'] as const;
 
 export const ProjectFlows = ({ project }: { project: Project }) => {
   const navigate = useNavigate();
@@ -383,65 +387,55 @@ export const ProjectFlows = ({ project }: { project: Project }) => {
     <div className="p-4 sm:p-6">
       {/* Header with Tabs and Search */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-4 sm:mb-6">
-        <div className="flex gap-1 bg-gray-100 p-1 rounded-lg self-start max-w-full overflow-x-auto">
-          {[
-            { id: 'all' as const, label: 'All Flows', count: flows.length },
-            { id: 'api' as const, label: 'REST API', count: flows.filter(f => f.type === 'API_SPEC').length },
-            { id: 'trigger' as const, label: 'Triggers', count: flows.filter(f => f.type?.toLowerCase() === 'trigger').length },
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`inline-flex items-center justify-center px-3 sm:px-4 h-9 sm:py-2 rounded-lg text-[14px] font-medium whitespace-nowrap transition-colors ${
-                activeTab === tab.id
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              {tab.label}
-              <span className="ml-2 text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">
-                {tab.count}
-              </span>
-            </button>
-          ))}
+        <div className="self-start max-w-full overflow-x-auto">
+          <Tabs
+            selectedIndex={FLOW_TABS.indexOf(activeTab)}
+            onChange={({ selectedIndex }) => setActiveTab(FLOW_TABS[selectedIndex])}
+          >
+            <TabList aria-label="Flow types" contained>
+              {[
+                { id: 'all' as const, label: 'All Flows', count: flows.length },
+                { id: 'api' as const, label: 'REST API', count: flows.filter(f => f.type === 'API_SPEC').length },
+                { id: 'trigger' as const, label: 'Triggers', count: flows.filter(f => f.type?.toLowerCase() === 'trigger').length },
+              ].map(tab => (
+                <Tab key={tab.id}>
+                  {tab.label}
+                  <Tag type="gray" size="sm" className="ml-2">{tab.count}</Tag>
+                </Tab>
+              ))}
+            </TabList>
+          </Tabs>
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
           {/* Search Bar */}
-          <div className="relative flex-1 lg:flex-none">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input
-              type="text"
+          <div className="flex-1 lg:flex-none lg:w-64">
+            <Search
+              id="project-flows-search"
+              size="md"
+              labelText="Search flows"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e: any) => setSearchTerm(e.target?.value ?? '')}
+              onClear={() => setSearchTerm('')}
               placeholder="Search flows..."
-              className="w-full lg:w-64 pl-10 pr-9 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
             />
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            )}
           </div>
 
-          <button
+          <Button
+            className="shrink-0"
             onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-1.5 h-9 px-3 text-[14px] bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors whitespace-nowrap shrink-0"
             title="Create Flow"
+            leftIcon={<Plus className="h-4 w-4" />}
           >
-            <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">Create Flow</span>
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Flows Grouped by Process */}
       {loading ? (
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          <Loading withOverlay={false} small description="Loading flows" />
         </div>
       ) : filteredFlows.length > 0 ? (
         <div className="space-y-4">
@@ -478,10 +472,10 @@ export const ProjectFlows = ({ project }: { project: Project }) => {
                           onDragLeave={handleDragLeave}
                           onDrop={(e) => handleDrop(e, flow, processFlows)}
                           onDragEnd={handleDragEnd}
-                          className={`bg-white rounded-lg border cursor-move transition-all duration-200 overflow-hidden group shadow-sm flex flex-col h-full relative
+                          className={`cds--tile app-tile !p-0 cursor-move transition-all duration-200 overflow-hidden group shadow-sm flex flex-col h-full relative
                             ${dragOverFlowId === flow.id && draggedFlow?.id !== flow.id 
                               ? 'opacity-30 scale-[0.98] border-blue-400' 
-                              : 'hover:border-blue-300 border-gray-200'}
+                              : ''}
                             ${draggedFlow?.id === flow.id ? 'opacity-40' : ''}
                           `}
                         >
@@ -518,20 +512,22 @@ export const ProjectFlows = ({ project }: { project: Project }) => {
                               
                               {/* Action Icons - Edit + Delete */}
                               <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 -mt-1 -mr-1" onClick={(e) => e.stopPropagation()}>
-                                <button
-                                  onClick={(e) => handleEditClick(e, flow)}
-                                  className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                                  title="Edit"
+                                <IconButton
+                                  kind="ghost"
+                                  size="sm"
+                                  label="Edit"
+                                  onClick={(e: React.MouseEvent) => handleEditClick(e, flow)}
                                 >
                                   <Pencil className="h-3 w-3" />
-                                </button>
-                                <button
-                                  onClick={(e) => handleDeleteClick(e, flow)}
-                                  className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                                  title="Delete"
+                                </IconButton>
+                                <IconButton
+                                  kind="ghost"
+                                  size="sm"
+                                  label="Delete"
+                                  onClick={(e: React.MouseEvent) => handleDeleteClick(e, flow)}
                                 >
                                   <Trash2 className="h-3 w-3" />
-                                </button>
+                                </IconButton>
                               </div>
                             </div>
                             
@@ -555,13 +551,15 @@ export const ProjectFlows = ({ project }: { project: Project }) => {
                                   <div className="flex items-center gap-1 min-w-0 overflow-hidden">
                                     <span className="text-gray-300 flex-shrink-0">•</span>
                                     {tags.slice(0, 3).map((tag: string) => (
-                                      <span
+                                      <Tag
                                         key={tag}
-                                        className="text-[12px] px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded truncate max-w-[50px]"
+                                        type="blue"
+                                        size="sm"
+                                        className="max-w-[60px]"
                                         title={tag}
                                       >
                                         {tag}
-                                      </span>
+                                      </Tag>
                                     ))}
                                     {tags.length > 3 && (
                                       <span className="text-[12px] text-gray-400 flex-shrink-0">
@@ -600,12 +598,9 @@ export const ProjectFlows = ({ project }: { project: Project }) => {
               : 'Create your first flow to start building integrations'}
           </p>
           {!searchTerm && (
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center h-9 px-3 text-[14px] bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-            >
+            <Button onClick={() => setShowCreateModal(true)}>
               Create Flow
-            </button>
+            </Button>
           )}
         </div>
       )}
@@ -634,44 +629,38 @@ export const ProjectFlows = ({ project }: { project: Project }) => {
       />
 
       {/* Delete Confirmation Modal */}
-      {showDeleteModal && flowToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm mx-4">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">Delete Flow</h2>
-              <button 
-                onClick={() => setShowDeleteModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="h-5 w-5 text-gray-500" />
-              </button>
+      <Modal
+        isOpen={showDeleteModal && !!flowToDelete}
+        onClose={() => setShowDeleteModal(false)}
+        title="Delete Flow"
+        size="sm"
+      >
+        {flowToDelete && (
+          <>
+            <div className="flex items-center gap-3 text-amber-500 mb-3">
+              <AlertCircle className="h-8 w-8" />
             </div>
-            <div className="p-6">
-              <div className="flex items-center gap-3 text-amber-500 mb-3">
-                <AlertCircle className="h-8 w-8" />
-              </div>
-              <p className="text-sm text-gray-600">
-                Are you sure you want to delete <strong>{flowToDelete.name}</strong>?
-              </p>
-              <p className="text-sm text-gray-500 mt-2">
-                This action cannot be undone. All executions and data associated with this flow will be permanently deleted.
-              </p>
-            </div>
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+            <p className="text-sm text-gray-600">
+              Are you sure you want to delete <strong>{flowToDelete.name}</strong>?
+            </p>
+            <p className="text-sm text-gray-500 mt-2">
+              This action cannot be undone. All executions and data associated with this flow will be permanently deleted.
+            </p>
+            <div className="flex items-center justify-end gap-3 pt-4 mt-4 border-t border-gray-200">
               <Button variant="ghost" onClick={() => setShowDeleteModal(false)}>
                 Cancel
               </Button>
-              <Button 
-                variant="danger" 
+              <Button
+                variant="danger"
                 onClick={handleDeleteFlow}
                 isLoading={isDeleting}
               >
                 Delete Flow
               </Button>
             </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </Modal>
     </div>
   );
 };

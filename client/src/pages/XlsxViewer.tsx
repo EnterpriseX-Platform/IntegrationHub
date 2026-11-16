@@ -1,5 +1,11 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import {
+  Button as CdsButton, Loading, InlineLoading, InlineNotification, IconButton, Search, Checkbox, TextInput,
+  Tabs, TabList, Tab,
+} from '@carbon/react';
+import { Download, ArrowUp, ArrowDown, Filter } from '@carbon/icons-react';
+import { Button } from '../components/ui/Button';
 import { API_URL, withAuthToken } from '../config/api';
 
 interface SheetMeta {
@@ -445,7 +451,7 @@ export default function XlsxViewer() {
     const sizeMB = (tooLarge.fileSize / 1024 / 1024).toFixed(1);
     return (
       <div className="h-screen flex items-center justify-center bg-[#f0f0f0]">
-        <div className="bg-white rounded-xl shadow-lg p-10 max-w-md text-center">
+        <div className="cds--tile app-tile p-10 max-w-md text-center">
           <div className="w-20 h-20 mx-auto mb-5 bg-[#e2efda] rounded-full flex items-center justify-center">
             <svg className="w-10 h-10 text-[#217346]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h4a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
@@ -453,15 +459,13 @@ export default function XlsxViewer() {
           </div>
           <h2 className="text-lg font-semibold text-gray-900 mb-2">{tooLarge.fileName}</h2>
           <p className="text-sm text-gray-500 mb-6">{sizeMB} MB</p>
-          <a
+          <CdsButton
+            kind="primary"
             href={withAuthToken(`${API_URL}/baskets/${basketId}/files/${fileId}/download`)}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-[#217346] text-white rounded-lg hover:bg-[#1a5c38] transition-colors font-medium"
+            renderIcon={Download}
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
             Download
-          </a>
+          </CdsButton>
         </div>
       </div>
     );
@@ -471,7 +475,7 @@ export default function XlsxViewer() {
     return (
       <div className="h-screen flex items-center justify-center bg-[#f0f0f0]">
         <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin h-10 w-10 border-4 border-[#217346] border-t-transparent rounded-full" />
+          <Loading withOverlay={false} description="Opening spreadsheet" />
           <span className="text-sm text-gray-700 font-medium">Opening spreadsheet...</span>
           <span className="text-xs text-gray-500">Large files may take a moment to load</span>
         </div>
@@ -482,14 +486,8 @@ export default function XlsxViewer() {
   if (error) {
     return (
       <div className="h-screen flex items-center justify-center bg-[#f0f0f0]">
-        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md text-center">
-          <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
-            <svg className="w-8 h-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-2">Error</h2>
-          <p className="text-gray-600">{error}</p>
+        <div className="max-w-md w-full">
+          <InlineNotification kind="error" lowContrast hideCloseButton title="Error" subtitle={error} />
         </div>
       </div>
     );
@@ -512,58 +510,60 @@ export default function XlsxViewer() {
         onClick={e => e.stopPropagation()}
       >
         <div className="border-b border-[#e0e0e0] p-1.5 flex gap-1">
-          <button
+          <Button
+            variant={sortCol === ci && sortDir === 'asc' ? 'secondary' : 'ghost'}
+            size="sm"
+            className="flex-1"
             onClick={() => { setSortCol(ci); setSortDir('asc'); setFilterDropdown(null); refetchWithSortFilter(ci, 'asc'); }}
-            className={`flex-1 px-2 py-1 text-[12px] rounded flex items-center gap-1.5 ${
-              sortCol === ci && sortDir === 'asc' ? 'bg-[#d6e4f0] text-[#217346] font-medium' : 'hover:bg-gray-100 text-gray-700'
-            }`}
+            leftIcon={<ArrowUp />}
           >
-            <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M6 2v8M3 5l3-3 3 3" /></svg>
             A to Z
-          </button>
-          <button
+          </Button>
+          <Button
+            variant={sortCol === ci && sortDir === 'desc' ? 'secondary' : 'ghost'}
+            size="sm"
+            className="flex-1"
             onClick={() => { setSortCol(ci); setSortDir('desc'); setFilterDropdown(null); refetchWithSortFilter(ci, 'desc'); }}
-            className={`flex-1 px-2 py-1 text-[12px] rounded flex items-center gap-1.5 ${
-              sortCol === ci && sortDir === 'desc' ? 'bg-[#d6e4f0] text-[#217346] font-medium' : 'hover:bg-gray-100 text-gray-700'
-            }`}
+            leftIcon={<ArrowDown />}
           >
-            <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M6 10V2M3 7l3 3 3-3" /></svg>
             Z to A
-          </button>
+          </Button>
         </div>
 
         <div className="p-1.5 border-b border-[#e0e0e0]">
-          <input
-            type="text"
+          <Search
+            id={`xlsx-filter-search-${ci}`}
+            size="sm"
+            labelText="Search values"
             placeholder="Search..."
             value={filterSearch}
-            onChange={e => setFilterSearch(e.target.value)}
-            className="w-full px-2 py-1 text-[12px] border border-[#c0c0c0] rounded outline-none focus:border-[#217346]"
+            onChange={(e: any) => setFilterSearch(e.target.value)}
+            onClear={() => setFilterSearch('')}
             autoFocus
           />
         </div>
 
         <div className="border-b border-[#e0e0e0]">
-          <label className="flex items-center gap-2 px-2 h-7 hover:bg-gray-50 cursor-pointer whitespace-nowrap">
-            <input type="checkbox" checked={isAllSelected} onChange={() => handleFilterSelectAll(ci)} className="w-3 h-3 accent-[#217346]" />
-            <span className="text-[12px] font-medium text-gray-700">(Select All)</span>
-          </label>
+          <div className="px-2 py-1">
+            <Checkbox id={`xlsx-filter-all-${ci}`} labelText="(Select All)" checked={isAllSelected} onChange={() => handleFilterSelectAll(ci)} />
+          </div>
         </div>
 
         <div className="overflow-y-auto" style={{ maxHeight: 200 }}>
           {filteredValues.map((val, idx) => {
             const checked = isAllSelected || (currentFilter?.has(val) ?? false);
             return (
-              <label key={idx} className="flex items-center gap-2 px-2 h-7 hover:bg-gray-50 cursor-pointer group whitespace-nowrap">
-                <input type="checkbox" checked={checked} onChange={() => handleFilterToggleValue(ci, val)} className="w-3 h-3 accent-[#217346]" />
-                <span className="text-[12px] text-gray-700 truncate flex-1">{val || '(Blank)'}</span>
+              <div key={idx} className="flex items-center gap-2 px-2 min-h-7 hover:bg-gray-50 group whitespace-nowrap">
+                <div className="flex-1 min-w-0 truncate">
+                  <Checkbox id={`xlsx-filter-${ci}-${idx}`} labelText={val || '(Blank)'} checked={checked} onChange={() => handleFilterToggleValue(ci, val)} />
+                </div>
                 <button
                   onClick={(e) => { e.preventDefault(); handleFilterSelectOnly(ci, val); }}
-                  className="hidden group-hover:block text-[12px] text-[#217346] hover:underline flex-shrink-0"
+                  className="cds--link hidden group-hover:block text-[12px] flex-shrink-0"
                 >
                   Only
                 </button>
-              </label>
+              </div>
             );
           })}
           {filteredValues.length === 0 && (
@@ -572,8 +572,8 @@ export default function XlsxViewer() {
         </div>
 
         <div className="border-t border-[#e0e0e0] p-1.5 flex justify-between">
-          <button onClick={() => handleFilterSelectAll(ci)} className="px-2 py-0.5 text-[12px] text-gray-600 hover:text-gray-900">Clear Filter</button>
-          <button onClick={handleFilterApply} className="inline-flex items-center justify-center px-3 h-8 text-[13px] bg-[#217346] text-white rounded hover:bg-[#1a5c38] whitespace-nowrap">OK</button>
+          <Button variant="ghost" size="sm" onClick={() => handleFilterSelectAll(ci)}>Clear Filter</Button>
+          <Button variant="primary" size="sm" onClick={handleFilterApply}>OK</Button>
         </div>
       </div>
     );
@@ -591,12 +591,9 @@ export default function XlsxViewer() {
           </div>
           <span className="text-sm font-medium">{fileName}</span>
         </div>
-        <button onClick={handleDownload} className="inline-flex items-center justify-center px-3 h-8 text-[13px] bg-white/15 hover:bg-white/25 rounded transition-colors whitespace-nowrap">
-          <svg className="w-4 h-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-          </svg>
+        <Button variant="secondary" size="sm" onClick={handleDownload} leftIcon={<Download />}>
           Download
-        </button>
+        </Button>
       </div>
 
       {/* Ribbon */}
@@ -624,12 +621,13 @@ export default function XlsxViewer() {
           {activeFilterCount > 0 && (
             <>
               <span className="mx-2 text-gray-300">|</span>
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => { setFilters({}); setSortCol(null); setSortDir(null); refetchWithSortFilter(null, null, {}); }}
-                className="text-[#c24629] hover:text-red-700 font-medium"
               >
                 Clear All Filters
-              </button>
+              </Button>
             </>
           )}
         </div>
@@ -637,14 +635,14 @@ export default function XlsxViewer() {
 
       {/* Formula Bar */}
       <div className="flex items-center border-b border-[#d4d4d4] flex-shrink-0">
-        <div className="w-[80px] border-r border-[#d4d4d4] px-2 py-1 bg-white">
-          <input type="text" value={cellAddress} readOnly className="w-full text-xs text-center font-medium text-gray-700 bg-transparent outline-none" placeholder="A1" />
+        <div className="w-[80px] border-r border-[#d4d4d4] bg-white">
+          <TextInput id="xlsx-cell-address" labelText="Cell address" hideLabel size="sm" value={cellAddress} readOnly placeholder="A1" className="text-center" />
         </div>
         <div className="flex items-center px-1 border-r border-[#d4d4d4] text-gray-400">
           <span className="text-xs italic px-1">fx</span>
         </div>
-        <div className="flex-1 px-2 py-1 bg-white">
-          <input type="text" value={cellValue} readOnly className="w-full text-xs text-gray-700 bg-transparent outline-none" />
+        <div className="flex-1 bg-white">
+          <TextInput id="xlsx-cell-value" labelText="Cell value" hideLabel size="sm" value={cellValue} readOnly />
         </div>
       </div>
 
@@ -701,14 +699,17 @@ export default function XlsxViewer() {
                         {sortDir === 'asc' ? '\u25B2' : '\u25BC'}
                       </span>
                     )}
-                    <button
-                      onClick={(e) => toggleFilterDropdown(ci, e)}
-                      className={`absolute right-0.5 top-1/2 -translate-y-1/2 w-4 h-4 flex items-center justify-center rounded ${
-                        isColumnFiltered(ci) ? 'text-[#217346]' : 'text-gray-400 hover:text-gray-600'
-                      }`}
-                    >
-                      <svg className="w-3 h-3" viewBox="0 0 12 12" fill="currentColor"><path d="M1 1h10L7.5 5.5V10L4.5 11V5.5L1 1z" /></svg>
-                    </button>
+                    <span className="absolute right-0 top-1/2 -translate-y-1/2">
+                      <IconButton
+                        kind="ghost"
+                        size="xs"
+                        label={isColumnFiltered(ci) ? 'Filter (active)' : 'Filter'}
+                        onClick={(e: any) => toggleFilterDropdown(ci, e)}
+                        className={isColumnFiltered(ci) ? 'text-[#217346]' : ''}
+                      >
+                        <Filter size={12} />
+                      </IconButton>
+                    </span>
                     {renderFilterDropdown(ci)}
                     <div className="absolute top-0 right-0 w-[5px] h-full cursor-col-resize hover:bg-[#5b9bd5] z-40"
                       onMouseDown={(e) => handleResizeStart(ci, e)}
@@ -762,7 +763,7 @@ export default function XlsxViewer() {
           {/* Loading more indicator */}
           {loadingMore && (
             <div style={{ position: 'absolute', top: 52 + allRows.length * ROW_HEIGHT, left: 0, width: '100%', textAlign: 'center', padding: 12 }}>
-              <span className="text-xs text-gray-500">Loading more rows...</span>
+              <InlineLoading className="justify-center" description="Loading more rows..." />
             </div>
           )}
         </div>
@@ -770,20 +771,17 @@ export default function XlsxViewer() {
 
       {/* Sheet Tabs */}
       <div className="flex items-center border-t border-[#c0c0c0] bg-[#e6e6e6] flex-shrink-0">
-        <div className="flex items-center gap-0.5 px-1 py-0.5 flex-1 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-          {sheetNames.map((s, idx) => (
-            <button
-              key={idx}
-              onClick={() => { setActiveSheet(idx); setSelectedCell(null); setCellAddress(''); setCellValue(''); }}
-              className={`px-4 py-1 text-[12px] border transition-colors whitespace-nowrap ${
-                idx === activeSheet
-                  ? 'bg-white border-[#c0c0c0] border-b-white text-[#217346] font-medium -mb-px z-10'
-                  : 'bg-[#e6e6e6] border-transparent text-gray-600 hover:bg-[#d9d9d9]'
-              }`}
-            >
-              {s.name}
-            </button>
-          ))}
+        <div className="flex-1 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+          <Tabs
+            selectedIndex={activeSheet}
+            onChange={({ selectedIndex }: { selectedIndex: number }) => { setActiveSheet(selectedIndex); setSelectedCell(null); setCellAddress(''); setCellValue(''); }}
+          >
+            <TabList aria-label="Sheets" contained>
+              {sheetNames.map((s, idx) => (
+                <Tab key={idx}>{s.name}</Tab>
+              ))}
+            </TabList>
+          </Tabs>
         </div>
         <div className="flex items-center gap-4 px-3 py-1 text-[12px] text-gray-500 border-l border-[#c0c0c0]">
           {selectedCell && selectedCell.row >= 0 && <span>Cell: {cellAddress}</span>}

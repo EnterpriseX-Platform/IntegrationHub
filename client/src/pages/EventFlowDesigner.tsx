@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
+import { IconButton, Tabs, TabList, Tab, TextArea, Tag, InlineNotification, Loading } from '@carbon/react';
 import { FlowDesigner } from '../components/flow/FlowDesigner';
 import { nodeRegistry } from '../lib/flow-sdk/nodeRegistry';
 import { registerAllNodes } from '../lib/flow-sdk/nodes';
@@ -247,17 +248,17 @@ export const EventFlowDesigner = () => {
         </div>
       )}
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 m-4 rounded">
-          <strong>Error:</strong> {error}
+        <div className="m-4">
+          <InlineNotification kind="error" lowContrast hideCloseButton title="Error:" subtitle={error} />
         </div>
       )}
       {/* Header */}
       <div className="bg-white border-b px-3 sm:px-4 py-2.5 sm:py-3">
         <div className="flex items-center justify-between gap-2 flex-wrap lg:flex-nowrap">
           <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
-            <button onClick={() => navigate(-1)} className="p-2 hover:bg-gray-100 rounded">
+            <IconButton kind="ghost" size="md" label="Back" onClick={() => navigate(-1)}>
               <i className="fas fa-arrow-left text-gray-600"></i>
-            </button>
+            </IconButton>
             <div className="flex items-center gap-3 min-w-0">
               <div className="hidden sm:flex w-10 h-10 shrink-0 bg-green-100 rounded-lg items-center justify-center">
                 <i className="fas fa-clock text-green-500"></i>
@@ -265,12 +266,12 @@ export const EventFlowDesigner = () => {
               <div className="min-w-0">
                 <h1 className="font-semibold text-gray-900 truncate" title={flowName}>{flowName || 'Untitled Triggers'}</h1>
                 <div className="flex items-center gap-2 whitespace-nowrap overflow-hidden">
-                  <span className="text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full">Triggers</span>
+                  <Tag size="sm" type="green">Triggers</Tag>
                   <span className="hidden sm:inline text-xs text-gray-500">{nodes.length} nodes</span>
                   {flowStatus === 'Active' && (
-                    <span className="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded-full flex items-center gap-1">
-                      <i className="fas fa-check-circle"></i> Active
-                    </span>
+                    <Tag size="sm" type="green">
+                      <i className="fas fa-check-circle mr-1"></i> Active
+                    </Tag>
                   )}
                   {linkedSchedulers.length > 0 && (
                     <button
@@ -291,26 +292,29 @@ export const EventFlowDesigner = () => {
           </div>
 
           {/* Tabs */}
-          <div className="order-last lg:order-none w-full lg:w-auto flex items-center gap-1 bg-gray-100 rounded-lg p-1">
-            {[
-              { id: 'designer', label: 'Flow Designer', icon: 'fa-project-diagram' },
-              { id: 'test', label: 'Test & Debug', icon: 'fa-bug' },
-              { id: 'deploy', label: 'Deploy', icon: 'fa-rocket' },
-            ].map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                title={tab.label}
-                className={`inline-flex items-center justify-center flex-1 lg:flex-none px-3 lg:px-4 h-9 lg:py-2 rounded-lg text-[14px] font-medium whitespace-nowrap transition-colors ${
-                  activeTab === tab.id 
-                    ? 'bg-white text-gray-900 shadow-sm' 
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <i className={`fas ${tab.icon} sm:mr-2`}></i>
-                <span className="hidden sm:inline">{tab.label}</span>
-              </button>
-            ))}
+          <div className="order-last lg:order-none w-full lg:w-auto">
+            {(() => {
+              const tabs = [
+                { id: 'designer', label: 'Flow Designer', icon: 'fa-project-diagram' },
+                { id: 'test', label: 'Test & Debug', icon: 'fa-bug' },
+                { id: 'deploy', label: 'Deploy', icon: 'fa-rocket' },
+              ];
+              return (
+                <Tabs
+                  selectedIndex={Math.max(0, tabs.findIndex(t => t.id === activeTab))}
+                  onChange={({ selectedIndex }: { selectedIndex: number }) => setActiveTab(tabs[selectedIndex].id as any)}
+                >
+                  <TabList aria-label="Flow sections" contained>
+                    {tabs.map(tab => (
+                      <Tab key={tab.id} title={tab.label}>
+                        <i className={`fas ${tab.icon} sm:mr-2`}></i>
+                        <span className="hidden sm:inline">{tab.label}</span>
+                      </Tab>
+                    ))}
+                  </TabList>
+                </Tabs>
+              );
+            })()}
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
@@ -464,17 +468,9 @@ const TestPanel = ({ flowId, nodes }: TestPanelProps) => {
                 <i className="fas fa-play-circle text-green-500"></i>
                 Test Input (Event Payload)
               </h3>
-              <button
-                onClick={handleTest}
-                disabled={loading}
-                className="px-3 h-9 text-[14px] font-medium rounded-lg flex items-center gap-2 transition-colors whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700"
-              >
-                {loading ? (
-                  <><i className="fas fa-spinner fa-spin"></i> Running...</>
-                ) : (
-                  <><i className="fas fa-play"></i> Run Test</>
-                )}
-              </button>
+              <Button onClick={handleTest} isLoading={loading} leftIcon={loading ? undefined : <i className="fas fa-play"></i>}>
+                {loading ? 'Running...' : 'Run Test'}
+              </Button>
             </div>
           </div>
 
@@ -487,24 +483,26 @@ const TestPanel = ({ flowId, nodes }: TestPanelProps) => {
                 </h4>
                 <div className="flex flex-wrap gap-2">
                   {triggerNodes.map(node => (
-                    <span key={node.id} className="text-xs px-2 py-1 bg-white text-blue-700 rounded border border-blue-200">
+                    <Tag key={node.id} size="sm" type="blue">
                       {node.type}
-                    </span>
+                    </Tag>
                   ))}
                 </div>
               </div>
             )}
 
-            <textarea
+            <TextArea
+              id="event-flow-test-input"
+              labelText="Test input"
+              hideLabel
               value={testInput}
               onChange={(e) => setTestInput(e.target.value)}
-              className="w-full h-80 p-4 border rounded-lg font-mono text-sm resize-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              className="font-mono"
+              rows={16}
               placeholder="{}"
               spellCheck={false}
+              helperText="Enter JSON payload that simulates the event data your flow will receive."
             />
-            <p className="text-xs text-gray-500 mt-2">
-              Enter JSON payload that simulates the event data your flow will receive.
-            </p>
           </div>
         </div>
 
@@ -522,17 +520,13 @@ const TestPanel = ({ flowId, nodes }: TestPanelProps) => {
               <div className="space-y-4">
                 {/* Status Bar */}
                 <div className="flex items-center gap-4">
-                  <div className={`px-4 py-2 rounded-lg font-medium text-sm ${
-                    response.success
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-red-100 text-red-700'
-                  }`}>
+                  <Tag type={response.success ? 'green' : 'red'}>
                     {response.success ? (
                       <><i className="fas fa-check-circle mr-2"></i>Success</>
                     ) : (
                       <><i className="fas fa-times-circle mr-2"></i>Failed</>
                     )}
-                  </div>
+                  </Tag>
                   {response.duration && (
                     <div className="text-sm text-gray-500">
                       <i className="fas fa-clock mr-1"></i>
@@ -543,21 +537,21 @@ const TestPanel = ({ flowId, nodes }: TestPanelProps) => {
 
                 {/* Error Message */}
                 {response.error && (
-                  <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-                    <p className="text-sm text-red-800 font-medium">{response.error}</p>
-                  </div>
+                  <InlineNotification kind="error" lowContrast hideCloseButton title={String(response.error)} />
                 )}
 
                 {/* Response Body */}
-                <div className="bg-white rounded-xl border overflow-hidden">
+                <div className="cds--tile app-tile !p-0 overflow-hidden">
                   <div className="px-4 py-2 bg-gray-100 border-b flex items-center justify-between">
                     <span className="text-xs font-semibold text-gray-600 uppercase">Output</span>
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => navigator.clipboard.writeText(formatJson(response.data || response))}
-                      className="text-xs text-blue-600 hover:text-blue-700"
+                      leftIcon={<i className="fas fa-copy"></i>}
                     >
-                      <i className="fas fa-copy mr-1"></i> Copy
-                    </button>
+                      Copy
+                    </Button>
                   </div>
                   <pre className="p-4 text-sm font-mono overflow-x-auto max-h-[400px]">
                     {formatJson(response.data || response)}
@@ -742,7 +736,7 @@ const DeployPanel = ({ flowId, projectId, flowName: _flowName, nodes, onStatusCh
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
+        <Loading withOverlay={false} description="Loading deployment" />
       </div>
     );
   }
@@ -758,39 +752,29 @@ const DeployPanel = ({ flowId, projectId, flowName: _flowName, nodes, onStatusCh
           </div>
           <div className="flex items-center gap-3">
             {config.enabled ? (
-              <button
-                onClick={undeployFlow}
-                disabled={deploying}
-                className="px-3 h-9 rounded-lg flex items-center gap-2 disabled:opacity-70 whitespace-nowrap bg-red-600 text-white hover:bg-red-700"
-              >
-                <i className="fas fa-stop"></i>
+              <Button variant="danger" onClick={undeployFlow} disabled={deploying} leftIcon={<i className="fas fa-stop"></i>}>
                 {deploying ? 'Processing...' : 'Deactivate'}
-              </button>
+              </Button>
             ) : (
-              <button
-                onClick={deployFlow}
-                disabled={deploying}
-                className="px-3 h-9 rounded-lg flex items-center gap-2 disabled:opacity-70 whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700"
-              >
-                <i className="fas fa-rocket"></i>
+              <Button onClick={deployFlow} disabled={deploying} leftIcon={<i className="fas fa-rocket"></i>}>
                 {deploying ? 'Deploying...' : 'Activate Flow'}
-              </button>
+              </Button>
             )}
           </div>
         </div>
 
         {/* Message */}
         {message && (
-          <div className={`p-4 rounded-lg flex items-center gap-2 ${
-            message.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
-          }`}>
-            <i className={`fas ${message.type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}`}></i>
-            {message.text}
-          </div>
+          <InlineNotification
+            kind={message.type === 'success' ? 'success' : 'error'}
+            lowContrast
+            hideCloseButton
+            title={message.text}
+          />
         )}
 
         {/* Status Card */}
-        <div className="bg-white rounded-xl border p-6">
+        <div className="cds--tile app-tile p-6">
           <h3 className="font-medium text-gray-900 mb-4">Deployment Status</h3>
           
           <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
@@ -806,18 +790,14 @@ const DeployPanel = ({ flowId, projectId, flowName: _flowName, nodes, onStatusCh
                 }
               </div>
             </div>
-            <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-              config.enabled 
-                ? 'bg-green-100 text-green-700' 
-                : 'bg-gray-100 text-gray-600'
-            }`}>
+            <Tag size="sm" type={config.enabled ? 'green' : 'gray'}>
               {config.enabled ? 'Running' : 'Stopped'}
-            </div>
+            </Tag>
           </div>
         </div>
 
         {/* Trigger Configuration */}
-        <div className="bg-white rounded-xl border p-6">
+        <div className="cds--tile app-tile p-6">
           <h3 className="font-medium text-gray-900 mb-4">Trigger Configuration</h3>
           
           <div className="space-y-4">
@@ -885,7 +865,7 @@ const DeployPanel = ({ flowId, projectId, flowName: _flowName, nodes, onStatusCh
         <VariablesPanel flowId={flowId} />
 
         {/* Recent Executions */}
-        <div className="bg-white rounded-xl border p-6">
+        <div className="cds--tile app-tile p-6">
           <h3 className="font-medium text-gray-900 mb-4">Recent Executions</h3>
           
           {executions.length > 0 ? (
@@ -907,12 +887,9 @@ const DeployPanel = ({ flowId, projectId, flowName: _flowName, nodes, onStatusCh
                       </div>
                     </div>
                   </div>
-                  <button
-                    onClick={() => navigate(`/projects/${projectId}/executions/${exec.id}`)}
-                    className="text-xs text-blue-600 hover:text-blue-700"
-                  >
+                  <Button variant="ghost" size="sm" onClick={() => navigate(`/projects/${projectId}/executions/${exec.id}`)}>
                     View Logs
-                  </button>
+                  </Button>
                 </div>
               ))}
             </div>

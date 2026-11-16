@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { 
-  Folder, Plus, Search, File, Trash2, X, Upload, Archive, FileText,
+  Folder, Plus, File, Trash2, Upload, Archive, FileText,
   Image, FileSpreadsheet, FileJson, FileCode, FileType,
   Loader2, ExternalLink,
   Package, CheckCircle, Play,
@@ -10,6 +10,12 @@ import {
   ArrowLeft, Server
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
+import {
+  ComposedModal, ModalHeader, ModalBody, ModalFooter, IconButton, TextInput,
+  TextArea, Select, SelectItem, Toggle, Search as CdsSearch, Loading, InlineLoading, Tag,
+  Tabs, TabList, Tab,
+  Table, TableHead, TableRow, TableHeader, TableBody, TableCell,
+} from '@carbon/react';
 import { SharesBasketDetail } from '../../components/basket/SharesBasketDetail';
 import { SftpBasketDetail } from '../../components/basket/SftpBasketDetail';
 import { API_URL, apiFetch, withAuthToken } from '../../config/api';
@@ -148,6 +154,20 @@ const getStatusColor = (status: string) => {
     locked: 'bg-orange-100 text-orange-700 border-orange-200',
   };
   return colors[status] || 'bg-gray-100 text-gray-700 border-gray-200';
+};
+
+const getStatusTagType = (status: string) => {
+  const types: Record<string, 'blue' | 'purple' | 'warm-gray' | 'green' | 'red' | 'gray' | 'magenta'> = {
+    open: 'blue',
+    active: 'blue',
+    published: 'purple',
+    processing: 'warm-gray',
+    completed: 'green',
+    error: 'red',
+    archived: 'gray',
+    locked: 'magenta',
+  };
+  return types[status] || 'gray';
 };
 
 const ITEMS_PER_PAGE = 20;
@@ -1113,7 +1133,7 @@ export const ProjectBaskets = ({ project }: { project: Project }) => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        <Loading withOverlay={false} small />
       </div>
     );
   }
@@ -1126,26 +1146,27 @@ export const ProjectBaskets = ({ project }: { project: Project }) => {
           <h2 className="text-base font-semibold text-gray-900">Baskets</h2>
           <p className="text-xs sm:text-sm text-gray-500">File storage with processing sessions & auto-archive</p>
         </div>
-        <button
+        <Button
           onClick={() => { resetForm(); setShowCreateModal(true); }}
-          className="flex items-center gap-1.5 h-9 px-3 text-[14px] bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shrink-0"
+          className="shrink-0"
+          leftIcon={<Plus className="h-4 w-4" />}
         >
-          <Plus className="h-4 w-4" />
           <span className="hidden sm:inline">Create Basket</span>
           <span className="sm:hidden">Create</span>
-        </button>
+        </Button>
       </div>
 
       {/* Search */}
       <div className="flex items-center gap-3 mb-6">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <input
-            type="text"
+          <CdsSearch
+            id="project-baskets-search"
+            size="md"
+            labelText="Search baskets"
             placeholder="Search baskets..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+            onChange={(e: any) => setSearchQuery(e.target.value)}
+            onClear={() => setSearchQuery('')}
           />
         </div>
       </div>
@@ -1163,7 +1184,7 @@ export const ProjectBaskets = ({ project }: { project: Project }) => {
               onDrop={(e) => handleDrop(e, basket)}
               onDragEnd={handleDragEnd}
               onClick={() => openBasketModal(basket)}
-              className={`bg-white rounded-lg border px-3 py-2 cursor-pointer transition-all duration-200 group
+              className={`cds--tile app-tile px-3 py-2 cursor-pointer transition-all duration-200 group
                 ${dragOverBasketId === basket.id && draggedBasket?.id !== basket.id 
                   ? 'opacity-30 scale-[0.98] border-blue-400' 
                   : 'hover:shadow-md hover:border-blue-200 border-gray-200'}`}
@@ -1182,21 +1203,17 @@ export const ProjectBaskets = ({ project }: { project: Project }) => {
                   <div className="flex items-center gap-2">
                     <h3 className="font-medium text-sm text-gray-900 truncate">{basket.name}</h3>
                     {basket.type === 'sftp' ? (
-                      <span className="px-1.5 py-0 bg-purple-50 text-purple-600 text-[12px] rounded-full border border-purple-100 flex items-center gap-1">
-                        <Server className="h-3 w-3" /> SFTP
-                      </span>
+                      <Tag size="sm" type="purple" renderIcon={() => <Server className="h-3 w-3" />}>SFTP</Tag>
                     ) : basket.type === 'shares' ? (
-                      <span className="px-1.5 py-0 bg-cyan-50 text-cyan-600 text-[12px] rounded-full border border-cyan-100 flex items-center gap-1">
-                        <Folder className="h-3 w-3" /> File Explorer
-                      </span>
+                      <Tag size="sm" type="cyan" renderIcon={() => <Folder className="h-3 w-3" />}>File Explorer</Tag>
                     ) : (
-                      <span className="px-1.5 py-0 bg-orange-50 text-orange-600 text-[12px] rounded-full border border-orange-100">Batch</span>
+                      <Tag size="sm" type="warm-gray">Batch</Tag>
                     )}
                     {basket.autoArchive && (
-                      <span className="px-1.5 py-0 bg-green-50 text-green-600 text-[12px] rounded-full border border-green-100">Auto-ZIP</span>
+                      <Tag size="sm" type="green">Auto-ZIP</Tag>
                     )}
                     {basket.autoPublish !== 'manual' && (
-                      <span className="px-1.5 py-0 bg-purple-50 text-purple-600 text-[12px] rounded-full border border-purple-100">Auto-Pub</span>
+                      <Tag size="sm" type="purple">Auto-Pub</Tag>
                     )}
                   </div>
                   <p className="text-xs text-gray-500 truncate">
@@ -1236,20 +1253,12 @@ export const ProjectBaskets = ({ project }: { project: Project }) => {
                   </p>
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
-                  <button
-                    onClick={(e) => { e.stopPropagation(); openBasketModal(basket); }}
-                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                    title="View Basket"
-                  >
+                  <IconButton kind="ghost" size="sm" label="View Basket" onClick={(e: React.MouseEvent) => { e.stopPropagation(); openBasketModal(basket); }}>
                     <Folder className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleDeleteClick(basket); }}
-                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    title="Delete"
-                  >
+                  </IconButton>
+                  <IconButton kind="ghost" size="sm" label="Delete" onClick={(e: React.MouseEvent) => { e.stopPropagation(); handleDeleteClick(basket); }}>
                     <Trash2 className="h-4 w-4" />
-                  </button>
+                  </IconButton>
                 </div>
               </div>
             </div>
@@ -1308,25 +1317,31 @@ export const ProjectBaskets = ({ project }: { project: Project }) => {
 
       {/* Basket Detail Modal */}
       {showBasketModal && selectedBasket && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-0 sm:p-4">
-          <div className={`bg-white sm:rounded-xl w-full flex flex-col transition-all duration-300 h-full sm:h-[90vh] sm:max-w-5xl ${
-            (fullscreenSession || fullscreenHistorySession) ? 'sm:h-[95vh] sm:max-w-6xl' : ''
-          }`}>
+        <ComposedModal
+          open
+          size="lg"
+          preventCloseOnClickOutside
+          selectorsFloatingMenus={['.app-stacked-modal']}
+          onClose={() => { setShowBasketModal(false); return false; }}
+        >
             {/* Modal Header with Inline Editing */}
-            <div className="px-5 py-3 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
+            <ModalHeader closeModal={() => setShowBasketModal(false)}>
+            <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0">
                 {/* Basket Name - Inline Edit */}
                 <div className="flex items-center gap-2">
                   {isEditingBasketDetail ? (
-                    <input
-                      type="text"
+                    <TextInput
+                      id="basket-detail-name"
+                      labelText="Basket name"
+                      hideLabel
                       value={editBasketDetailName}
                       onChange={(e) => setEditBasketDetailName(e.target.value)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') saveBasketDetailChanges();
                         if (e.key === 'Escape') cancelEditingBasketDetail();
                       }}
-                      className="text-lg font-semibold text-gray-900 outline-none border-b-2 border-blue-500 bg-transparent px-0 py-0 w-full max-w-xl"
+                      className="w-full max-w-xl"
                       autoFocus
                     />
                   ) : (
@@ -1343,15 +1358,18 @@ export const ProjectBaskets = ({ project }: { project: Project }) => {
                 {/* Basket Description - Inline Edit */}
                 <div className="mt-1">
                   {isEditingBasketDetail ? (
-                    <input
-                      type="text"
+                    <TextInput
+                      id="basket-detail-desc"
+                      labelText="Description"
+                      hideLabel
+                      size="sm"
                       value={editBasketDetailDesc}
                       onChange={(e) => setEditBasketDetailDesc(e.target.value)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') saveBasketDetailChanges();
                         if (e.key === 'Escape') cancelEditingBasketDetail();
                       }}
-                      className="text-sm text-gray-600 outline-none border-b-2 border-blue-500 bg-transparent px-0 py-0 w-full max-w-xl"
+                      className="w-full max-w-xl"
                       placeholder="Add description..."
                     />
                   ) : (
@@ -1368,57 +1386,38 @@ export const ProjectBaskets = ({ project }: { project: Project }) => {
                 {/* Edit Actions */}
                 {isEditingBasketDetail && (
                   <div className="flex items-center gap-2 mt-2">
-                    <button
-                      onClick={saveBasketDetailChanges}
-                      disabled={isSavingBasketDetail || !editBasketDetailName.trim()}
-                      className="inline-flex items-center justify-center text-[13px] px-2 h-8 rounded disabled:opacity-50 whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700"
-                    >
+                    <Button size="sm" onClick={saveBasketDetailChanges} disabled={isSavingBasketDetail || !editBasketDetailName.trim()}>
                       {isSavingBasketDetail ? 'Saving...' : 'Save'}
-                    </button>
-                    <button
-                      onClick={cancelEditingBasketDetail}
-                      className="inline-flex items-center justify-center h-9 px-3 text-[14px] font-medium border border-gray-300 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap"
-                    >
+                    </Button>
+                    <Button size="sm" variant="secondary" onClick={cancelEditingBasketDetail}>
                       Cancel
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
-              <button onClick={() => setShowBasketModal(false)} className="p-2 text-gray-400 hover:text-gray-600 ml-4 flex-shrink-0">
-                <X className="h-5 w-5" />
-              </button>
             </div>
+            </ModalHeader>
 
             {/* Tabs */}
-            <div className="px-5 border-b border-gray-200 flex items-center gap-1 flex-shrink-0">
-              <button
-                onClick={() => setActiveTab('sessions')}
-                className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === 'sessions' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-600 hover:text-gray-900'
-                }`}
+            <div className="px-5 flex-shrink-0">
+              <Tabs
+                selectedIndex={['sessions', 'history', 'settings'].indexOf(activeTab)}
+                onChange={({ selectedIndex }: { selectedIndex: number }) => {
+                  if (selectedIndex === 0) setActiveTab('sessions');
+                  else if (selectedIndex === 1) { setActiveTab('history'); fetchHistory(); }
+                  else setActiveTab('settings');
+                }}
               >
-                Sessions ({sessions.filter(s => ['open', 'published', 'processing'].includes(s.status)).length})
-              </button>
-              <button
-                onClick={() => { setActiveTab('history'); fetchHistory(); }}
-                className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === 'history' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Histories ({sessions.filter(s => s.status === 'completed' || s.status === 'archived').length})
-              </button>
-              <button
-                onClick={() => setActiveTab('settings')}
-                className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === 'settings' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Settings
-              </button>
+                <TabList aria-label="Basket sections">
+                  <Tab>Sessions ({sessions.filter(s => ['open', 'published', 'processing'].includes(s.status)).length})</Tab>
+                  <Tab>Histories ({sessions.filter(s => s.status === 'completed' || s.status === 'archived').length})</Tab>
+                  <Tab>Settings</Tab>
+                </TabList>
+              </Tabs>
             </div>
 
             {/* Tab Content */}
-            <div className="flex-1 overflow-auto relative">
+            <ModalBody className={`overflow-auto relative !p-0 !mb-0 ${(fullscreenSession || fullscreenHistorySession) ? 'h-[80vh]' : 'h-[65vh]'}`}>
               {/* Sessions Tab */}
               {activeTab === 'sessions' && (
                 <div className="p-5 relative min-h-0 h-full">
@@ -1466,28 +1465,25 @@ export const ProjectBaskets = ({ project }: { project: Project }) => {
                     // Normal mode - show list
                     <>
                       <div className="flex items-center gap-3 mb-4">
-                        <button
-                          onClick={createSession}
-                          className="flex items-center gap-2 px-3 h-9 rounded-lg text-[14px] whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700"
-                        >
-                          <Plus className="h-4 w-4" />
+                        <Button onClick={createSession} leftIcon={<Plus className="h-4 w-4" />}>
                           New Session
-                        </button>
+                        </Button>
                         <div className="relative flex-1 max-w-xs">
-                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                          <input
-                            type="text"
+                          <CdsSearch
+                            id="active-session-search"
+                            size="md"
+                            labelText="Search active sessions"
                             placeholder="Search active sessions..."
                             value={sessionSearch}
-                            onChange={(e) => setSessionSearch(e.target.value)}
-                            className="w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg text-sm"
+                            onChange={(e: any) => setSessionSearch(e.target.value)}
+                            onClear={() => setSessionSearch('')}
                           />
                         </div>
                       </div>
 
                       {sessionsLoading ? (
                         <div className="flex items-center justify-center py-12">
-                          <Loader2 className="h-8 w-8 text-blue-500 animate-spin" />
+                          <Loading withOverlay={false} small />
                         </div>
                       ) : sessions.filter(s => ['open', 'published', 'processing'].includes(s.status)).length > 0 ? (
                         <div className="space-y-3">
@@ -1580,29 +1576,30 @@ export const ProjectBaskets = ({ project }: { project: Project }) => {
                     <>
                       <div className="flex items-center gap-3 mb-4">
                         <div className="relative flex-1 max-w-xs">
-                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                          <input
-                            type="text"
+                          <CdsSearch
+                            id="history-session-search"
+                            size="md"
+                            labelText="Search completed sessions"
                             placeholder="Search completed sessions..."
                             value={historySearch}
-                            onChange={(e) => setHistorySearch(e.target.value)}
-                            className="w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg text-sm"
+                            onChange={(e: any) => setHistorySearch(e.target.value)}
+                            onClear={() => setHistorySearch('')}
                           />
                         </div>
                         <div className="flex items-center gap-2">
-                          <input type="date" value={historyDateRange.from} onChange={(e) => setHistoryDateRange(prev => ({ ...prev, from: e.target.value }))} className="px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+                          <TextInput id="history-date-from" labelText="From date" hideLabel type="date" value={historyDateRange.from} onChange={(e) => setHistoryDateRange(prev => ({ ...prev, from: e.target.value }))} />
                           <span className="text-gray-400">to</span>
-                          <input type="date" value={historyDateRange.to} onChange={(e) => setHistoryDateRange(prev => ({ ...prev, to: e.target.value }))} className="px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+                          <TextInput id="history-date-to" labelText="To date" hideLabel type="date" value={historyDateRange.to} onChange={(e) => setHistoryDateRange(prev => ({ ...prev, to: e.target.value }))} />
                         </div>
                         {sessions.filter(s => s.status === 'completed' || s.status === 'archived').length > 0 && (
-                          <button
+                          <Button
+                            variant="danger"
                             onClick={() => setShowClearHistoryModal(true)}
-                            className="flex items-center gap-2 px-3 h-9 text-red-600 hover:bg-red-50 rounded-lg text-[14px] border border-red-200 whitespace-nowrap"
                             title="Clear all history sessions"
+                            leftIcon={<Trash2 className="h-4 w-4" />}
                           >
-                            <Trash2 className="h-4 w-4" />
                             Clear All
-                          </button>
+                          </Button>
                         )}
                       </div>
 
@@ -1646,174 +1643,139 @@ export const ProjectBaskets = ({ project }: { project: Project }) => {
                 <div className="p-5 max-w-2xl">
                   <div className="space-y-6">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Session Naming Pattern</label>
-                      <input type="text" value={formData.sessionPattern} onChange={(e) => setFormData({ ...formData, sessionPattern: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Batch-{YYYYMMDD}-{NNN}" />
+                      <TextInput id="settings-session-pattern" labelText="Session Naming Pattern" value={formData.sessionPattern} onChange={(e) => setFormData({ ...formData, sessionPattern: e.target.value })} placeholder="Batch-{YYYYMMDD}-{NNN}" />
                       <p className="text-xs text-gray-500 mt-1">Variables: {'{YYYY}'}, {'{YYYY+543}'}, {'{MM}'}, {'{DD}'}, {'{YYYYMMDD}'}, {'{N}'}, {'{NN}'}, {'{NNN}'}</p>
                     </div>
 
                     <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                       <div><span className="font-medium text-gray-900">Auto Archive to ZIP</span><p className="text-sm text-gray-500">Create ZIP when session is published</p></div>
-                      <button type="button" onClick={() => setFormData({ ...formData, autoArchive: !formData.autoArchive })} className={`relative inline-flex h-6 w-11 items-center rounded-full ${formData.autoArchive ? 'bg-blue-600' : 'bg-gray-200'}`}><span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${formData.autoArchive ? 'translate-x-6' : 'translate-x-1'}`} /></button>
+                      <Toggle id="settings-auto-archive" labelText="Auto Archive to ZIP" hideLabel size="sm" toggled={formData.autoArchive} onToggle={(checked: boolean) => setFormData({ ...formData, autoArchive: checked })} />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Auto Publish Mode</label>
-                      <select value={formData.autoPublish} onChange={(e) => setFormData({ ...formData, autoPublish: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                        <option value="manual">Manual - Click Publish button</option>
-                        <option value="immediate">Immediate - Auto publish on upload</option>
-                        <option value="threshold">Threshold - Publish when file count reached</option>
-                      </select>
+                      <Select id="settings-auto-publish" labelText="Auto Publish Mode" value={formData.autoPublish} onChange={(e) => setFormData({ ...formData, autoPublish: e.target.value })}>
+                        <SelectItem value="manual" text="Manual - Click Publish button" />
+                        <SelectItem value="immediate" text="Immediate - Auto publish on upload" />
+                        <SelectItem value="threshold" text="Threshold - Publish when file count reached" />
+                      </Select>
                     </div>
 
                     {formData.autoPublish === 'threshold' && (
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">File Threshold</label>
-                        <input type="number" value={formData.autoPublishThreshold} onChange={(e) => setFormData({ ...formData, autoPublishThreshold: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="100" />
+                        <TextInput id="settings-threshold" labelText="File Threshold" type="number" value={formData.autoPublishThreshold} onChange={(e) => setFormData({ ...formData, autoPublishThreshold: e.target.value })} placeholder="100" />
                       </div>
                     )}
 
                     <div className="border-t border-gray-200 pt-6">
                       <h4 className="font-medium text-gray-900 mb-4">Validation Rules</h4>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                        <div><label className="block text-sm font-medium text-gray-700 mb-1">Max Files</label><input type="number" value={formData.maxFiles} onChange={(e) => setFormData({ ...formData, maxFiles: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="Unlimited" /></div>
-                        <div><label className="block text-sm font-medium text-gray-700 mb-1">Max Size (MB)</label><input type="number" value={formData.maxFileSize} onChange={(e) => setFormData({ ...formData, maxFileSize: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="Unlimited" /></div>
+                        <div><TextInput id="settings-max-files" labelText="Max Files" type="number" value={formData.maxFiles} onChange={(e) => setFormData({ ...formData, maxFiles: e.target.value })} placeholder="Unlimited" /></div>
+                        <div><TextInput id="settings-max-size" labelText="Max Size (MB)" type="number" value={formData.maxFileSize} onChange={(e) => setFormData({ ...formData, maxFileSize: e.target.value })} placeholder="Unlimited" /></div>
                       </div>
-                      <div className="mb-4"><label className="block text-sm font-medium text-gray-700 mb-1">Allowed File Types</label><input type="text" value={formData.allowedTypes} onChange={(e) => setFormData({ ...formData, allowedTypes: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="image/*, application/pdf" /></div>
-                      <div><label className="block text-sm font-medium text-gray-700 mb-1">Naming Pattern (Regex)</label><input type="text" value={formData.namingPattern} onChange={(e) => setFormData({ ...formData, namingPattern: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm" placeholder="^[A-Z]{3}-\d{4}\.pdf$" /></div>
+                      <div className="mb-4"><TextInput id="settings-allowed-types" labelText="Allowed File Types" value={formData.allowedTypes} onChange={(e) => setFormData({ ...formData, allowedTypes: e.target.value })} placeholder="image/*, application/pdf" /></div>
+                      <div><TextInput id="settings-naming-pattern" labelText="Naming Pattern (Regex)" className="font-mono" value={formData.namingPattern} onChange={(e) => setFormData({ ...formData, namingPattern: e.target.value })} placeholder="^[A-Z]{3}-\d{4}\.pdf$" /></div>
                     </div>
 
                     <div className="flex justify-end pt-4 border-t border-gray-200">
-                      <button onClick={handleUpdateSettings} disabled={saving} className="flex items-center gap-2 px-3 h-9 rounded-lg disabled:opacity-50 whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700">
-                        {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                      <Button onClick={handleUpdateSettings} isLoading={saving} leftIcon={<Save className="h-4 w-4" />}>
                         Save Settings
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 </div>
               )}
-            </div>
-          </div>
-        </div>
+            </ModalBody>
+        </ComposedModal>
       )}
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && basketToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm mx-4">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">Delete Basket</h2>
-              <button 
-                onClick={() => setShowDeleteModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="h-5 w-5 text-gray-500" />
-              </button>
+        <ComposedModal open size="xs" className="app-stacked-modal" onClose={() => { (() => setShowDeleteModal(false))(); return false; }}>
+          <ModalHeader title="Delete Basket" closeModal={() => setShowDeleteModal(false)} />
+          <ModalBody>
+            <div className="flex items-center gap-3 text-amber-500 mb-3">
+              <AlertCircle className="h-8 w-8" />
             </div>
-            <div className="p-6">
-              <div className="flex items-center gap-3 text-amber-500 mb-3">
-                <AlertCircle className="h-8 w-8" />
-              </div>
-              <p className="text-sm text-gray-600">
-                Are you sure you want to delete <strong>{basketToDelete.name}</strong>?
-              </p>
-              <p className="text-sm text-gray-500 mt-2">
-                This action cannot be undone. All files and sessions in this basket will be permanently deleted.
-              </p>
-            </div>
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
-              <Button variant="ghost" onClick={() => setShowDeleteModal(false)}>
-                Cancel
-              </Button>
-              <Button 
-                variant="danger" 
-                onClick={handleDeleteBasket}
-                isLoading={isDeleting}
-              >
-                Delete Basket
-              </Button>
-            </div>
-          </div>
-        </div>
+            <p className="text-sm text-gray-600">
+              Are you sure you want to delete <strong>{basketToDelete.name}</strong>?
+            </p>
+            <p className="text-sm text-gray-500 mt-2">
+              This action cannot be undone. All files and sessions in this basket will be permanently deleted.
+            </p>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
+              Cancel
+            </Button>
+            <Button 
+              variant="danger" 
+              onClick={handleDeleteBasket}
+              isLoading={isDeleting}
+            >
+              Delete Basket
+            </Button>
+          </ModalFooter>
+        </ComposedModal>
       )}
 
       {/* Delete Session Confirmation Modal */}
       {showDeleteSessionModal && sessionToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm mx-4">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">Delete Session</h2>
-              <button 
-                onClick={closeDeleteSessionModal}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="h-5 w-5 text-gray-500" />
-              </button>
+        <ComposedModal open size="xs" className="app-stacked-modal" onClose={() => { (() => closeDeleteSessionModal())(); return false; }}>
+          <ModalHeader title="Delete Session" closeModal={() => closeDeleteSessionModal()} />
+          <ModalBody>
+            <div className="flex items-center gap-3 text-amber-500 mb-3">
+              <AlertCircle className="h-8 w-8" />
             </div>
-            <div className="p-6">
-              <div className="flex items-center gap-3 text-amber-500 mb-3">
-                <AlertCircle className="h-8 w-8" />
-              </div>
-              <p className="text-sm text-gray-600">
-                Are you sure you want to delete <strong>{sessionToDelete.batchName}</strong>?
-              </p>
-              <p className="text-sm text-gray-500 mt-2">
-                This action cannot be undone. All {sessionToDelete.fileCount} files in this session will be permanently deleted.
-              </p>
-            </div>
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
-              <Button variant="ghost" onClick={closeDeleteSessionModal}>
-                Cancel
-              </Button>
-              <Button 
-                variant="danger" 
-                onClick={handleDeleteSession}
-                isLoading={isDeletingSession}
-              >
-                Delete Session
-              </Button>
-            </div>
-          </div>
-        </div>
+            <p className="text-sm text-gray-600">
+              Are you sure you want to delete <strong>{sessionToDelete.batchName}</strong>?
+            </p>
+            <p className="text-sm text-gray-500 mt-2">
+              This action cannot be undone. All {sessionToDelete.fileCount} files in this session will be permanently deleted.
+            </p>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="secondary" onClick={closeDeleteSessionModal}>
+              Cancel
+            </Button>
+            <Button 
+              variant="danger" 
+              onClick={handleDeleteSession}
+              isLoading={isDeletingSession}
+            >
+              Delete Session
+            </Button>
+          </ModalFooter>
+        </ComposedModal>
       )}
 
       {/* Clear History Confirmation Modal */}
       {showClearHistoryModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm mx-4">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">Clear History</h2>
-              <button
-                onClick={() => setShowClearHistoryModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="h-5 w-5 text-gray-500" />
-              </button>
+        <ComposedModal open size="xs" className="app-stacked-modal" onClose={() => { (() => setShowClearHistoryModal(false))(); return false; }}>
+          <ModalHeader title="Clear History" closeModal={() => setShowClearHistoryModal(false)} />
+          <ModalBody>
+            <div className="flex items-center gap-3 text-amber-500 mb-3">
+              <AlertCircle className="h-8 w-8" />
             </div>
-            <div className="p-6">
-              <div className="flex items-center gap-3 text-amber-500 mb-3">
-                <AlertCircle className="h-8 w-8" />
-              </div>
-              <p className="text-sm text-gray-600">
-                Are you sure you want to clear all history sessions?
-              </p>
-              <p className="text-sm text-gray-500 mt-2">
-                This will permanently delete all completed and archived sessions. This action cannot be undone.
-              </p>
-            </div>
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
-              <Button variant="ghost" onClick={() => setShowClearHistoryModal(false)}>
-                Cancel
-              </Button>
-              <Button
-                variant="danger"
-                onClick={handleClearHistory}
-                isLoading={isClearingHistory}
-              >
-                Clear All History
-              </Button>
-            </div>
-          </div>
-        </div>
+            <p className="text-sm text-gray-600">
+              Are you sure you want to clear all history sessions?
+            </p>
+            <p className="text-sm text-gray-500 mt-2">
+              This will permanently delete all completed and archived sessions. This action cannot be undone.
+            </p>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="secondary" onClick={() => setShowClearHistoryModal(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              onClick={handleClearHistory}
+              isLoading={isClearingHistory}
+            >
+              Clear All History
+            </Button>
+          </ModalFooter>
+        </ComposedModal>
       )}
 
     </div>
@@ -1916,8 +1878,11 @@ function SessionCard({
           <div className="flex items-center gap-2">
             {isEditing ? (
               <div className="flex items-center gap-2 flex-1">
-                <input
-                  type="text"
+                <TextInput
+                  id={`session-name-${session.id}`}
+                  labelText="Session name"
+                  hideLabel
+                  size="sm"
                   value={editingName}
                   onChange={(e) => onEditingNameChange?.(e.target.value)}
                   onKeyDown={(e) => {
@@ -1925,8 +1890,8 @@ function SessionCard({
                     if (e.key === 'Escape') onCancelEdit?.();
                   }}
                   onClick={(e) => e.stopPropagation()}
-                  className="font-medium text-gray-900 text-base outline-none border-b-2 border-blue-500 bg-transparent px-0 py-0 w-auto min-w-[100px] max-w-md"
-                  style={{ width: `${(editingName || '').length + 2}ch` }}
+                  className="min-w-[100px] max-w-md"
+                  style={{ width: `${(editingName || '').length + 4}ch` }}
                   autoFocus
                 />
               </div>
@@ -1939,8 +1904,8 @@ function SessionCard({
                 >
                   {session.batchName}
                 </h4>
-                <span className={`px-2 py-0.5 text-xs rounded-full border ${getStatusColor(session.status)}`}>{session.status}</span>
-                {session.lockedBy && <span className="px-2 py-0.5 text-xs rounded-full bg-orange-100 text-orange-700 border border-orange-200 flex-shrink-0">Locked</span>}
+                <Tag size="sm" type={getStatusTagType(session.status)}>{session.status}</Tag>
+                {session.lockedBy && <Tag size="sm" type="magenta" className="flex-shrink-0">Locked</Tag>}
                 {isDragOver && <span className="text-xs text-blue-600 flex-shrink-0 font-medium animate-pulse">Drop files here...</span>}
               </>
             )}
@@ -1978,69 +1943,41 @@ function SessionCard({
         
         <div className="flex items-center gap-1 flex-shrink-0">
           {/* Fullscreen Toggle */}
-          <button 
-            onClick={(e) => { e.stopPropagation(); onToggleFullscreen(); }}
-            className="p-2 text-gray-500 hover:bg-gray-200 rounded-lg"
-            title={fullscreen ? "Exit Fullscreen" : "Fullscreen"}
-          >
+          <IconButton kind="ghost" size="sm" label={fullscreen ? "Exit Fullscreen" : "Fullscreen"} onClick={(e) => { e.stopPropagation(); onToggleFullscreen(); }}>
             {fullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-          </button>
+          </IconButton>
           
           {session.status === 'open' && (
             <>
               <input ref={fileInputRef} type="file" multiple onChange={(e) => onUpload(e.target.files)} className="hidden" />
-              <button 
-                onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }} 
-                disabled={uploadingFiles.some(uf => uf.status === 'uploading')}
-                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg disabled:opacity-50" 
-                title="Upload Files"
-              >
+              <IconButton kind="ghost" size="sm" label="Upload Files" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }} disabled={uploadingFiles.some(uf => uf.status === 'uploading')}>
                 <Upload className="h-4 w-4" />
-              </button>
+              </IconButton>
             </>
           )}
           {(session.status === 'open' || session.status === 'error') && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onPublish(); }}
-              className={`p-2 ${session.status === 'error' ? 'text-red-600 hover:bg-red-50' : 'text-purple-600 hover:bg-purple-50'} rounded-lg`}
-              title={session.status === 'error' ? 'Re-publish Session (retry)' : 'Publish Session'}
-            >
+            <IconButton kind="ghost" size="sm" label={session.status === 'error' ? 'Re-publish Session (retry)' : 'Publish Session'} onClick={(e) => { e.stopPropagation(); onPublish(); }}>
               <Play className="h-4 w-4" />
-            </button>
+            </IconButton>
           )}
           {session.status === 'processing' && onForceComplete && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onForceComplete(); }}
-              className="p-2 text-green-600 hover:bg-green-50 rounded-lg"
-              title="Force Complete (stuck processing)"
-            >
+            <IconButton kind="ghost" size="sm" label="Force Complete (stuck processing)" onClick={(e) => { e.stopPropagation(); onForceComplete(); }}>
               <CheckCircle className="h-4 w-4" />
-            </button>
+            </IconButton>
           )}
           {onArchive && (
-            <button 
-              onClick={(e) => { e.stopPropagation(); onArchive(); }} 
-              className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg" 
-              title="Archive Session"
-            >
+            <IconButton kind="ghost" size="sm" label="Archive Session" onClick={(e) => { e.stopPropagation(); onArchive(); }}>
               <Archive className="h-4 w-4" />
-            </button>
+            </IconButton>
           )}
           {onDelete && (
-            <button 
-              onClick={(e) => { e.stopPropagation(); onDelete(); }} 
-              className="p-2 text-red-600 hover:bg-red-50 rounded-lg" 
-              title="Delete Session"
-            >
+            <IconButton kind="ghost" size="sm" label="Delete Session" onClick={(e) => { e.stopPropagation(); onDelete(); }}>
               <Trash2 className="h-4 w-4" />
-            </button>
+            </IconButton>
           )}
-          <button 
-            onClick={(e) => { e.stopPropagation(); onToggle(); }}
-            className="p-2 text-gray-400 hover:text-gray-600"
-          >
+          <IconButton kind="ghost" size="sm" label={expanded || fullscreen ? 'Collapse' : 'Expand'} onClick={(e) => { e.stopPropagation(); onToggle(); }}>
             {expanded || fullscreen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-          </button>
+          </IconButton>
         </div>
       </div>
       
@@ -2050,34 +1987,27 @@ function SessionCard({
           {/* Search and Pagination Controls */}
           <div className="px-4 py-3 border-b border-gray-100 flex flex-wrap items-center justify-between gap-2 flex-shrink-0">
             <div className="relative w-full sm:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
+              <CdsSearch
+                id={`files-search-${session.id}`}
+                size="md"
+                labelText="Search files"
                 placeholder="Search files..."
                 value={filesSearch}
-                onChange={(e) => onSearch(e.target.value)}
-                className="w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg text-sm"
+                onChange={(e: any) => onSearch(e.target.value)}
+                onClear={() => onSearch('')}
               />
             </div>
             {filesPaging && filesPaging.totalPages > 1 && (
               <div className="flex items-center gap-2">
-                <button 
-                  onClick={() => onPageChange(filesPaging.page - 1)} 
-                  disabled={filesPaging.page === 1} 
-                  className="inline-flex items-center justify-center px-3 h-9 text-[14px] border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50 whitespace-nowrap"
-                >
+                <Button size="sm" variant="secondary" onClick={() => onPageChange(filesPaging.page - 1)} disabled={filesPaging.page === 1}>
                   Previous
-                </button>
+                </Button>
                 <span className="text-sm text-gray-600 px-2">
                   Page {filesPaging.page} of {filesPaging.totalPages}
                 </span>
-                <button 
-                  onClick={() => onPageChange(filesPaging.page + 1)} 
-                  disabled={filesPaging.page === filesPaging.totalPages} 
-                  className="inline-flex items-center justify-center px-3 h-9 text-[14px] border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50 whitespace-nowrap"
-                >
+                <Button size="sm" variant="secondary" onClick={() => onPageChange(filesPaging.page + 1)} disabled={filesPaging.page === filesPaging.totalPages}>
                   Next
-                </button>
+                </Button>
               </div>
             )}
           </div>
@@ -2085,36 +2015,36 @@ function SessionCard({
           {/* File List - Scrollable */}
           <div className="flex-1 overflow-auto px-4">
             {filesLoading ? (
-              <div className="flex items-center justify-center py-8"><Loader2 className="h-6 w-6 text-blue-500 animate-spin" /></div>
+              <div className="flex items-center justify-center py-8"><Loading withOverlay={false} small /></div>
             ) : allFiles.length > 0 ? (
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 sticky top-0">
-                  <tr>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">File</th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 w-24">Size</th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 w-36">Updated</th>
-                    <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 w-20">Status</th>
-                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 w-24">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
+              <Table size="sm">
+                <TableHead>
+                  <TableRow>
+                    <TableHeader>File</TableHeader>
+                    <TableHeader>Size</TableHeader>
+                    <TableHeader>Updated</TableHeader>
+                    <TableHeader>Status</TableHeader>
+                    <TableHeader>Actions</TableHeader>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
                   {allFiles.map((file: any) => {
                     const FileIcon = getFileIcon(file.mimeType);
                     return (
-                      <tr key={file.id} className={`hover:bg-gray-50 ${file.isUploading ? 'bg-blue-50/50' : ''}`}>
-                        <td className="px-3 py-2">
+                      <TableRow key={file.id} className={`hover:bg-gray-50 ${file.isUploading ? 'bg-blue-50/50' : ''}`}>
+                        <TableCell className="px-3 py-2">
                           <div className="flex items-center gap-2">
                             <FileIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
                             <span className="truncate max-w-[300px]" title={file.originalName}>{file.originalName}</span>
                           </div>
-                        </td>
-                        <td className="px-3 py-2 text-gray-600 whitespace-nowrap">
+                        </TableCell>
+                        <TableCell className="px-3 py-2 text-gray-600 whitespace-nowrap">
                           {file.isUploading ? '-' : formatFileSize(file.size)}
-                        </td>
-                        <td className="px-3 py-2 text-xs text-gray-500 whitespace-nowrap">
+                        </TableCell>
+                        <TableCell className="px-3 py-2 text-xs text-gray-500 whitespace-nowrap">
                           {file.isUploading ? '-' : new Date(file.remoteModifiedAt || file.updatedAt || file.createdAt).toLocaleString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
-                        </td>
-                        <td className="px-3 py-2 text-center">
+                        </TableCell>
+                        <TableCell className="px-3 py-2 text-center">
                           {file.isUploading ? (
                             <div className="flex items-center justify-center gap-2">
                               <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
@@ -2126,47 +2056,33 @@ function SessionCard({
                               <span className="text-xs text-gray-500">{file.progress}%</span>
                             </div>
                           ) : (
-                            <span className={`px-2 py-0.5 text-xs rounded-full ${getStatusColor(file.status)}`}>
-                              {file.status}
-                            </span>
+                            <Tag size="sm" type={getStatusTagType(file.status)}>{file.status}</Tag>
                           )}
-                        </td>
-                        <td className="px-3 py-2">
+                        </TableCell>
+                        <TableCell className="px-3 py-2">
                           <div className="flex items-center justify-end gap-1">
                             {!file.isUploading && (
                               <>
-                                <button 
-                                  onClick={() => onViewFile(file.id, file.originalName)}
-                                  className="p-1.5 text-blue-600 hover:bg-blue-50 rounded" 
-                                  title="Open"
-                                >
+                                <IconButton kind="ghost" size="sm" label="Open" onClick={() => onViewFile(file.id, file.originalName)}>
                                   <ExternalLink className="h-3.5 w-3.5" />
-                                </button>
-                                <button 
-                                  onClick={() => onDownloadFile(file.id, file.originalName)} 
-                                  className="p-1.5 text-green-600 hover:bg-green-50 rounded" 
-                                  title="Download"
-                                >
+                                </IconButton>
+                                <IconButton kind="ghost" size="sm" label="Download" onClick={() => onDownloadFile(file.id, file.originalName)}>
                                   <Download className="h-3.5 w-3.5" />
-                                </button>
+                                </IconButton>
                                 {session.status === 'open' && (
-                                  <button 
-                                    onClick={() => onDeleteFile(file.id, session.id)} 
-                                    className="p-1.5 text-red-600 hover:bg-red-50 rounded" 
-                                    title="Delete"
-                                  >
+                                  <IconButton kind="ghost" size="sm" label="Delete" onClick={() => onDeleteFile(file.id, session.id)}>
                                     <Trash2 className="h-3.5 w-3.5" />
-                                  </button>
+                                  </IconButton>
                                 )}
                               </>
                             )}
                           </div>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     );
                   })}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             ) : (
               <p className="text-center text-gray-500 py-4">{filesSearch ? 'No files match your search' : 'No files in this session'}</p>
             )}
@@ -2234,29 +2150,29 @@ function HistorySessionCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <h4 className="font-medium text-gray-900 truncate">{session.batchName}</h4>
-            <span className={`px-2 py-0.5 text-xs rounded-full border ${getStatusColor(session.status)}`}>{session.status}</span>
+            <Tag size="sm" type={getStatusTagType(session.status)}>{session.status}</Tag>
           </div>
           <p className="text-sm text-gray-500 truncate">{filesPaging?.total !== undefined ? filesPaging.total : session.fileCount} files • {formatFileSize(session.totalSize)} • Completed: {session.completedAt ? new Date(session.completedAt).toLocaleString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }) : 'N/A'}</p>
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
           {/* Fullscreen Toggle */}
-          <button 
-            onClick={(e) => { e.stopPropagation(); onToggleFullscreen(); }}
-            className="p-2 text-gray-500 hover:bg-gray-200 rounded-lg"
-            title={fullscreen ? "Exit Fullscreen" : "Fullscreen"}
-          >
+          <IconButton kind="ghost" size="sm" label={fullscreen ? "Exit Fullscreen" : "Fullscreen"} onClick={(e) => { e.stopPropagation(); onToggleFullscreen(); }}>
             {fullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-          </button>
+          </IconButton>
           
           {session.status === 'completed' && !session.archivePath && (
-            <button onClick={(e) => { e.stopPropagation(); onArchive(); }} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg" title="Archive"><Archive className="h-4 w-4" /></button>
+            <IconButton kind="ghost" size="sm" label="Archive" onClick={(e) => { e.stopPropagation(); onArchive(); }}>
+              <Archive className="h-4 w-4" />
+            </IconButton>
           )}
           {session.archivePath && (
-            <button onClick={(e) => { e.stopPropagation(); onDownloadArchive(); }} className="p-2 text-green-600 hover:bg-green-50 rounded-lg" title="Download ZIP"><Download className="h-4 w-4" /></button>
+            <IconButton kind="ghost" size="sm" label="Download ZIP" onClick={(e) => { e.stopPropagation(); onDownloadArchive(); }}>
+              <Download className="h-4 w-4" />
+            </IconButton>
           )}
-          <button onClick={(e) => { e.stopPropagation(); onToggle(); }} className="p-2 text-gray-400 hover:text-gray-600">
+          <IconButton kind="ghost" size="sm" label={expanded || fullscreen ? 'Collapse' : 'Expand'} onClick={(e) => { e.stopPropagation(); onToggle(); }}>
             {expanded || fullscreen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-          </button>
+          </IconButton>
         </div>
       </div>
       
@@ -2266,34 +2182,27 @@ function HistorySessionCard({
           {/* Search and Pagination Controls */}
           <div className="px-4 py-3 border-b border-gray-100 flex flex-wrap items-center justify-between gap-2 flex-shrink-0">
             <div className="relative w-full sm:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
+              <CdsSearch
+                id={`history-files-search-${session.id}`}
+                size="md"
+                labelText="Search files"
                 placeholder="Search files..."
                 value={filesSearch}
-                onChange={(e) => onSearch(e.target.value)}
-                className="w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg text-sm"
+                onChange={(e: any) => onSearch(e.target.value)}
+                onClear={() => onSearch('')}
               />
             </div>
             {filesPaging && filesPaging.totalPages > 1 && (
               <div className="flex items-center gap-2">
-                <button 
-                  onClick={() => onPageChange(filesPaging.page - 1)} 
-                  disabled={filesPaging.page === 1} 
-                  className="inline-flex items-center justify-center px-3 h-9 text-[14px] border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50 whitespace-nowrap"
-                >
+                <Button size="sm" variant="secondary" onClick={() => onPageChange(filesPaging.page - 1)} disabled={filesPaging.page === 1}>
                   Previous
-                </button>
+                </Button>
                 <span className="text-sm text-gray-600 px-2">
                   Page {filesPaging.page} of {filesPaging.totalPages}
                 </span>
-                <button 
-                  onClick={() => onPageChange(filesPaging.page + 1)} 
-                  disabled={filesPaging.page === filesPaging.totalPages} 
-                  className="inline-flex items-center justify-center px-3 h-9 text-[14px] border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50 whitespace-nowrap"
-                >
+                <Button size="sm" variant="secondary" onClick={() => onPageChange(filesPaging.page + 1)} disabled={filesPaging.page === filesPaging.totalPages}>
                   Next
-                </button>
+                </Button>
               </div>
             )}
           </div>
@@ -2301,61 +2210,51 @@ function HistorySessionCard({
           {/* File List - Scrollable */}
           <div className="flex-1 overflow-auto px-4">
             {filesLoading ? (
-              <div className="flex items-center justify-center py-8"><Loader2 className="h-6 w-6 text-blue-500 animate-spin" /></div>
+              <div className="flex items-center justify-center py-8"><Loading withOverlay={false} small /></div>
             ) : files.length > 0 ? (
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 sticky top-0">
-                  <tr>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">File</th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 w-24">Size</th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 w-36">Updated</th>
-                    <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 w-20">Status</th>
-                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 w-24">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
+              <Table size="sm">
+                <TableHead>
+                  <TableRow>
+                    <TableHeader>File</TableHeader>
+                    <TableHeader>Size</TableHeader>
+                    <TableHeader>Updated</TableHeader>
+                    <TableHeader>Status</TableHeader>
+                    <TableHeader>Actions</TableHeader>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
                   {files.map(file => {
                     const FileIcon = getFileIcon(file.mimeType);
                     return (
-                      <tr key={file.id} className="hover:bg-gray-50">
-                        <td className="px-3 py-2">
+                      <TableRow key={file.id} className="hover:bg-gray-50">
+                        <TableCell className="px-3 py-2">
                           <div className="flex items-center gap-2">
                             <FileIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
                             <span className="truncate max-w-[300px]" title={file.originalName}>{file.originalName}</span>
                           </div>
-                        </td>
-                        <td className="px-3 py-2 text-gray-600 whitespace-nowrap">{formatFileSize(file.size)}</td>
-                        <td className="px-3 py-2 text-xs text-gray-500 whitespace-nowrap">
+                        </TableCell>
+                        <TableCell className="px-3 py-2 text-gray-600 whitespace-nowrap">{formatFileSize(file.size)}</TableCell>
+                        <TableCell className="px-3 py-2 text-xs text-gray-500 whitespace-nowrap">
                           {new Date(file.updatedAt || file.createdAt).toLocaleString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}
-                        </td>
-                        <td className="px-3 py-2 text-center">
-                          <span className={`px-2 py-0.5 text-xs rounded-full ${getStatusColor(file.status)}`}>
-                            {file.status}
-                          </span>
-                        </td>
-                        <td className="px-3 py-2">
+                        </TableCell>
+                        <TableCell className="px-3 py-2 text-center">
+                          <Tag size="sm" type={getStatusTagType(file.status)}>{file.status}</Tag>
+                        </TableCell>
+                        <TableCell className="px-3 py-2">
                           <div className="flex items-center justify-end gap-1">
-                            <button 
-                              onClick={() => onViewFile(file.id, file.originalName)}
-                              className="p-1.5 text-blue-600 hover:bg-blue-50 rounded" 
-                              title="Open"
-                            >
+                            <IconButton kind="ghost" size="sm" label="Open" onClick={() => onViewFile(file.id, file.originalName)}>
                               <ExternalLink className="h-3.5 w-3.5" />
-                            </button>
-                            <button 
-                              onClick={() => onDownloadFile(file.id, file.originalName)} 
-                              className="p-1.5 text-green-600 hover:bg-green-50 rounded" 
-                              title="Download"
-                            >
+                            </IconButton>
+                            <IconButton kind="ghost" size="sm" label="Download" onClick={() => onDownloadFile(file.id, file.originalName)}>
                               <Download className="h-3.5 w-3.5" />
-                            </button>
+                            </IconButton>
                           </div>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     );
                   })}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             ) : (
               <p className="text-center text-gray-500 py-4">{filesSearch ? 'No files match your search' : 'No files in this session'}</p>
             )}
@@ -2407,13 +2306,9 @@ function BasketFormModal({ title, formData, setFormData, onSubmit, onClose, savi
   // Type Selection Step (Create only) - Clean design without descriptions
   if (step === 'type' && isCreate) {
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-xl w-full max-w-lg">
-          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">Select Basket Type</h3>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X className="h-5 w-5" /></button>
-          </div>
-          <div className="p-6">
+      <ComposedModal open size="sm" onClose={() => { onClose(); return false; }}>
+          <ModalHeader title="Select Basket Type" closeModal={onClose} />
+          <ModalBody>
             <div className="space-y-3">
               {/* Batch Basket Option */}
               <button
@@ -2460,12 +2355,11 @@ function BasketFormModal({ title, formData, setFormData, onSubmit, onClose, savi
                 </div>
               </button>
             </div>
-          </div>
-          <div className="px-6 py-4 border-t border-gray-200 flex justify-end">
-            <button type="button" onClick={onClose} className="inline-flex items-center justify-center h-9 px-3 text-[14px] font-medium border border-gray-300 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap">Cancel</button>
-          </div>
-        </div>
-      </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          </ModalFooter>
+      </ComposedModal>
     );
   }
   
@@ -2474,35 +2368,26 @@ function BasketFormModal({ title, formData, setFormData, onSubmit, onClose, savi
   const isSftp = formData.type === 'sftp';
   
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-auto">
-        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+    <ComposedModal open size="md" onClose={() => { onClose(); return false; }}>
+        <ModalHeader closeModal={onClose}>
           <div className="flex items-center gap-3">
             {isCreate && (
-              <button 
-                type="button" 
-                onClick={handleBackToType}
-                className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
-              >
+              <IconButton kind="ghost" size="sm" label="Back" onClick={handleBackToType}>
                 <ArrowLeft className="h-5 w-5" />
-              </button>
+              </IconButton>
             )}
             <div>
               <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className={`text-xs px-2 py-0.5 rounded-full ${
-                  isBatch ? 'bg-orange-100 text-orange-700' : 
-                  isSftp ? 'bg-purple-100 text-purple-700' : 
-                  'bg-cyan-100 text-cyan-700'
-                }`}>
+                <Tag size="sm" type={isBatch ? 'warm-gray' : isSftp ? 'purple' : 'cyan'}>
                   {isBatch ? 'Batch Basket' : isSftp ? 'SFTP Basket' : 'File Explorer'}
-                </span>
+                </Tag>
               </div>
             </div>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X className="h-5 w-5" /></button>
-        </div>
-        <form onSubmit={onSubmit} className="p-6 space-y-6">
+        </ModalHeader>
+        <form onSubmit={onSubmit} className="contents">
+        <ModalBody hasForm className="space-y-6">
           {/* SFTP Connection Selection */}
           {isSftp && (
             <div>
@@ -2511,10 +2396,7 @@ function BasketFormModal({ title, formData, setFormData, onSubmit, onClose, savi
                 SFTP Connection
               </label>
               {sftpConnectionsLoading ? (
-                <div className="flex items-center gap-2 px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-500 text-sm">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Loading connections...
-                </div>
+                <InlineLoading description="Loading connections..." />
               ) : sftpConnections.length === 0 ? (
                 <div className="px-4 py-5 border-2 border-dashed border-gray-300 rounded-xl text-center">
                   <Server className="h-8 w-8 text-gray-300 mx-auto mb-2" />
@@ -2617,22 +2499,21 @@ function BasketFormModal({ title, formData, setFormData, onSubmit, onClose, savi
           {/* Common Fields */}
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
-              <input 
-                type="text" 
+              <TextInput
+                id="basket-form-name"
+                labelText={<>Name <span className="text-red-500">*</span></>} 
                 required 
                 value={formData.name} 
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })} 
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" 
-                placeholder={isBatch ? "e.g., Incoming Invoices" : "e.g., Shared Documents"} 
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}  
+                placeholder={isBatch ? "e.g., Incoming Invoices" : "e.g., Shared Documents"}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-              <textarea 
+              <TextArea
+                id="basket-form-description"
+                labelText="Description"
                 value={formData.description} 
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })} 
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 resize-none" 
                 rows={2}
                 placeholder={isBatch ? "Describe the batch processing workflow..." : "Describe the shared folder purpose..."}
               />
@@ -2648,13 +2529,12 @@ function BasketFormModal({ title, formData, setFormData, onSubmit, onClose, savi
               </h4>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Session Naming Pattern</label>
-                  <input 
-                    type="text" 
+                  <TextInput
+                    id="basket-form-sessionPattern"
+                    labelText="Session Naming Pattern" 
                     value={formData.sessionPattern} 
-                    onChange={(e) => setFormData({ ...formData, sessionPattern: e.target.value })} 
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" 
-                    placeholder="Batch-{YYYYMMDD}-{NNN}" 
+                    onChange={(e) => setFormData({ ...formData, sessionPattern: e.target.value })}  
+                    placeholder="Batch-{YYYYMMDD}-{NNN}"
                   />
                   <p className="text-xs text-gray-500 mt-1">Variables: {'{YYYY}'}, {'{YYYY+543}'}, {'{MM}'}, {'{DD}'}, {'{YYYYMMDD}'}, {'{N}'}, {'{NN}'}, {'{NNN}'}</p>
                 </div>
@@ -2663,35 +2543,29 @@ function BasketFormModal({ title, formData, setFormData, onSubmit, onClose, savi
                     <span className="font-medium text-gray-900">Auto Archive to ZIP</span>
                     <p className="text-sm text-gray-500">Create ZIP when session is published</p>
                   </div>
-                  <button 
-                    type="button" 
-                    onClick={() => setFormData({ ...formData, autoArchive: !formData.autoArchive })} 
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full ${formData.autoArchive ? 'bg-blue-600' : 'bg-gray-200'}`}
-                  >
-                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${formData.autoArchive ? 'translate-x-6' : 'translate-x-1'}`} />
-                  </button>
+                  <Toggle id="basket-form-autoArchive" labelText="Auto Archive to ZIP" hideLabel size="sm" toggled={formData.autoArchive} onToggle={(checked: boolean) => setFormData({ ...formData, autoArchive: checked })} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Auto Publish Mode</label>
-                  <select 
+                  <Select
+                    id="basket-form-autoPublish"
+                    labelText="Auto Publish Mode"
                     value={formData.autoPublish} 
                     onChange={(e) => setFormData({ ...formData, autoPublish: e.target.value })} 
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="manual">Manual - Click Publish button</option>
-                    <option value="immediate">Immediate - Auto publish on upload</option>
-                    <option value="threshold">Threshold - Publish when file count reached</option>
-                  </select>
+                    <SelectItem value="manual" text="Manual - Click Publish button" />
+                    <SelectItem value="immediate" text="Immediate - Auto publish on upload" />
+                    <SelectItem value="threshold" text="Threshold - Publish when file count reached" />
+                  </Select>
                 </div>
                 {formData.autoPublish === 'threshold' && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">File Threshold</label>
-                    <input 
+                    <TextInput
+                      id="basket-form-autoPublishThreshold"
+                      labelText="File Threshold"
                       type="number" 
                       value={formData.autoPublishThreshold} 
-                      onChange={(e) => setFormData({ ...formData, autoPublishThreshold: e.target.value })} 
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" 
-                      placeholder="100" 
+                      onChange={(e) => setFormData({ ...formData, autoPublishThreshold: e.target.value })}  
+                      placeholder="100"
                     />
                   </div>
                 )}
@@ -2706,56 +2580,54 @@ function BasketFormModal({ title, formData, setFormData, onSubmit, onClose, savi
             <h4 className="font-medium text-gray-900 mb-4">Validation Rules (Optional)</h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Max Files</label>
-                <input 
+                <TextInput
+                  id="basket-form-maxFiles"
+                  labelText="Max Files"
                   type="number" 
                   value={formData.maxFiles} 
-                  onChange={(e) => setFormData({ ...formData, maxFiles: e.target.value })} 
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg" 
-                  placeholder="Unlimited" 
+                  onChange={(e) => setFormData({ ...formData, maxFiles: e.target.value })}  
+                  placeholder="Unlimited"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Max Size (MB)</label>
-                <input 
+                <TextInput
+                  id="basket-form-maxFileSize"
+                  labelText="Max Size (MB)"
                   type="number" 
                   value={formData.maxFileSize} 
-                  onChange={(e) => setFormData({ ...formData, maxFileSize: e.target.value })} 
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg" 
-                  placeholder="Unlimited" 
+                  onChange={(e) => setFormData({ ...formData, maxFileSize: e.target.value })}  
+                  placeholder="Unlimited"
                 />
               </div>
             </div>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Allowed File Types</label>
-              <input 
-                type="text" 
+              <TextInput
+                id="basket-form-allowedTypes"
+                labelText="Allowed File Types" 
                 value={formData.allowedTypes} 
-                onChange={(e) => setFormData({ ...formData, allowedTypes: e.target.value })} 
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg" 
-                placeholder="image/*, application/pdf" 
+                onChange={(e) => setFormData({ ...formData, allowedTypes: e.target.value })}  
+                placeholder="image/*, application/pdf"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Naming Pattern (Regex)</label>
-              <input 
-                type="text" 
+              <TextInput
+                id="basket-form-namingPattern"
+                labelText="Naming Pattern (Regex)" className="font-mono" 
                 value={formData.namingPattern} 
-                onChange={(e) => setFormData({ ...formData, namingPattern: e.target.value })} 
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm" 
-                placeholder="^[A-Z]{3}-\d{4}\.pdf$" 
+                onChange={(e) => setFormData({ ...formData, namingPattern: e.target.value })}  
+                placeholder="^[A-Z]{3}-\d{4}\.pdf$"
               />
             </div>
           </div>
-          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-            <button type="button" onClick={onClose} className="inline-flex items-center justify-center h-9 px-3 text-[14px] font-medium border border-gray-300 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap">Cancel</button>
-            <button type="submit" disabled={saving || !formData.name.trim()} className="inline-flex items-center justify-center px-3 h-9 rounded-lg disabled:opacity-50 whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700">
+        </ModalBody>
+          <ModalFooter>
+            <Button variant="secondary" onClick={onClose}>Cancel</Button>
+            <Button type="submit" disabled={saving || !formData.name.trim()}>
               {saving ? 'Saving...' : isCreate ? 'Create Basket' : 'Update Basket'}
-            </button>
-          </div>
+            </Button>
+          </ModalFooter>
         </form>
-      </div>
-    </div>
+    </ComposedModal>
   );
 }
 

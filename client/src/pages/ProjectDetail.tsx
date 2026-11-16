@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate, useLocation, NavLink, Routes, Route, Navigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Routes, Route, Navigate } from 'react-router-dom';
 import { 
   LayoutDashboard, GitBranch, FolderKanban,
   Plug, History, ArrowLeft, Settings, Plus,
@@ -8,6 +8,7 @@ import {
 import { AccessModal } from '../components/access/AccessModal';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
+import { TextInput, TextArea, Tabs, TabList, Tab, Tag, Loading, IconButton } from '@carbon/react';
 
 // Sub-pages
 import { ProjectDashboard } from './project/ProjectDashboard';
@@ -140,12 +141,14 @@ const ComboboxWithAdd = ({ label, value, options, onChange, onAddNew, placeholde
         <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto">
           {/* Search/Add Input */}
           <div className="p-2 border-b border-gray-100 sticky top-0 bg-white">
-            <input
-              type="text"
+            <TextInput
+              id={`combobox-search-${label.replace(/\s+/g, '-').toLowerCase()}`}
+              labelText={`Search ${label}`}
+              hideLabel
+              size="sm"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               placeholder={`Search or add new ${label.toLowerCase()}...`}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
               autoFocus
             />
           </div>
@@ -246,20 +249,20 @@ const CompactEditForm = ({
                 <div className="relative w-full h-full rounded-lg overflow-hidden border border-gray-200">
                   <img src={editForm.image} alt="Project" className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
-                    <button
-                      type="button"
+                    <Button
+                      variant="secondary"
+                      size="sm"
                       onClick={() => document.getElementById('edit-image-upload')?.click()}
-                      className="px-1.5 py-0.5 bg-white rounded text-[12px] font-medium text-gray-700"
                     >
                       Change
-                    </button>
-                    <button
-                      type="button"
+                    </Button>
+                    <Button
+                      variant="danger"
+                      size="sm"
                       onClick={() => setEditForm((prev: any) => ({ ...prev, image: null }))}
-                      className="px-1.5 py-0.5 bg-red-500 rounded text-[12px] font-medium text-white"
                     >
                       Remove
-                    </button>
+                    </Button>
                   </div>
                 </div>
               ) : (
@@ -294,46 +297,36 @@ const CompactEditForm = ({
         {/* Right Column Fields */}
         <div className="space-y-2">
           {/* Project Name */}
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-0.5">
-              Project Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={editForm.name}
-              onChange={(e) => setEditForm((prev: any) => ({ ...prev, name: e.target.value }))}
-              className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-              placeholder="Enter project name"
-              required
-            />
-          </div>
+          <TextInput
+            id="edit-project-name"
+            labelText="Project Name *"
+            size="sm"
+            value={editForm.name}
+            onChange={(e) => setEditForm((prev: any) => ({ ...prev, name: e.target.value }))}
+            placeholder="Enter project name"
+            required
+          />
 
           {/* Slug */}
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-0.5">
-              Slug <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={editForm.slug}
-              onChange={(e) => setEditForm((prev: any) => ({ ...prev, slug: e.target.value }))}
-              className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-              placeholder="enter-project-slug"
-              required
-            />
-          </div>
+          <TextInput
+            id="edit-project-slug"
+            labelText="Slug *"
+            size="sm"
+            value={editForm.slug}
+            onChange={(e) => setEditForm((prev: any) => ({ ...prev, slug: e.target.value }))}
+            placeholder="enter-project-slug"
+            required
+          />
 
           {/* Description */}
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-0.5">Description</label>
-            <textarea
-              value={editForm.description}
-              onChange={(e) => setEditForm((prev: any) => ({ ...prev, description: e.target.value }))}
-              className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
-              rows={2}
-              placeholder="Enter description"
-            />
-          </div>
+          <TextArea
+            id="edit-project-description"
+            labelText="Description"
+            value={editForm.description}
+            onChange={(e) => setEditForm((prev: any) => ({ ...prev, description: e.target.value }))}
+            rows={2}
+            placeholder="Enter description"
+          />
         </div>
       </div>
 
@@ -372,13 +365,13 @@ const CompactEditForm = ({
       <div>
         <div className="flex items-center justify-between mb-2">
           <label className="block text-xs font-medium text-gray-700">Theme Color</label>
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setShowCustomColor(!showCustomColor)}
-            className="text-xs text-blue-600 hover:text-blue-700"
           >
             {showCustomColor ? 'Preset Colors' : 'Custom Color'}
-          </button>
+          </Button>
         </div>
         
         {showCustomColor ? (
@@ -392,16 +385,21 @@ const CompactEditForm = ({
               }}
               className="w-12 h-8 rounded cursor-pointer border border-gray-300"
             />
-            <input
-              type="text"
-              value={customColor}
-              onChange={(e) => {
-                setCustomColor(e.target.value);
-                setEditForm((prev: any) => ({ ...prev, color: e.target.value }));
-              }}
-              className="flex-1 px-2.5 py-1.5 text-sm border border-gray-300 rounded-md font-mono"
-              placeholder="#3b82f6"
-            />
+            <div className="flex-1">
+              <TextInput
+                id="edit-project-custom-color"
+                labelText="Custom color hex"
+                hideLabel
+                size="sm"
+                className="font-mono"
+                value={customColor}
+                onChange={(e) => {
+                  setCustomColor(e.target.value);
+                  setEditForm((prev: any) => ({ ...prev, color: e.target.value }));
+                }}
+                placeholder="#3b82f6"
+              />
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-6 sm:grid-cols-11 gap-1.5">
@@ -500,7 +498,7 @@ export const ProjectDetailLayout = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        <Loading withOverlay={false} small description="Loading project" />
       </div>
     );
   }
@@ -510,12 +508,9 @@ export const ProjectDetailLayout = () => {
       <div className="p-6">
         <div className="text-center py-12">
           <h2 className="text-xl font-semibold text-gray-900">Project not found</h2>
-          <button
-            onClick={() => navigate('/projects')}
-            className="inline-flex items-center justify-center mt-4 px-3.5 h-9 bg-blue-500 text-white rounded-lg hover:bg-blue-600 whitespace-nowrap"
-          >
+          <Button className="mt-4" onClick={() => navigate('/projects')}>
             Back to Projects
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -542,6 +537,10 @@ export const ProjectDetailLayout = () => {
     { path: `/projects/${id}/executions`, label: 'Executions', icon: History },
     { path: `/projects/${id}/secrets-vault`, label: 'Secrets Vault', icon: ShieldCheck },
   ];
+
+  const activeTabIndex = Math.max(0, navItems.findIndex((item) =>
+    item.end ? location.pathname === item.path : location.pathname.startsWith(item.path)
+  ));
 
   const handleSaveEdit = async () => {
     if (!id) return;
@@ -575,12 +574,15 @@ export const ProjectDetailLayout = () => {
         <div className="px-3 sm:px-6 py-2">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-              <button
+              <IconButton
+                kind="ghost"
+                size="sm"
+                label="Back to projects"
+                className="shrink-0"
                 onClick={() => navigate('/projects')}
-                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors shrink-0"
               >
-                <ArrowLeft className="h-4 w-4 text-gray-600" />
-              </button>
+                <ArrowLeft className="h-4 w-4" />
+              </IconButton>
               <div className="flex items-center gap-2.5 min-w-0">
                 {/* Project Icon/Image - Initial Letter Style */}
                 {project.image ? (
@@ -601,22 +603,26 @@ export const ProjectDetailLayout = () => {
                   <p className="text-xs text-gray-500 truncate">{project.description}</p>
                 </div>
               </div>
-              <span className="hidden sm:inline-block px-2 py-0.5 bg-green-100 text-green-700 text-[12px] rounded-full font-medium shrink-0">
+              <Tag type="green" size="sm" className="hidden sm:inline-flex shrink-0">
                 {project.status}
-              </span>
+              </Tag>
             </div>
             
             {/* Quick Actions */}
             <div className="flex items-center gap-2">
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => setShowAccess(true)}
-                className="inline-flex items-center gap-1.5 h-8 px-2.5 text-[13px] text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                 title="Who can see this project"
+                leftIcon={<Users className="h-4 w-4" />}
               >
-                <Users className="h-4 w-4 text-gray-600" />
                 <span className="hidden sm:inline">Access</span>
-              </button>
-              <button 
+              </Button>
+              <IconButton
+                kind="ghost"
+                size="sm"
+                label="Edit Project"
                 onClick={() => {
                   setEditForm({ 
                     name: project.name || '', 
@@ -629,41 +635,28 @@ export const ProjectDetailLayout = () => {
                   });
                   setShowEditModal(true);
                 }}
-                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-                title="Edit Project"
               >
-                <Settings className="h-4 w-4 text-gray-600" />
-              </button>
+                <Settings className="h-4 w-4" />
+              </IconButton>
             </div>
           </div>
         </div>
 
-        {/* Navigation Tabs (horizontal scroll on narrow screens) */}
-        <nav className="px-3 sm:px-6 overflow-x-auto -mb-px [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <div className="flex gap-1 min-w-max">
-            {navItems.map((item) => {
-              const isActive = item.end
-                ? location.pathname === item.path
-                : location.pathname.startsWith(item.path);
-
-              return (
-                <NavLink
-                  key={item.path}
-                  to={item.path}
-                  end={item.end}
-                  className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-2 text-[13px] font-medium border-b-2 transition-colors whitespace-nowrap shrink-0 ${
-                    isActive
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
-                  }`}
-                >
-                  <item.icon className="h-3.5 w-3.5" />
+        {/* Navigation Tabs (route-driven; horizontal scroll on narrow screens) */}
+        <div className="px-3 sm:px-6 overflow-x-auto">
+          <Tabs
+            selectedIndex={activeTabIndex}
+            onChange={({ selectedIndex }) => navigate(navItems[selectedIndex].path)}
+          >
+            <TabList aria-label="Project sections" contained={false}>
+              {navItems.map((item) => (
+                <Tab key={item.path} renderIcon={item.icon}>
                   {item.label}
-                </NavLink>
-              );
-            })}
-          </div>
-        </nav>
+                </Tab>
+              ))}
+            </TabList>
+          </Tabs>
+        </div>
       </div>
 
       {/* Content Area */}

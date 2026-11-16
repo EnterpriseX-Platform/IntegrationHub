@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { 
   Plus, Tag, Edit2, Trash2, Link as LinkIcon, 
   Server, Database, Globe, Users,
-  CheckCircle, XCircle, RefreshCw, Search
+  CheckCircle, XCircle, RefreshCw
 } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
 import { Button } from '../components/ui/Button';
+import { Search as CdsSearch, Select, SelectItem, TextInput, IconButton, Loading } from '@carbon/react';
 
 interface Connection {
   id: string;
@@ -153,50 +154,52 @@ export const AppConnections: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
-        <div className="flex flex-wrap gap-4">
+      <div className="cds--tile app-tile p-4 mb-6">
+        <div className="flex flex-wrap gap-4 items-end">
           <div className="flex-1 min-w-[200px]">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <input
-                type="text"
-                placeholder="Search connections..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
+            <CdsSearch
+              id="app-connections-search"
+              labelText="Search connections"
+              placeholder="Search connections..."
+              value={searchTerm}
+              onChange={(e: any) => setSearchTerm(e.target.value)}
+              onClear={() => setSearchTerm('')}
+            />
           </div>
-          
-          <select
+
+          <Select
+            id="app-connections-type"
+            labelText="Type"
+            hideLabel
             value={selectedType}
             onChange={(e) => setSelectedType(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
           >
-            <option value="all">All Types</option>
-            <option value="sftp">SFTP</option>
-            <option value="database">Database</option>
-            <option value="http">HTTP</option>
-            <option value="api">API</option>
-          </select>
+            <SelectItem value="all" text="All Types" />
+            <SelectItem value="sftp" text="SFTP" />
+            <SelectItem value="database" text="Database" />
+            <SelectItem value="http" text="HTTP" />
+            <SelectItem value="api" text="API" />
+          </Select>
 
-          <select
+          <Select
+            id="app-connections-tag"
+            labelText="Tag"
+            hideLabel
             value={selectedTag}
             onChange={(e) => setSelectedTag(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
           >
-            <option value="">All Tags</option>
+            <SelectItem value="" text="All Tags" />
             {tags.map(tag => (
-              <option key={tag.id} value={tag.id}>{tag.name}</option>
+              <SelectItem key={tag.id} value={tag.id} text={tag.name} />
             ))}
-          </select>
+          </Select>
         </div>
       </div>
 
       {/* Connections Grid */}
       {loading ? (
         <div className="flex justify-center py-12">
-          <RefreshCw className="w-8 h-8 animate-spin text-blue-600" />
+          <Loading withOverlay={false} description="Loading connections" />
         </div>
       ) : filteredConnections.length === 0 ? (
         <div className="text-center py-12 bg-gray-50 rounded-lg">
@@ -209,7 +212,7 @@ export const AppConnections: React.FC = () => {
           {filteredConnections.map(connection => (
             <div
               key={connection.id}
-              className="bg-white rounded-lg border border-gray-200 p-5 hover:shadow-md transition-shadow"
+              className="cds--tile app-tile p-5 hover:shadow-md transition-shadow"
             >
               {/* Header */}
               <div className="flex items-start justify-between mb-4">
@@ -217,30 +220,23 @@ export const AppConnections: React.FC = () => {
                   {connectionIcons[connection.type] || <Server className="w-5 h-5" />}
                 </div>
                 <div className="flex gap-1">
-                  <button
-                    onClick={() => handleTestConnection(connection.id)}
-                    className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded"
-                    title="Test connection"
-                  >
+                  <IconButton kind="ghost" size="sm" label="Test connection" onClick={() => handleTestConnection(connection.id)}>
                     <RefreshCw className="w-4 h-4" />
-                  </button>
-                  <button
+                  </IconButton>
+                  <IconButton
+                    kind="ghost"
+                    size="sm"
+                    label="Edit"
                     onClick={() => {
                       setEditingConnection(connection);
                       setShowConnectionModal(true);
                     }}
-                    className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"
-                    title="Edit"
                   >
                     <Edit2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteConnection(connection.id)}
-                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
-                    title="Delete"
-                  >
+                  </IconButton>
+                  <IconButton kind="ghost" size="sm" label="Delete" onClick={() => handleDeleteConnection(connection.id)}>
                     <Trash2 className="w-4 h-4" />
-                  </button>
+                  </IconButton>
                 </div>
               </div>
 
@@ -320,12 +316,9 @@ export const AppConnections: React.FC = () => {
             }}
             className="flex gap-2"
           >
-            <input
-              name="name"
-              placeholder="Tag name"
-              required
-              className="flex-1 px-3 h-9 border border-gray-300 rounded-lg"
-            />
+            <div className="flex-1">
+              <TextInput id="app-connections-tag-name" name="name" labelText="Tag name" hideLabel placeholder="Tag name" required />
+            </div>
             <input
               name="color"
               type="color"
@@ -352,7 +345,10 @@ export const AppConnections: React.FC = () => {
                     ({(tag as any)._count?.connections || 0} connections)
                   </span>
                 </div>
-                <button
+                <IconButton
+                  kind="ghost"
+                  size="sm"
+                  label="Delete tag"
                   onClick={async () => {
                     if (!confirm('Delete this tag?')) return;
                     try {
@@ -364,10 +360,9 @@ export const AppConnections: React.FC = () => {
                       console.error('Error deleting tag:', error);
                     }
                   }}
-                  className="p-1.5 text-gray-400 hover:text-red-600"
                 >
                   <Trash2 className="w-4 h-4" />
-                </button>
+                </IconButton>
               </div>
             ))}
           </div>

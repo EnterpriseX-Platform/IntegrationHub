@@ -1,6 +1,11 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { X, Plus, Trash2, Info, Search, Check, ChevronDown, Clock } from 'lucide-react';
+import { Plus, Trash2, Info, Check, ChevronDown, Clock } from 'lucide-react';
+import {
+  ComposedModal, ModalHeader, ModalBody, ModalFooter,
+  TextInput, NumberInput, Select, SelectItem, Checkbox, Search, IconButton, InlineNotification,
+} from '@carbon/react';
 import { API_URL } from '../config/api';
+import { Button } from './ui/Button';
 import { resolveDateTimePlaceholders } from '../utils/datetimePlaceholders';
 
 export interface SchedulerFormValues {
@@ -280,18 +285,10 @@ export default function SchedulerFormModal({ open, mode, initialValues, onClose,
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
-      <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-          <h2 className="text-lg font-semibold text-gray-900">
-            {mode === 'edit' ? 'Edit Scheduler' : 'New Scheduler'}
-          </h2>
-          <button onClick={onClose} className="rounded p-1 hover:bg-gray-100">
-            <X className="h-5 w-5 text-gray-500" />
-          </button>
-        </div>
+    <ComposedModal open={open} onClose={onClose} size="md">
+        <ModalHeader title={mode === 'edit' ? 'Edit Scheduler' : 'New Scheduler'} />
 
-        <div className="space-y-5 px-6 py-5">
+        <ModalBody hasScrollingContent className="space-y-5">
           {/* Flow picker - searchable combobox */}
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700">Flow <span className="text-red-500">*</span></label>
@@ -336,17 +333,16 @@ export default function SchedulerFormModal({ open, mode, initialValues, onClose,
                 <div className="absolute left-0 right-0 z-20 mt-1 max-h-[32rem] overflow-hidden rounded-md border border-gray-200 bg-white shadow-lg">
                   {/* Sticky header: search only */}
                   <div className="sticky top-0 border-b border-gray-100 bg-white p-2">
-                    <div className="relative">
-                      <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                      <input
-                        type="text"
-                        autoFocus
-                        value={flowQuery}
-                        onChange={(e) => setFlowQuery(e.target.value)}
-                        placeholder="Search by flow name, project, or description…"
-                        className="w-full rounded-md border border-gray-200 pl-8 pr-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      />
-                    </div>
+                    <Search
+                      id="scheduler-flow-search"
+                      size="sm"
+                      labelText="Search flows"
+                      autoFocus
+                      value={flowQuery}
+                      onChange={(e: any) => setFlowQuery(e.target.value)}
+                      onClear={() => setFlowQuery('')}
+                      placeholder="Search by flow name, project, or description…"
+                    />
                   </div>
 
                   {/* Scrollable list: hierarchical project cards */}
@@ -429,13 +425,9 @@ export default function SchedulerFormModal({ open, mode, initialValues, onClose,
                   <div className="border-t border-gray-100 bg-gray-50 px-3 py-1.5 text-xs text-gray-500">
                     {filteredFlows.length} of {flows.length} flow{flows.length !== 1 ? 's' : ''}
                     {flowQuery && (
-                      <button
-                        type="button"
-                        onClick={() => setFlowQuery('')}
-                        className="ml-2 text-blue-600 hover:text-blue-700"
-                      >
+                      <Button variant="ghost" size="sm" className="ml-2" onClick={() => setFlowQuery('')}>
                         Clear search
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -447,72 +439,64 @@ export default function SchedulerFormModal({ open, mode, initialValues, onClose,
           </div>
 
           {/* Name */}
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">Name (optional)</label>
-            <input
-              type="text"
-              value={form.name}
-              onChange={(e) => update('name', e.target.value)}
-              placeholder="e.g. Daily Morning Run"
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
+          <TextInput
+            id="scheduler-name"
+            labelText="Name (optional)"
+            value={form.name}
+            onChange={(e) => update('name', e.target.value)}
+            placeholder="e.g. Daily Morning Run"
+          />
 
           {/* Cron */}
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">Cron Expression <span className="text-red-500">*</span></label>
-            <input
-              type="text"
+            <TextInput
+              id="scheduler-cron"
+              labelText={<>Cron Expression <span className="text-red-500">*</span></>}
               value={form.schedule}
               onChange={(e) => update('schedule', e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="font-mono"
             />
             <div className="mt-2 flex flex-wrap gap-1">
               {CRON_PRESETS.map(p => (
-                <button
+                <Button
                   key={p.value}
-                  type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={() => update('schedule', p.value)}
-                  className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs text-gray-700 hover:bg-gray-100"
                 >
                   {p.label}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
 
           {/* Timezone + MaxConcurrent */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Timezone</label>
-              <select
-                value={form.timezone}
-                onChange={(e) => update('timezone', e.target.value)}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              >
-                {TIMEZONES.map(tz => <option key={tz} value={tz}>{tz}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Max Concurrent Runs</label>
-              <input
-                type="number"
-                min={1}
-                max={20}
-                value={form.maxConcurrent}
-                onChange={(e) => update('maxConcurrent', parseInt(e.target.value, 10) || 1)}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
+            <Select
+              id="scheduler-timezone"
+              labelText="Timezone"
+              value={form.timezone}
+              onChange={(e) => update('timezone', e.target.value)}
+            >
+              {TIMEZONES.map(tz => <SelectItem key={tz} value={tz} text={tz} />)}
+            </Select>
+            <NumberInput
+              id="scheduler-max-concurrent"
+              label="Max Concurrent Runs"
+              min={1}
+              max={20}
+              value={form.maxConcurrent}
+              onChange={(_e: any, { value }: any) => update('maxConcurrent', parseInt(String(value), 10) || 1)}
+            />
           </div>
 
           {/* Parameters */}
           <div>
             <div className="mb-1 flex items-center justify-between">
               <label className="block text-sm font-medium text-gray-700">Parameters</label>
-              <button type="button" onClick={addParam} className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700">
-                <Plus className="h-3.5 w-3.5" /> Add parameter
-              </button>
+              <Button variant="ghost" size="sm" onClick={addParam} leftIcon={<Plus className="h-3.5 w-3.5" />}>
+                Add parameter
+              </Button>
             </div>
             {loadingVars && (
               <p className="mb-2 text-xs text-gray-500">Loading flow variables…</p>
@@ -530,13 +514,15 @@ export default function SchedulerFormModal({ open, mode, initialValues, onClose,
                   return (
                     <div key={i} className="flex items-start gap-2">
                       <div className="w-36 shrink-0">
-                        <input
-                          type="text"
+                        <TextInput
+                          id={`scheduler-param-name-${i}`}
+                          labelText="Parameter name"
+                          hideLabel
+                          size="sm"
                           placeholder="name"
                           value={p.name}
                           onChange={(e) => setParam(i, 'name', e.target.value)}
                           readOnly={isDeclared}
-                          className={`w-full rounded-md border px-2 py-1.5 text-sm ${isDeclared ? 'border-blue-200 bg-blue-50 text-blue-800 font-medium' : 'border-gray-300'}`}
                           title={def?.label || p.name}
                         />
                         {def?.label && (
@@ -544,34 +530,45 @@ export default function SchedulerFormModal({ open, mode, initialValues, onClose,
                         )}
                       </div>
                       {isDropdown ? (
-                        <select
-                          value={p.value}
-                          onChange={(e) => setParam(i, 'value', e.target.value)}
-                          className="flex-1 rounded-md border border-gray-300 px-2 py-1.5 text-sm"
-                        >
-                          <option value="">{def!.required ? '— Select —' : '— None —'}</option>
-                          {def!.options!.map(o => (
-                            <option key={o.value} value={o.value}>{o.label || o.value}</option>
-                          ))}
-                        </select>
+                        <div className="flex-1">
+                          <Select
+                            id={`scheduler-param-value-${i}`}
+                            labelText="Parameter value"
+                            hideLabel
+                            size="sm"
+                            value={p.value}
+                            onChange={(e) => setParam(i, 'value', e.target.value)}
+                          >
+                            <SelectItem value="" text={def!.required ? '— Select —' : '— None —'} />
+                            {def!.options!.map(o => (
+                              <SelectItem key={o.value} value={o.value} text={o.label || o.value} />
+                            ))}
+                          </Select>
+                        </div>
                       ) : (
-                        <input
-                          type={def?.type === 'number' ? 'number' : def?.type === 'date' ? 'date' : 'text'}
-                          placeholder={def?.description || 'value (supports {{year}}, {{year+543}}, ...)'}
-                          value={p.value}
-                          onChange={(e) => setParam(i, 'value', e.target.value)}
-                          className="flex-1 rounded-md border border-gray-300 px-2 py-1.5 font-mono text-sm"
-                        />
+                        <div className="flex-1">
+                          <TextInput
+                            id={`scheduler-param-value-${i}`}
+                            labelText="Parameter value"
+                            hideLabel
+                            size="sm"
+                            type={def?.type === 'number' ? 'number' : def?.type === 'date' ? 'date' : 'text'}
+                            placeholder={def?.description || 'value (supports {{year}}, {{year+543}}, ...)'}
+                            value={p.value}
+                            onChange={(e) => setParam(i, 'value', e.target.value)}
+                            className="font-mono"
+                          />
+                        </div>
                       )}
-                      <button
-                        type="button"
+                      <IconButton
+                        kind="ghost"
+                        size="sm"
                         onClick={() => removeParam(i)}
-                        disabled={isDeclared && def?.required}
-                        title={isDeclared && def?.required ? 'Required variable cannot be removed' : 'Remove'}
-                        className="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                        disabled={!!(isDeclared && def?.required)}
+                        label={isDeclared && def?.required ? 'Required variable cannot be removed' : 'Remove'}
                       >
                         <Trash2 className="h-4 w-4" />
-                      </button>
+                      </IconButton>
                     </div>
                   );
                 })}
@@ -593,40 +590,27 @@ export default function SchedulerFormModal({ open, mode, initialValues, onClose,
 
           {/* Enabled toggle */}
           <div>
-            <label className="inline-flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={form.enabled}
-                onChange={(e) => update('enabled', e.target.checked)}
-                className="h-4 w-4 rounded text-blue-600"
-              />
-              <span className="text-sm text-gray-700">Enabled (start running immediately)</span>
-            </label>
+            <Checkbox
+              id="scheduler-enabled"
+              labelText="Enabled (start running immediately)"
+              checked={form.enabled}
+              onChange={(_e, { checked }) => update('enabled', checked)}
+            />
           </div>
 
           {error && (
-            <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
-              {error}
-            </div>
+            <InlineNotification kind="error" lowContrast hideCloseButton title={error} />
           )}
-        </div>
+        </ModalBody>
 
-        <div className="flex justify-end gap-2 border-t border-gray-200 bg-gray-50 px-6 py-3">
-          <button
-            onClick={onClose}
-            className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-3 h-9 text-[14px] font-medium text-gray-700 hover:bg-gray-50 whitespace-nowrap"
-          >
+        <ModalFooter>
+          <Button variant="secondary" onClick={onClose}>
             Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="inline-flex items-center justify-center rounded-lg px-3 h-9 text-[14px] font-medium disabled:opacity-50 whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700"
-          >
+          </Button>
+          <Button onClick={handleSave} disabled={saving}>
             {saving ? 'Saving…' : mode === 'edit' ? 'Save Changes' : 'Create Scheduler'}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </ModalFooter>
+    </ComposedModal>
   );
 }

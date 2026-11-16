@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Key, Copy, Plus, Trash2, Eye, EyeOff, Shield, Server, Webhook, Globe, History, Lock, ChevronLeft, ChevronRight, AlertCircle, X, Download, Upload, FileKey, ShieldCheck, Fingerprint } from 'lucide-react';
+import { Key, Copy, Plus, Trash2, Eye, EyeOff, Shield, Server, Webhook, Globe, History, Lock, ChevronLeft, ChevronRight, AlertCircle, Download, Upload, FileKey, ShieldCheck, Fingerprint } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
+import { Modal } from '../../components/ui/Modal';
+import {
+  TextInput, NumberInput, PasswordInput, TextArea, Select, SelectItem, Checkbox, Tag, Loading,
+  IconButton, Tabs, TabList, Tab, InlineNotification,
+  TableContainer, Table, TableHead, TableRow, TableHeader, TableBody, TableCell,
+} from '@carbon/react';
 import { API_URL, apiFetch } from '../../config/api';
 
 interface ApiKey {
@@ -102,7 +108,7 @@ export const ProjectApiKeys = ({ project }: { project: Project }) => {
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [downloadTarget, setDownloadTarget] = useState<EncryptionKey | null>(null);
   const [downloadPassword, setDownloadPassword] = useState('');
-  const [showDownloadPassword, setShowDownloadPassword] = useState(false);
+  const [, setShowDownloadPassword] = useState(false);
 
   useEffect(() => {
     fetchApiKeys();
@@ -409,7 +415,7 @@ export const ProjectApiKeys = ({ project }: { project: Project }) => {
   if (loading) {
     return (
       <div className="p-6 flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        <Loading withOverlay={false} small description="Loading" />
       </div>
     );
   }
@@ -417,29 +423,18 @@ export const ProjectApiKeys = ({ project }: { project: Project }) => {
   return (
     <div className="p-4 sm:p-6">
       {/* Tabs */}
-      <div className="flex items-center gap-1 mb-4 border-b border-gray-200">
-        <button
-          onClick={() => setActiveMainTab('api-keys')}
-          className={`flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium border-b-2 transition-colors -mb-px whitespace-nowrap ${
-            activeMainTab === 'api-keys'
-              ? 'border-blue-500 text-blue-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-          }`}
+      <div className="mb-4">
+        <Tabs
+          selectedIndex={activeMainTab === 'api-keys' ? 0 : 1}
+          onChange={({ selectedIndex }: { selectedIndex: number }) =>
+            setActiveMainTab(selectedIndex === 0 ? 'api-keys' : 'encryption-keys')
+          }
         >
-          <Key className="h-4 w-4" />
-          API Keys
-        </button>
-        <button
-          onClick={() => setActiveMainTab('encryption-keys')}
-          className={`flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium border-b-2 transition-colors -mb-px whitespace-nowrap ${
-            activeMainTab === 'encryption-keys'
-              ? 'border-emerald-500 text-emerald-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-          }`}
-        >
-          <FileKey className="h-4 w-4" />
-          Encryption Keys
-        </button>
+          <TabList aria-label="Key management tabs">
+            <Tab renderIcon={() => <Key className="h-4 w-4" />}>API Keys</Tab>
+            <Tab renderIcon={() => <FileKey className="h-4 w-4" />}>Encryption Keys</Tab>
+          </TabList>
+        </Tabs>
       </div>
 
       {/* ===== API Keys Tab ===== */}
@@ -453,13 +448,13 @@ export const ProjectApiKeys = ({ project }: { project: Project }) => {
                 Manage API keys for accessing project endpoints
               </p>
             </div>
-            <button
+            <Button
               onClick={() => setShowCreateModal(true)}
-              className="self-start sm:self-auto shrink-0 whitespace-nowrap flex items-center gap-1.5 h-9 px-3 text-[14px] bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+              className="self-start sm:self-auto shrink-0"
+              leftIcon={<Plus className="h-4 w-4" />}
             >
-              <Plus className="h-4 w-4" />
               Create API Key
-            </button>
+            </Button>
           </div>
 
           {/* Features Supported */}
@@ -488,45 +483,43 @@ export const ProjectApiKeys = ({ project }: { project: Project }) => {
 
           {/* Newly Created Key Alert */}
           {newlyCreatedKey && (
-            <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-              <div className="flex items-start gap-3">
-                <Key className="h-5 w-5 text-amber-600 mt-0.5" />
+            <div className="mb-6">
+              <InlineNotification
+                kind="warning"
+                lowContrast
+                hideCloseButton
+                title="API Key Created!"
+                subtitle={`Copy your key now. The ${newlyCreatedKey.secretKey ? 'secret key ' : ''}will not be shown again.`}
+              />
+              <div className="flex items-start gap-3 mt-2">
                 <div className="flex-1">
-                  <h3 className="font-medium text-amber-900">API Key Created!</h3>
-                  <p className="text-sm text-amber-700 mt-1">
-                    Copy your key now. The {newlyCreatedKey.secretKey ? 'secret key ' : ''}will not be shown again.
-                  </p>
 
                   <div className="mt-3 space-y-2">
                     <div className="bg-white border border-amber-300 rounded-lg px-3 py-2 font-mono text-sm flex items-center justify-between">
                       <span className="truncate">{newlyCreatedKey.key}</span>
-                      <button
-                        onClick={() => copyToClipboard(newlyCreatedKey.key, 'new-key')}
-                        className="ml-2 p-1 text-amber-600 hover:bg-amber-100 rounded"
-                      >
-                        {copiedId === 'new-key' ? 'Copied!' : <Copy className="h-4 w-4" />}
-                      </button>
+                      <IconButton kind="ghost" size="sm" label={copiedId === 'new-key' ? 'Copied!' : 'Copy key'} onClick={() => copyToClipboard(newlyCreatedKey.key, 'new-key')} className="ml-2">
+                        {copiedId === 'new-key' ? <span className="text-[12px]">Copied!</span> : <Copy className="h-4 w-4" />}
+                      </IconButton>
                     </div>
 
                     {newlyCreatedKey.secretKey && (
                       <div className="bg-white border border-amber-300 rounded-lg px-3 py-2 font-mono text-sm flex items-center justify-between">
                         <span className="truncate text-purple-700">{newlyCreatedKey.secretKey}</span>
-                        <button
-                          onClick={() => copyToClipboard(newlyCreatedKey.secretKey, 'new-secret')}
-                          className="ml-2 p-1 text-amber-600 hover:bg-amber-100 rounded"
-                        >
-                          {copiedId === 'new-secret' ? 'Copied!' : <Copy className="h-4 w-4" />}
-                        </button>
+                        <IconButton kind="ghost" size="sm" label={copiedId === 'new-secret' ? 'Copied!' : 'Copy secret key'} onClick={() => copyToClipboard(newlyCreatedKey.secretKey, 'new-secret')} className="ml-2">
+                          {copiedId === 'new-secret' ? <span className="text-[12px]">Copied!</span> : <Copy className="h-4 w-4" />}
+                        </IconButton>
                       </div>
                     )}
                   </div>
 
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => setNewlyCreatedKey(null)}
-                    className="mt-3 text-sm text-amber-700 hover:text-amber-900 underline"
+                    className="mt-3"
                   >
                     I have copied the key(s)
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -542,8 +535,8 @@ export const ProjectApiKeys = ({ project }: { project: Project }) => {
                 return (
                   <div
                     key={apiKey.id}
-                    className={`bg-white border rounded-lg p-3 transition-colors ${
-                      apiKey.isActive ? 'border-gray-200 hover:border-gray-300' : 'border-gray-200 bg-gray-50 opacity-60'
+                    className={`cds--tile app-tile p-3 transition-colors ${
+                      apiKey.isActive ? '' : 'opacity-60'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-3">
@@ -555,13 +548,9 @@ export const ProjectApiKeys = ({ project }: { project: Project }) => {
                           </div>
                           <h3 className="font-medium text-sm text-gray-900 truncate">{apiKey.name}</h3>
                           {apiKey.isActive ? (
-                            <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-[12px] rounded-full">
-                              Active
-                            </span>
+                            <Tag size="sm" type="green">Active</Tag>
                           ) : (
-                            <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-[12px] rounded-full">
-                              Inactive
-                            </span>
+                            <Tag size="sm" type="gray">Inactive</Tag>
                           )}
                         </div>
 
@@ -569,20 +558,13 @@ export const ProjectApiKeys = ({ project }: { project: Project }) => {
                         <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                           {getKeyTypeBadge(apiKey.type)}
                           {apiKey.scopes.map(scope => (
-                            <span key={scope} className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-[12px] rounded">
-                              {scope}
-                            </span>
+                            <Tag key={scope} size="sm" type="gray">{scope}</Tag>
                           ))}
                           {apiKey.validateIp && (
-                            <span className="flex items-center gap-0.5 px-1.5 py-0.5 bg-purple-50 text-purple-700 text-[12px] rounded">
-                              <Lock className="h-2.5 w-2.5" />
-                              IP
-                            </span>
+                            <Tag size="sm" type="purple" renderIcon={() => <Lock className="h-2.5 w-2.5" />}>IP</Tag>
                           )}
                           {apiKey.rateLimit && (
-                            <span className="px-1.5 py-0.5 bg-orange-50 text-orange-700 text-[12px] rounded">
-                              {apiKey.rateLimit}/min
-                            </span>
+                            <Tag size="sm" type="warm-gray">{apiKey.rateLimit}/min</Tag>
                           )}
                         </div>
 
@@ -596,24 +578,26 @@ export const ProjectApiKeys = ({ project }: { project: Project }) => {
                               <span>••••••••••••••••••</span>
                             )}
                           </div>
-                          <button
+                          <IconButton
+                            kind="ghost"
+                            size="sm"
+                            label={showKeyId === apiKey.id ? 'Hide' : 'Show'}
                             onClick={() => setShowKeyId(showKeyId === apiKey.id ? null : apiKey.id)}
-                            className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
-                            title={showKeyId === apiKey.id ? 'Hide' : 'Show'}
                           >
                             {showKeyId === apiKey.id ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                          </button>
-                          <button
+                          </IconButton>
+                          <IconButton
+                            kind="ghost"
+                            size="sm"
+                            label="Copy"
                             onClick={() => copyToClipboard(apiKey.key, apiKey.id)}
-                            className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
-                            title="Copy"
                           >
                             {copiedId === apiKey.id ? (
                               <span className="text-green-600 text-[12px] font-medium">✓</span>
                             ) : (
                               <Copy className="h-3.5 w-3.5" />
                             )}
-                          </button>
+                          </IconButton>
                         </div>
 
                         {/* Row 4: Meta Info */}
@@ -632,34 +616,33 @@ export const ProjectApiKeys = ({ project }: { project: Project }) => {
 
                       {/* Actions */}
                       <div className="flex items-center gap-0.5 shrink-0">
-                        <button
+                        <IconButton
+                          kind="ghost"
+                          size="sm"
+                          label="Audit Logs"
                           onClick={() => {
                             setSelectedKey(apiKey.id);
                             fetchAuditLogs(apiKey.id);
                           }}
-                          className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
-                          title="Audit Logs"
                         >
                           <History className="h-3.5 w-3.5" />
-                        </button>
-                        <button
+                        </IconButton>
+                        <IconButton
+                          kind="ghost"
+                          size="sm"
+                          label={apiKey.isActive ? 'Deactivate' : 'Activate'}
                           onClick={() => toggleActive(apiKey)}
-                          className={`p-1.5 rounded-md transition-colors ${
-                            apiKey.isActive
-                              ? 'text-green-500 hover:text-green-600 hover:bg-green-50'
-                              : 'text-gray-300 hover:text-gray-500 hover:bg-gray-100'
-                          }`}
-                          title={apiKey.isActive ? 'Deactivate' : 'Activate'}
                         >
-                          <Shield className="h-3.5 w-3.5" />
-                        </button>
-                        <button
+                          <Shield className={`h-3.5 w-3.5 ${apiKey.isActive ? 'text-green-500' : 'text-gray-300'}`} />
+                        </IconButton>
+                        <IconButton
+                          kind="ghost"
+                          size="sm"
+                          label="Delete"
                           onClick={() => handleDeleteClick(apiKey)}
-                          className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                          title="Delete"
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
+                          <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                        </IconButton>
                       </div>
                     </div>
                   </div>
@@ -673,12 +656,9 @@ export const ProjectApiKeys = ({ project }: { project: Project }) => {
               <p className="text-gray-500 mb-4">
                 Create an API key to start making authenticated requests
               </p>
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="inline-flex items-center justify-center px-3.5 h-9 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors whitespace-nowrap"
-              >
+              <Button onClick={() => setShowCreateModal(true)}>
                 Create API Key
-              </button>
+              </Button>
             </div>
           )}
         </>
@@ -696,20 +676,12 @@ export const ProjectApiKeys = ({ project }: { project: Project }) => {
               </p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <button
-                onClick={() => setShowImportModal(true)}
-                className="whitespace-nowrap flex items-center gap-1.5 h-9 px-3 text-[14px] bg-white border border-emerald-300 text-emerald-700 rounded-lg hover:bg-emerald-50 transition-colors"
-              >
-                <Upload className="h-4 w-4" />
+              <Button variant="secondary" onClick={() => setShowImportModal(true)} leftIcon={<Upload className="h-4 w-4" />}>
                 Import Public Key
-              </button>
-              <button
-                onClick={() => setShowGenerateModal(true)}
-                className="whitespace-nowrap flex items-center gap-1.5 h-9 px-3 text-[14px] bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors"
-              >
-                <Plus className="h-4 w-4" />
+              </Button>
+              <Button onClick={() => setShowGenerateModal(true)} leftIcon={<Plus className="h-4 w-4" />}>
                 Generate Key Pair
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -735,15 +707,15 @@ export const ProjectApiKeys = ({ project }: { project: Project }) => {
 
           {encryptionLoading ? (
             <div className="flex items-center justify-center h-40">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
+              <Loading withOverlay={false} small description="Loading encryption keys" />
             </div>
           ) : encryptionKeys.length > 0 ? (
             <div className="space-y-3">
               {encryptionKeys.map((encKey) => (
                 <div
                   key={encKey.id}
-                  className={`bg-white border rounded-lg p-3 transition-colors ${
-                    encKey.isActive ? 'border-gray-200 hover:border-emerald-200' : 'border-gray-200 bg-gray-50 opacity-60'
+                  className={`cds--tile app-tile p-3 transition-colors ${
+                    encKey.isActive ? '' : 'opacity-60'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -755,39 +727,24 @@ export const ProjectApiKeys = ({ project }: { project: Project }) => {
                         </div>
                         <h3 className="font-medium text-sm text-gray-900 truncate">{encKey.name}</h3>
                         {encKey.isActive ? (
-                          <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 text-[12px] rounded-full">
-                            Active
-                          </span>
+                          <Tag size="sm" type="green">Active</Tag>
                         ) : (
-                          <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-[12px] rounded-full">
-                            Inactive
-                          </span>
+                          <Tag size="sm" type="gray">Inactive</Tag>
                         )}
                       </div>
 
                       {/* Row 2: Algorithm + Format badges */}
                       <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[12px] font-medium bg-emerald-100 text-emerald-700">
-                          <ShieldCheck className="h-3 w-3" />
-                          {encKey.algorithm}
-                        </span>
+                        <Tag size="sm" type="green" renderIcon={() => <ShieldCheck className="h-3 w-3" />}>{encKey.algorithm}</Tag>
                         {encKey.keyFormat && (
-                          <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-[12px] rounded">
-                            {encKey.keyFormat}
-                          </span>
+                          <Tag size="sm" type="gray">{encKey.keyFormat}</Tag>
                         )}
                         {/* Private Key indicator — only for asymmetric keys */}
                         {encKey.algorithm && !encKey.algorithm.startsWith('aes') && (
                           encKey.hasPrivateKey ? (
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[12px] font-medium bg-blue-100 text-blue-700" title="Private key stored in system">
-                              <Lock className="h-3 w-3" />
-                              มี Private Key
-                            </span>
+                            <Tag size="sm" type="blue" title="Private key stored in system" renderIcon={() => <Lock className="h-3 w-3" />}>มี Private Key</Tag>
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[12px] font-medium bg-amber-100 text-amber-700" title="No private key — encrypt only">
-                              <Lock className="h-3 w-3" />
-                              Public Only
-                            </span>
+                            <Tag size="sm" type="warm-gray" title="No private key — encrypt only" renderIcon={() => <Lock className="h-3 w-3" />}>Public Only</Tag>
                           )
                         )}
                         {encKey.description && (
@@ -815,34 +772,33 @@ export const ProjectApiKeys = ({ project }: { project: Project }) => {
 
                     {/* Actions */}
                     <div className="flex items-center gap-0.5 shrink-0">
-                      <button
+                      <IconButton
+                        kind="ghost"
+                        size="sm"
+                        label="Download Public Key"
                         onClick={() => handleDownloadPublicKey(encKey)}
-                        className="p-1.5 text-emerald-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-colors"
-                        title="Download Public Key"
                       >
-                        <Download className="h-3.5 w-3.5" />
-                      </button>
-                      <button
+                        <Download className="h-3.5 w-3.5 text-emerald-600" />
+                      </IconButton>
+                      <IconButton
+                        kind="ghost"
+                        size="sm"
+                        label={encKey.isActive ? 'Deactivate' : 'Activate'}
                         onClick={() => toggleEncKeyActive(encKey)}
-                        className={`p-1.5 rounded-md transition-colors ${
-                          encKey.isActive
-                            ? 'text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50'
-                            : 'text-gray-300 hover:text-gray-500 hover:bg-gray-100'
-                        }`}
-                        title={encKey.isActive ? 'Deactivate' : 'Activate'}
                       >
-                        <ShieldCheck className="h-3.5 w-3.5" />
-                      </button>
-                      <button
+                        <ShieldCheck className={`h-3.5 w-3.5 ${encKey.isActive ? 'text-emerald-500' : 'text-gray-300'}`} />
+                      </IconButton>
+                      <IconButton
+                        kind="ghost"
+                        size="sm"
+                        label="Delete"
                         onClick={() => {
                           setEncKeyToDelete(encKey);
                           setShowDeleteEncKeyModal(true);
                         }}
-                        className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                        title="Delete"
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+                        <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                      </IconButton>
                     </div>
                   </div>
                 </div>
@@ -856,18 +812,12 @@ export const ProjectApiKeys = ({ project }: { project: Project }) => {
                 Generate a key pair or import a public key to get started
               </p>
               <div className="flex items-center justify-center gap-3">
-                <button
-                  onClick={() => setShowImportModal(true)}
-                  className="inline-flex items-center justify-center px-3.5 h-9 bg-white border border-emerald-300 text-emerald-700 rounded-lg hover:bg-emerald-50 transition-colors whitespace-nowrap"
-                >
+                <Button variant="secondary" onClick={() => setShowImportModal(true)}>
                   Import Public Key
-                </button>
-                <button
-                  onClick={() => setShowGenerateModal(true)}
-                  className="inline-flex items-center justify-center px-3.5 h-9 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors whitespace-nowrap"
-                >
+                </Button>
+                <Button onClick={() => setShowGenerateModal(true)}>
                   Generate Key Pair
-                </button>
+                </Button>
               </div>
             </div>
           )}
@@ -877,26 +827,33 @@ export const ProjectApiKeys = ({ project }: { project: Project }) => {
       {/* ===== Modals ===== */}
 
       {/* Create API Key Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Create New API Key</h3>
+      <Modal
+        isOpen={showCreateModal}
+        onClose={() => {
+          setShowCreateModal(false);
+          setNewKeyData({
+            name: '',
+            type: 'client',
+            scopes: ['read'],
+            validateIp: false,
+            ipWhitelist: '',
+            rateLimit: '',
+          });
+        }}
+        title="Create New API Key"
+        size="xl"
+      >
 
             <div className="space-y-4">
               {/* Key Name */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Key Name *
-                </label>
-                <input
-                  type="text"
-                  value={newKeyData.name}
-                  onChange={(e) => setNewKeyData({ ...newKeyData, name: e.target.value })}
-                  placeholder="e.g., Production API Key"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  autoFocus
-                />
-              </div>
+              <TextInput
+                id="api-key-name"
+                labelText="Key Name *"
+                value={newKeyData.name}
+                onChange={(e) => setNewKeyData({ ...newKeyData, name: e.target.value })}
+                placeholder="e.g., Production API Key"
+                autoFocus
+              />
 
               {/* Key Type */}
               <div>
@@ -934,70 +891,64 @@ export const ProjectApiKeys = ({ project }: { project: Project }) => {
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {['read', 'write', 'delete', 'admin'].map(scope => (
-                    <label key={scope} className="flex items-center gap-2 px-3 h-9 border rounded-lg cursor-pointer hover:bg-gray-50 whitespace-nowrap">
-                      <input
-                        type="checkbox"
-                        checked={newKeyData.scopes.includes(scope)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setNewKeyData({ ...newKeyData, scopes: [...newKeyData.scopes, scope] });
-                          } else {
-                            setNewKeyData({ ...newKeyData, scopes: newKeyData.scopes.filter(s => s !== scope) });
-                          }
-                        }}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span className="text-sm capitalize">{scope}</span>
-                    </label>
+                    <Checkbox
+                      key={scope}
+                      id={`api-key-scope-${scope}`}
+                      labelText={<span className="capitalize">{scope}</span>}
+                      checked={newKeyData.scopes.includes(scope)}
+                      onChange={(_e, { checked }) => {
+                        if (checked) {
+                          setNewKeyData({ ...newKeyData, scopes: [...newKeyData.scopes, scope] });
+                        } else {
+                          setNewKeyData({ ...newKeyData, scopes: newKeyData.scopes.filter(s => s !== scope) });
+                        }
+                      }}
+                    />
                   ))}
                 </div>
               </div>
 
               {/* IP Validation */}
               <div className="border-t pt-4">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={newKeyData.validateIp}
-                    onChange={(e) => setNewKeyData({ ...newKeyData, validateIp: e.target.checked })}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm font-medium text-gray-700">Enable IP Whitelist</span>
-                </label>
+                <Checkbox
+                  id="api-key-validate-ip"
+                  labelText="Enable IP Whitelist"
+                  checked={newKeyData.validateIp}
+                  onChange={(_e, { checked }) => setNewKeyData({ ...newKeyData, validateIp: checked })}
+                />
 
                 {newKeyData.validateIp && (
                   <div className="mt-2">
-                    <input
-                      type="text"
+                    <TextInput
+                      id="api-key-ip-whitelist"
+                      labelText="IP whitelist"
+                      hideLabel
                       value={newKeyData.ipWhitelist}
                       onChange={(e) => setNewKeyData({ ...newKeyData, ipWhitelist: e.target.value })}
                       placeholder="192.168.1.0/24, 10.0.0.5"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      helperText="Comma-separated IPs or CIDR ranges. Empty = allow all."
                     />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Comma-separated IPs or CIDR ranges. Empty = allow all.
-                    </p>
                   </div>
                 )}
               </div>
 
               {/* Rate Limit */}
               <div className="border-t pt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Rate Limit (requests per minute)
-                </label>
-                <input
-                  type="number"
-                  value={newKeyData.rateLimit}
-                  onChange={(e) => setNewKeyData({ ...newKeyData, rateLimit: e.target.value })}
+                <NumberInput
+                  id="api-key-rate-limit"
+                  label="Rate Limit (requests per minute)"
+                  hideSteppers
+                  allowEmpty
+                  value={newKeyData.rateLimit === '' ? '' : Number(newKeyData.rateLimit)}
+                  onChange={(e: any) => setNewKeyData({ ...newKeyData, rateLimit: e.target.value })}
                   placeholder="Leave empty for unlimited"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
             </div>
 
             <div className="flex justify-end gap-2 mt-6">
-              <button
+              <Button
+                variant="ghost"
                 onClick={() => {
                   setShowCreateModal(false);
                   setNewKeyData({
@@ -1009,36 +960,28 @@ export const ProjectApiKeys = ({ project }: { project: Project }) => {
                     rateLimit: '',
                   });
                 }}
-                className="inline-flex items-center justify-center px-3.5 h-9 text-gray-600 hover:text-gray-900 whitespace-nowrap"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={createApiKey}
                 disabled={!newKeyData.name.trim()}
-                className="inline-flex items-center justify-center px-3 h-9 rounded-lg transition-colors disabled:opacity-50 whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700"
               >
                 Create Key
-              </button>
+              </Button>
             </div>
-          </div>
-        </div>
-      )}
+      </Modal>
 
       {/* Delete API Key Confirmation Modal */}
-      {showDeleteModal && keyToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm mx-4">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">Delete API Key</h2>
-              <button
-                onClick={() => setShowDeleteModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="h-5 w-5 text-gray-500" />
-              </button>
-            </div>
-            <div className="p-6">
+      <Modal
+        isOpen={showDeleteModal && !!keyToDelete}
+        onClose={() => setShowDeleteModal(false)}
+        title="Delete API Key"
+        size="md"
+      >
+        {keyToDelete && (
+          <>
+            <div>
               <div className="flex items-center gap-3 text-amber-500 mb-3">
                 <AlertCircle className="h-8 w-8" />
               </div>
@@ -1049,7 +992,7 @@ export const ProjectApiKeys = ({ project }: { project: Project }) => {
                 This action cannot be undone. Applications using this key will immediately lose access.
               </p>
             </div>
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+            <div className="flex items-center justify-end gap-3 pt-4 mt-4 border-t border-gray-200">
               <Button variant="ghost" onClick={() => setShowDeleteModal(false)}>
                 Cancel
               </Button>
@@ -1061,64 +1004,64 @@ export const ProjectApiKeys = ({ project }: { project: Project }) => {
                 Delete Key
               </Button>
             </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </Modal>
 
       {/* Audit Logs Modal */}
-      {selectedKey && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Audit Logs</h3>
-              <button
-                onClick={() => setSelectedKey(null)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-auto">
+      <Modal
+        isOpen={!!selectedKey}
+        onClose={() => setSelectedKey(null)}
+        title="Audit Logs"
+        size="2xl"
+      >
+        {selectedKey && (
+          <>
+            <div className="max-h-[60vh] overflow-auto">
               {auditLogs.length > 0 ? (
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 sticky top-0">
-                    <tr>
-                      <th className="px-4 py-2 text-left font-medium text-gray-700">Time</th>
-                      <th className="px-4 py-2 text-left font-medium text-gray-700">Action</th>
-                      <th className="px-4 py-2 text-left font-medium text-gray-700">IP Address</th>
-                      <th className="px-4 py-2 text-left font-medium text-gray-700">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {auditLogs.map((log) => (
-                      <tr key={log.id}>
-                        <td className="px-4 py-2 text-gray-600">
-                          {new Date(log.createdAt).toLocaleString()}
-                        </td>
-                        <td className="px-4 py-2">
-                          <span className={`px-2 py-0.5 rounded text-xs ${
-                            log.action === 'authenticate' ? 'bg-green-100 text-green-700' :
-                            log.action.startsWith('denied') ? 'bg-red-100 text-red-700' :
-                            'bg-gray-100 text-gray-700'
-                          }`}>
-                            {log.action}
-                          </span>
-                        </td>
-                        <td className="px-4 py-2 text-gray-600 font-mono text-xs">
-                          {log.ipAddress}
-                        </td>
-                        <td className="px-4 py-2">
-                          {log.success ? (
-                            <span className="text-green-600">✓ Success</span>
-                          ) : (
-                            <span className="text-red-600" title={log.errorMessage}>✗ Failed</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <TableContainer>
+                  <Table size="sm">
+                    <TableHead>
+                      <TableRow>
+                        <TableHeader>Time</TableHeader>
+                        <TableHeader>Action</TableHeader>
+                        <TableHeader>IP Address</TableHeader>
+                        <TableHeader>Status</TableHeader>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {auditLogs.map((log) => (
+                        <TableRow key={log.id}>
+                          <TableCell className="text-gray-600">
+                            {new Date(log.createdAt).toLocaleString()}
+                          </TableCell>
+                          <TableCell>
+                            <Tag
+                              size="sm"
+                              type={
+                                log.action === 'authenticate' ? 'green' :
+                                log.action.startsWith('denied') ? 'red' :
+                                'gray'
+                              }
+                            >
+                              {log.action}
+                            </Tag>
+                          </TableCell>
+                          <TableCell className="text-gray-600 font-mono text-xs">
+                            {log.ipAddress}
+                          </TableCell>
+                          <TableCell>
+                            {log.success ? (
+                              <span className="text-green-600">✓ Success</span>
+                            ) : (
+                              <span className="text-red-600" title={log.errorMessage}>✗ Failed</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
               ) : (
                 <div className="text-center py-8 text-gray-500">
                   No audit logs found
@@ -1133,51 +1076,55 @@ export const ProjectApiKeys = ({ project }: { project: Project }) => {
                   {auditLogsTotal} total logs
                 </div>
                 <div className="flex items-center gap-2">
-                  <button
+                  <IconButton
+                    kind="ghost"
+                    size="sm"
+                    label="Previous page"
                     onClick={() => fetchAuditLogs(selectedKey, auditLogsPage - 1)}
                     disabled={auditLogsPage <= 1}
-                    className="p-1.5 border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <ChevronLeft className="h-4 w-4" />
-                  </button>
+                  </IconButton>
                   <span className="text-sm text-gray-600">
                     Page {auditLogsPage} of {auditLogsTotalPages}
                   </span>
-                  <button
+                  <IconButton
+                    kind="ghost"
+                    size="sm"
+                    label="Next page"
                     onClick={() => fetchAuditLogs(selectedKey, auditLogsPage + 1)}
                     disabled={auditLogsPage >= auditLogsTotalPages}
-                    className="p-1.5 border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <ChevronRight className="h-4 w-4" />
-                  </button>
+                  </IconButton>
                 </div>
               </div>
             )}
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </Modal>
 
       {/* Generate Key Pair Modal */}
-      {showGenerateModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Generate Key Pair</h3>
+      <Modal
+        isOpen={showGenerateModal}
+        onClose={() => {
+          setShowGenerateModal(false);
+          setGenerateForm({ name: '', algorithm: 'PGP', passphrase: '', description: '', keySize: 4096 });
+        }}
+        title="Generate Key Pair"
+        size="xl"
+      >
 
             <div className="space-y-4">
               {/* Name */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Key Name *
-                </label>
-                <input
-                  type="text"
-                  value={generateForm.name}
-                  onChange={(e) => setGenerateForm({ ...generateForm, name: e.target.value })}
-                  placeholder="e.g., Production PGP Key"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                  autoFocus
-                />
-              </div>
+              <TextInput
+                id="generate-key-name"
+                labelText="Key Name *"
+                value={generateForm.name}
+                onChange={(e) => setGenerateForm({ ...generateForm, name: e.target.value })}
+                placeholder="e.g., Production PGP Key"
+                autoFocus
+              />
 
               {/* Algorithm */}
               <div>
@@ -1248,91 +1195,73 @@ export const ProjectApiKeys = ({ project }: { project: Project }) => {
 
               {/* Passphrase — not for RSA: its private key is stored unlocked so flows can decrypt */}
               {generateForm.algorithm !== 'RSA' && <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {generateForm.algorithm === 'AES' ? 'Password *' : 'Passphrase'}
-                </label>
-                <input
-                  type="password"
+                <PasswordInput
+                  id="generate-key-passphrase"
+                  labelText={generateForm.algorithm === 'AES' ? 'Password *' : 'Passphrase'}
                   autoComplete="new-password"
                   value={generateForm.passphrase}
                   onChange={(e) => setGenerateForm({ ...generateForm, passphrase: e.target.value })}
                   placeholder={generateForm.algorithm === 'AES' ? 'Required — used to derive AES key (PBKDF2)' : 'Optional passphrase for private key'}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  {generateForm.algorithm === 'AES'
+                  helperText={generateForm.algorithm === 'AES'
                     ? 'Key derived from password using PBKDF2 (100,000 iterations, SHA-256).'
                     : 'Leave empty for no passphrase protection.'}
-                </p>
+                />
               </div>}
 
               {/* Description */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description
-                </label>
-                <textarea
+                <TextArea
+                  id="generate-key-description"
+                  labelText="Description"
                   value={generateForm.description}
                   onChange={(e) => setGenerateForm({ ...generateForm, description: e.target.value })}
                   placeholder="Optional description for this key pair"
                   rows={2}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none"
                 />
               </div>
             </div>
 
             <div className="flex justify-end gap-2 mt-6">
-              <button
+              <Button
+                variant="ghost"
                 onClick={() => {
                   setShowGenerateModal(false);
                   setGenerateForm({ name: '', algorithm: 'PGP', passphrase: '', description: '', keySize: 4096 });
                 }}
-                className="inline-flex items-center justify-center px-3.5 h-9 text-gray-600 hover:text-gray-900 whitespace-nowrap"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleGenerateKeyPair}
-                disabled={!generateForm.name.trim() || isGenerating || (generateForm.algorithm === 'AES' && !generateForm.passphrase.trim())}
-                className="px-3 h-9 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2 whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700"
+                disabled={!generateForm.name.trim() || (generateForm.algorithm === 'AES' && !generateForm.passphrase.trim())}
+                isLoading={isGenerating}
               >
-                {isGenerating ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Generating...
-                  </>
-                ) : (
-                  'Generate Key Pair'
-                )}
-              </button>
+                {isGenerating ? 'Generating...' : 'Generate Key Pair'}
+              </Button>
             </div>
-          </div>
-        </div>
-      )}
+      </Modal>
 
       {/* Import Key Modal */}
-      {showImportModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              {importForm.algorithm.startsWith('AES') ? 'Import Secret Key' : 'Import Key Pair'}
-            </h3>
+      <Modal
+        isOpen={showImportModal}
+        onClose={() => {
+          setShowImportModal(false);
+          setImportForm({ name: '', algorithm: 'PGP', publicKey: '', secretKey: '', passphrase: '', keyFormat: '', description: '' });
+        }}
+        title={importForm.algorithm.startsWith('AES') ? 'Import Secret Key' : 'Import Key Pair'}
+        size="xl"
+      >
 
             <div className="space-y-4">
               {/* Name */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Key Name *
-                </label>
-                <input
-                  type="text"
-                  value={importForm.name}
-                  onChange={(e) => setImportForm({ ...importForm, name: e.target.value })}
-                  placeholder={importForm.algorithm.startsWith('AES') ? 'e.g., SRC_A AES Key' : 'e.g., Partner Public Key'}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                  autoFocus
-                />
-              </div>
+              <TextInput
+                id="import-key-name"
+                labelText="Key Name *"
+                value={importForm.name}
+                onChange={(e) => setImportForm({ ...importForm, name: e.target.value })}
+                placeholder={importForm.algorithm.startsWith('AES') ? 'e.g., SRC_A AES Key' : 'e.g., Partner Public Key'}
+                autoFocus
+              />
 
               {/* Algorithm */}
               <div>
@@ -1362,28 +1291,30 @@ export const ProjectApiKeys = ({ project }: { project: Project }) => {
                 </div>
                 {importForm.algorithm.startsWith('AES') && (
                   <div className="mt-2">
-                    <select
+                    <Select
+                      id="import-key-aes-variant"
+                      labelText="AES variant"
+                      hideLabel
+                      size="sm"
                       value={importForm.algorithm}
                       onChange={(e) => setImportForm({ ...importForm, algorithm: e.target.value })}
-                      className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                     >
-                      <option value="AES-256-GCM">AES-256-GCM (recommended)</option>
-                      <option value="AES-256-CBC">AES-256-CBC</option>
-                      <option value="AES-192-GCM">AES-192-GCM</option>
-                      <option value="AES-192-CBC">AES-192-CBC</option>
-                      <option value="AES-128-GCM">AES-128-GCM</option>
-                      <option value="AES-128-CBC">AES-128-CBC</option>
-                    </select>
+                      <SelectItem value="AES-256-GCM" text="AES-256-GCM (recommended)" />
+                      <SelectItem value="AES-256-CBC" text="AES-256-CBC" />
+                      <SelectItem value="AES-192-GCM" text="AES-192-GCM" />
+                      <SelectItem value="AES-192-CBC" text="AES-192-CBC" />
+                      <SelectItem value="AES-128-GCM" text="AES-128-GCM" />
+                      <SelectItem value="AES-128-CBC" text="AES-128-CBC" />
+                    </Select>
                   </div>
                 )}
               </div>
 
               {/* Key Input */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {importForm.algorithm.startsWith('AES') ? 'Secret Key *' : 'Public Key *'}
-                </label>
-                <textarea
+                <TextArea
+                  id="import-key-public"
+                  labelText={importForm.algorithm.startsWith('AES') ? 'Secret Key *' : 'Public Key *'}
                   value={importForm.publicKey}
                   onChange={(e) => setImportForm({ ...importForm, publicKey: e.target.value })}
                   placeholder={importForm.algorithm.startsWith('AES')
@@ -1392,7 +1323,7 @@ export const ProjectApiKeys = ({ project }: { project: Project }) => {
                       ? 'Paste the RSA public key: -----BEGIN PUBLIC KEY-----, -----BEGIN RSA PUBLIC KEY-----, a certificate or ssh-rsa AAAA...'
                       : 'Paste the public key here (-----BEGIN PGP PUBLIC KEY BLOCK-----)...'}
                   rows={importForm.algorithm.startsWith('AES') ? 3 : 6}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent font-mono text-xs resize-none"
+                  className="font-mono text-xs"
                 />
                 {importForm.algorithm.startsWith('AES') && (
                   <p className="mt-1 text-xs text-gray-500">
@@ -1404,15 +1335,14 @@ export const ProjectApiKeys = ({ project }: { project: Project }) => {
               {/* Private Key (PGP/RSA only) - optional, for decryption */}
               {!importForm.algorithm.startsWith('AES') && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Private Key <span className="text-gray-400 font-normal">(optional — ใช้สำหรับ decrypt)</span>
-                  </label>
-                  <textarea
+                  <TextArea
+                    id="import-key-private"
+                    labelText={<>Private Key <span className="text-gray-400 font-normal">(optional — ใช้สำหรับ decrypt)</span></>}
                     value={importForm.secretKey}
                     onChange={(e) => setImportForm({ ...importForm, secretKey: e.target.value })}
                     placeholder="Paste the private key here (-----BEGIN PGP PRIVATE KEY BLOCK-----)..."
                     rows={6}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent font-mono text-xs resize-none"
+                    className="font-mono text-xs"
                   />
                   <p className="mt-1 text-xs text-gray-500">
                     ถ้าต้องการ decrypt ไฟล์ที่ได้รับจาก partner ให้ใส่ Private Key ด้วย
@@ -1423,123 +1353,86 @@ export const ProjectApiKeys = ({ project }: { project: Project }) => {
               {/* RSA private key passphrase — used once to unlock the key on import */}
               {importForm.algorithm === 'RSA' && importForm.secretKey.includes('ENCRYPTED') && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Private Key Passphrase *</label>
-                  <input
-                    type="password"
+                  <PasswordInput
+                    id="import-key-passphrase"
+                    labelText="Private Key Passphrase *"
                     autoComplete="new-password"
                     value={importForm.passphrase}
                     onChange={(e) => setImportForm({ ...importForm, passphrase: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                   />
                   <p className="mt-1 text-xs text-gray-500">ใช้ปลดล็อก Private Key ตอน import เท่านั้น — ระบบเก็บคีย์ที่ปลดล็อกแล้วเพื่อให้ flow ถอดรหัสได้เอง</p>
                 </div>
               )}
 
               {/* Key Format */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Key Format
-                </label>
-                <input
-                  type="text"
-                  value={importForm.keyFormat}
-                  onChange={(e) => setImportForm({ ...importForm, keyFormat: e.target.value })}
-                  placeholder="e.g., PEM, armored (optional)"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                />
-              </div>
+              <TextInput
+                id="import-key-format"
+                labelText="Key Format"
+                value={importForm.keyFormat}
+                onChange={(e) => setImportForm({ ...importForm, keyFormat: e.target.value })}
+                placeholder="e.g., PEM, armored (optional)"
+              />
 
               {/* Description */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description
-                </label>
-                <textarea
+                <TextArea
+                  id="import-key-description"
+                  labelText="Description"
                   value={importForm.description}
                   onChange={(e) => setImportForm({ ...importForm, description: e.target.value })}
                   placeholder="Optional description"
                   rows={2}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none"
                 />
               </div>
             </div>
 
             <div className="flex justify-end gap-2 mt-6">
-              <button
+              <Button
+                variant="ghost"
                 onClick={() => {
                   setShowImportModal(false);
                   setImportForm({ name: '', algorithm: 'PGP', publicKey: '', secretKey: '', passphrase: '', keyFormat: '', description: '' });
                 }}
-                className="inline-flex items-center justify-center px-3.5 h-9 text-gray-600 hover:text-gray-900 whitespace-nowrap"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleImportKey}
-                disabled={!importForm.name.trim() || !importForm.publicKey.trim() || isImporting}
-                className="px-3 h-9 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2 whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700"
+                disabled={!importForm.name.trim() || !importForm.publicKey.trim()}
+                isLoading={isImporting}
+                leftIcon={<Upload className="h-4 w-4" />}
               >
-                {isImporting ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Importing...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="h-4 w-4" />
-                    Import Key
-                  </>
-                )}
-              </button>
+                {isImporting ? 'Importing...' : 'Import Key'}
+              </Button>
             </div>
-          </div>
-        </div>
-      )}
+      </Modal>
 
       {/* Delete Encryption Key Confirmation Modal */}
       {/* Download Public Key Modal */}
-      {showDownloadModal && downloadTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm mx-4">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">Download Public Key</h2>
-              <button
-                onClick={() => setShowDownloadModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="h-5 w-5 text-gray-500" />
-              </button>
-            </div>
-            <div className="p-6 space-y-4">
+      <Modal
+        isOpen={showDownloadModal && !!downloadTarget}
+        onClose={() => setShowDownloadModal(false)}
+        title="Download Public Key"
+        size="md"
+      >
+        {downloadTarget && (
+          <>
+            <div className="space-y-4">
               <p className="text-sm text-gray-600">
                 Download <strong>{downloadTarget.name}</strong> public key
               </p>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  ZIP Password <span className="text-gray-400">(optional)</span>
-                </label>
-                <div className="relative">
-                  <input
-                    type={showDownloadPassword ? 'text' : 'password'}
-                    value={downloadPassword}
-                    onChange={(e) => setDownloadPassword(e.target.value)}
-                    placeholder="Enter password for ZIP protection"
-                    className="w-full px-3 py-2 pr-10 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowDownloadPassword(!showDownloadPassword)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600"
-                  >
-                    {showDownloadPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-                <p className="text-[12px] text-gray-400 mt-1">
-                  Leave empty to download as plain file
-                </p>
-              </div>
+              <PasswordInput
+                id="download-zip-password"
+                labelText={<>ZIP Password <span className="text-gray-400">(optional)</span></>}
+                value={downloadPassword}
+                onChange={(e) => setDownloadPassword(e.target.value)}
+                placeholder="Enter password for ZIP protection"
+                helperText="Leave empty to download as plain file"
+                showPasswordLabel="Show password"
+                hidePasswordLabel="Hide password"
+              />
             </div>
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+            <div className="flex items-center justify-end gap-3 pt-4 mt-4 border-t border-gray-200">
               <Button variant="ghost" onClick={() => setShowDownloadModal(false)}>
                 Cancel
               </Button>
@@ -1550,23 +1443,19 @@ export const ProjectApiKeys = ({ project }: { project: Project }) => {
                 {downloadPassword ? 'Download ZIP' : 'Download'}
               </Button>
             </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </Modal>
 
-      {showDeleteEncKeyModal && encKeyToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm mx-4">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">Delete Encryption Key</h2>
-              <button
-                onClick={() => setShowDeleteEncKeyModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="h-5 w-5 text-gray-500" />
-              </button>
-            </div>
-            <div className="p-6">
+      <Modal
+        isOpen={showDeleteEncKeyModal && !!encKeyToDelete}
+        onClose={() => setShowDeleteEncKeyModal(false)}
+        title="Delete Encryption Key"
+        size="md"
+      >
+        {encKeyToDelete && (
+          <>
+            <div>
               <div className="flex items-center gap-3 text-amber-500 mb-3">
                 <AlertCircle className="h-8 w-8" />
               </div>
@@ -1577,7 +1466,7 @@ export const ProjectApiKeys = ({ project }: { project: Project }) => {
                 This action cannot be undone. Any data encrypted with this key may become inaccessible.
               </p>
             </div>
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+            <div className="flex items-center justify-end gap-3 pt-4 mt-4 border-t border-gray-200">
               <Button variant="ghost" onClick={() => setShowDeleteEncKeyModal(false)}>
                 Cancel
               </Button>
@@ -1589,9 +1478,9 @@ export const ProjectApiKeys = ({ project }: { project: Project }) => {
                 Delete Key
               </Button>
             </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </Modal>
     </div>
   );
 };

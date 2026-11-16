@@ -2,10 +2,13 @@ import { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   History, CheckCircle, XCircle, Clock,
-  Search, Calendar, ChevronDown, ChevronLeft, ChevronRight,
-  X, Activity, Zap, Terminal, AlertCircle,
+  ChevronDown, ChevronLeft, ChevronRight,
+  Activity, Zap, Terminal, AlertCircle,
   ChevronRight as ChevronRightIcon, Trash2, Filter, Loader2
 } from 'lucide-react';
+import { Search as CdsSearch, Select, SelectItem, Tag, Loading, InlineLoading, IconButton, Tabs, TabList, Tab } from '@carbon/react';
+import { Button } from '../../components/ui/Button';
+import { Modal } from '../../components/ui/Modal';
 
 import { API_URL, apiFetch } from '../../config/api';
 
@@ -225,31 +228,19 @@ export const ProjectExecutions = ({ project }: { project: Project }) => {
     currentPage * ITEMS_PER_PAGE
   );
 
-  const getStatusBadge = (status: string) => {
-    const styles = {
-      Completed: 'bg-green-100 text-green-700 border-green-200',
-      Success: 'bg-green-100 text-green-700 border-green-200',
-      Failed: 'bg-red-100 text-red-700 border-red-200',
-      Running: 'bg-blue-100 text-blue-700 border-blue-200',
-      Pending: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-    };
-    return styles[status as keyof typeof styles] || 'bg-gray-100 text-gray-700 border-gray-200';
+  const getStatusTagType = (status: string): 'green' | 'red' | 'blue' | 'warm-gray' | 'gray' => {
+    const types = { Completed: 'green', Success: 'green', Failed: 'red', Running: 'blue', Pending: 'warm-gray' } as const;
+    return types[status as keyof typeof types] || 'gray';
   };
 
   const getFlowTypeBadge = (type: string) => {
     if (type === 'API_SPEC') {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[12px] font-medium bg-blue-50 text-blue-700 border border-blue-100">
-          <Zap className="h-3 w-3" />
-          API Flow
-        </span>
+        <Tag size="sm" type="blue" renderIcon={() => <Zap className="h-3 w-3" />}>API Flow</Tag>
       );
     }
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[12px] font-medium bg-purple-50 text-purple-700 border border-purple-100">
-        <Activity className="h-3 w-3" />
-        Triggers
-      </span>
+      <Tag size="sm" type="purple" renderIcon={() => <Activity className="h-3 w-3" />}>Triggers</Tag>
     );
   };
 
@@ -341,7 +332,7 @@ export const ProjectExecutions = ({ project }: { project: Project }) => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        <Loading withOverlay={false} small description="Loading executions" />
       </div>
     );
   }
@@ -357,13 +348,14 @@ export const ProjectExecutions = ({ project }: { project: Project }) => {
           </p>
         </div>
         <div className="relative group">
-          <button
-            className="flex items-center gap-2 px-3 h-9 text-red-600 hover:bg-red-50 rounded-lg border border-red-200 hover:border-red-300 transition-colors text-[14px] whitespace-nowrap"
+          <Button
+            variant="danger"
+            size="md"
+            leftIcon={<Trash2 className="h-4 w-4" />}
+            rightIcon={<ChevronDown className="h-3 w-3" />}
           >
-            <Trash2 className="h-4 w-4" />
             Clear Logs
-            <ChevronDown className="h-3 w-3" />
-          </button>
+          </Button>
           <div className="absolute top-full right-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
             <button
               onClick={() => { setClearAllMode(false); setShowClearModal(true); }}
@@ -387,162 +379,85 @@ export const ProjectExecutions = ({ project }: { project: Project }) => {
       <div className="mb-4 flex flex-wrap items-center gap-3">
         {/* Search */}
         <div className="relative flex-1 min-w-[200px] max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <input
-            type="text"
+          <CdsSearch
+            id="executions-search"
+            size="md"
+            labelText="Search executions"
             placeholder="Search by flow name, ID, or status..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            onChange={(e: any) => setSearchQuery(e.target.value)}
+            onClear={() => setSearchQuery('')}
           />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
         </div>
 
         {/* Date Range Dropdown */}
-        <div className="relative group">
-          <button className="flex items-center gap-2 px-3 h-9 border border-gray-200 rounded-lg text-[14px] hover:border-gray-300 bg-white whitespace-nowrap">
-            <Calendar className="h-4 w-4 text-gray-500" />
-            <span>{getDateRangeLabel(dateRange)}</span>
-            <ChevronDown className="h-4 w-4 text-gray-400" />
-          </button>
-          <div className="absolute top-full left-0 mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+        <div className="w-40">
+          <Select
+            id="executions-date-range"
+            labelText="Date range"
+            hideLabel
+            size="md"
+            value={dateRange}
+            onChange={(e) => { setDateRange(e.target.value as DateRange); setCurrentPage(1); }}
+          >
             {(['today', 'yesterday', '7days', '30days', 'all'] as DateRange[]).map((range) => (
-              <button
-                key={range}
-                onClick={() => { setDateRange(range); setCurrentPage(1); }}
-                className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg ${
-                  dateRange === range ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
-                }`}
-              >
-                {getDateRangeLabel(range)}
-              </button>
+              <SelectItem key={range} value={range} text={getDateRangeLabel(range)} />
             ))}
-          </div>
+          </Select>
         </div>
 
         {/* Status Filter */}
-        <div className="relative group">
-          <button className="flex items-center gap-2 px-3 h-9 border border-gray-200 rounded-lg text-[14px] hover:border-gray-300 bg-white whitespace-nowrap">
-            <span>
-              {statusFilter === 'all' ? 'All Status' : 
-               statusFilter === 'success' ? 'Completed' :
-               statusFilter === 'failed' ? 'Failed' : 'Running'}
-            </span>
-            <ChevronDown className="h-4 w-4 text-gray-400" />
-          </button>
-          <div className="absolute top-full right-0 mt-1 w-36 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
-            <button
-              onClick={() => { setStatusFilter('all'); setCurrentPage(1); }}
-              className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 first:rounded-t-lg ${
-                statusFilter === 'all' ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
-              }`}
-            >
-              All Status
-            </button>
-            <button
-              onClick={() => { setStatusFilter('success'); setCurrentPage(1); }}
-              className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${
-                statusFilter === 'success' ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
-              }`}
-            >
-              Completed
-            </button>
-            <button
-              onClick={() => { setStatusFilter('failed'); setCurrentPage(1); }}
-              className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${
-                statusFilter === 'failed' ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
-              }`}
-            >
-              Failed
-            </button>
-            <button
-              onClick={() => { setStatusFilter('running'); setCurrentPage(1); }}
-              className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 last:rounded-b-lg ${
-                statusFilter === 'running' ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
-              }`}
-            >
-              Running
-            </button>
-          </div>
+        <div className="w-36">
+          <Select
+            id="executions-status-filter"
+            labelText="Status"
+            hideLabel
+            size="md"
+            value={statusFilter}
+            onChange={(e) => { setStatusFilter(e.target.value as typeof statusFilter); setCurrentPage(1); }}
+          >
+            <SelectItem value="all" text="All Status" />
+            <SelectItem value="success" text="Completed" />
+            <SelectItem value="failed" text="Failed" />
+            <SelectItem value="running" text="Running" />
+          </Select>
         </div>
 
         {/* Type Filter */}
-        <div className="relative group">
-          <button className="flex items-center gap-2 px-3 h-9 border border-gray-200 rounded-lg text-[14px] hover:border-gray-300 bg-white whitespace-nowrap">
-            <span>
-              {typeFilter === 'all' ? 'All Types' : 
-               typeFilter === 'api' ? 'API Flow' : 'Triggers'}
-            </span>
-            <ChevronDown className="h-4 w-4 text-gray-400" />
-          </button>
-          <div className="absolute top-full right-0 mt-1 w-36 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
-            <button
-              onClick={() => { setTypeFilter('all'); setCurrentPage(1); }}
-              className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 first:rounded-t-lg ${
-                typeFilter === 'all' ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
-              }`}
-            >
-              All Types
-            </button>
-            <button
-              onClick={() => { setTypeFilter('api'); setCurrentPage(1); }}
-              className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${
-                typeFilter === 'api' ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
-              }`}
-            >
-              API Flow
-            </button>
-            <button
-              onClick={() => { setTypeFilter('trigger'); setCurrentPage(1); }}
-              className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 last:rounded-b-lg ${
-                typeFilter === 'trigger' ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
-              }`}
-            >
-              Triggers
-            </button>
-          </div>
+        <div className="w-36">
+          <Select
+            id="executions-type-filter"
+            labelText="Type"
+            hideLabel
+            size="md"
+            value={typeFilter}
+            onChange={(e) => { setTypeFilter(e.target.value as typeof typeFilter); setCurrentPage(1); }}
+          >
+            <SelectItem value="all" text="All Types" />
+            <SelectItem value="api" text="API Flow" />
+            <SelectItem value="trigger" text="Triggers" />
+          </Select>
         </div>
 
         {/* Flow Filter */}
-        <div className="relative group">
-          <button className="flex items-center gap-2 px-3 h-9 border border-gray-200 rounded-lg text-[14px] hover:border-gray-300 bg-white min-w-[140px] whitespace-nowrap">
-            <span className="truncate">{flowFilter === 'all' ? 'All Flows' : flows.find(f => f.id === flowFilter)?.name || 'Unknown'}</span>
-            <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0" />
-          </button>
-          <div className="absolute top-full right-0 mt-1 w-56 max-h-64 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
-            <button
-              onClick={() => { setFlowFilter('all'); setCurrentPage(1); }}
-              className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 first:rounded-t-lg ${
-                flowFilter === 'all' ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
-              }`}
-            >
-              All Flows
-            </button>
-            {flows.length > 0 && <div className="border-t border-gray-100 my-1"></div>}
+        <div className="w-56">
+          <Select
+            id="executions-flow-filter"
+            labelText="Flow"
+            hideLabel
+            size="md"
+            value={flowFilter}
+            onChange={(e) => { setFlowFilter(e.target.value); setCurrentPage(1); }}
+          >
+            <SelectItem value="all" text="All Flows" />
             {flows.map((flow) => (
-              <button
+              <SelectItem
                 key={flow.id}
-                onClick={() => { setFlowFilter(flow.id); setCurrentPage(1); }}
-                className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2 ${
-                  flowFilter === flow.id ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
-                }`}
-              >
-                <span className="truncate flex-1">{flow.name}</span>
-                {flow.type === 'API_SPEC' ? (
-                  <span className="text-[12px] px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">API</span>
-                ) : (
-                  <span className="text-[12px] px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded">Triggers</span>
-                )}
-              </button>
+                value={flow.id}
+                text={`${flow.name} (${flow.type === 'API_SPEC' ? 'API' : 'Triggers'})`}
+              />
             ))}
-          </div>
+          </Select>
         </div>
       </div>
 
@@ -576,7 +491,7 @@ export const ProjectExecutions = ({ project }: { project: Project }) => {
               <div
                 key={execution.id}
                 onClick={() => handleExecutionClick(execution)}
-                className={`bg-white border border-gray-200 border-l-4 ${borderColor} rounded-lg px-4 py-3 hover:shadow-sm hover:border-gray-300 transition-all cursor-pointer`}
+                className={`cds--tile app-tile border-l-4 ${borderColor} px-4 py-3 hover:shadow-sm transition-all cursor-pointer`}
               >
                 <div className="flex items-center gap-3">
                   {statusIconEl}
@@ -607,9 +522,9 @@ export const ProjectExecutions = ({ project }: { project: Project }) => {
                   </div>
                   {/* Right: status pill + chevron */}
                   <div className="flex items-center gap-2 ml-2 flex-shrink-0">
-                    <span className={`px-2.5 py-1 text-xs font-medium rounded-full border ${getStatusBadge(execution.status)}`}>
+                    <Tag size="sm" type={getStatusTagType(execution.status)}>
                       {execution.status}
-                    </span>
+                    </Tag>
                     <ChevronRightIcon className="h-4 w-4 text-gray-400" />
                   </div>
                 </div>
@@ -642,47 +557,41 @@ export const ProjectExecutions = ({ project }: { project: Project }) => {
             Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, filteredExecutions.length)} of {filteredExecutions.length}
           </div>
           <div className="flex items-center gap-2">
-            <button
+            <IconButton
+              kind="ghost"
+              size="sm"
+              label="Previous page"
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <ChevronLeft className="h-4 w-4" />
-            </button>
+            </IconButton>
             <span className="text-sm text-gray-600">
               Page {currentPage} of {totalPages}
             </span>
-            <button
+            <IconButton
+              kind="ghost"
+              size="sm"
+              label="Next page"
               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <ChevronRight className="h-4 w-4" />
-            </button>
+            </IconButton>
           </div>
         </div>
       )}
 
       {/* Detail Modal */}
-      {showDetailModal && selectedExecution && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-            {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Execution Details</h3>
-                <p className="text-sm text-gray-500">ID: {selectedExecution.id}</p>
-              </div>
-              <button
-                onClick={() => setShowDetailModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="h-5 w-5 text-gray-500" />
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div className="flex-1 overflow-auto p-6">
+      <Modal
+        isOpen={showDetailModal && !!selectedExecution}
+        onClose={() => setShowDetailModal(false)}
+        title="Execution Details"
+        size="4xl"
+      >
+        {selectedExecution && (
+            <div>
+              <p className="text-sm text-gray-500 mb-4">ID: {selectedExecution.id}</p>
               {(() => {
                 const execution = selectedExecution;
 
@@ -697,12 +606,14 @@ export const ProjectExecutions = ({ project }: { project: Project }) => {
                         {json}
                       </pre>
                       {isLarge && (
-                        <button
+                        <Button
+                          variant="secondary"
+                          size="sm"
                           onClick={() => setCollapsed(c => !c)}
-                          className="inline-flex items-center justify-center absolute bottom-2 right-2 text-[13px] bg-white border border-gray-300 rounded px-2 h-8 hover:bg-gray-50 whitespace-nowrap"
+                          className="absolute bottom-2 right-2"
                         >
                           {collapsed ? 'Expand' : 'Collapse'}
-                        </button>
+                        </Button>
                       )}
                     </div>
                   );
@@ -711,29 +622,34 @@ export const ProjectExecutions = ({ project }: { project: Project }) => {
                 return (
                   <>
                     {/* Tab bar */}
-                    <div className="flex border-b border-gray-200 mb-4">
-                      {[
-                        { key: 'overview', label: 'Overview', icon: Activity },
-                        {
-                          key: 'logs',
-                          label: `Logs${execution.logs?.length ? ` (${execution.logs.length})` : ''}`,
-                          icon: Terminal,
-                        },
-                        { key: 'result', label: 'Result', icon: Zap },
-                      ].map(tab => (
-                        <button
-                          key={tab.key}
-                          onClick={() => setDetailTab(tab.key as 'overview' | 'logs' | 'result')}
-                          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                            detailTab === tab.key
-                              ? 'border-blue-500 text-blue-600'
-                              : 'border-transparent text-gray-500 hover:text-gray-700'
-                          }`}
-                        >
-                          <tab.icon className="h-4 w-4" />
-                          {tab.label}
-                        </button>
-                      ))}
+                    <div className="mb-4">
+                      {(() => {
+                        const tabs = [
+                          { key: 'overview', label: 'Overview', icon: Activity },
+                          {
+                            key: 'logs',
+                            label: `Logs${execution.logs?.length ? ` (${execution.logs.length})` : ''}`,
+                            icon: Terminal,
+                          },
+                          { key: 'result', label: 'Result', icon: Zap },
+                        ];
+                        return (
+                          <Tabs
+                            selectedIndex={Math.max(0, tabs.findIndex(t => t.key === detailTab))}
+                            onChange={({ selectedIndex }: { selectedIndex: number }) =>
+                              setDetailTab(tabs[selectedIndex].key as 'overview' | 'logs' | 'result')
+                            }
+                          >
+                            <TabList aria-label="Execution detail tabs">
+                              {tabs.map(tab => (
+                                <Tab key={tab.key} renderIcon={() => <tab.icon className="h-4 w-4" />}>
+                                  {tab.label}
+                                </Tab>
+                              ))}
+                            </TabList>
+                          </Tabs>
+                        );
+                      })()}
                     </div>
 
                     {/* Tab: Overview */}
@@ -741,9 +657,9 @@ export const ProjectExecutions = ({ project }: { project: Project }) => {
                       <div className="space-y-4">
                         {/* Status badge */}
                         <div className="flex items-center gap-3">
-                          <span className={`px-3 py-1.5 text-sm font-semibold rounded-full border ${getStatusBadge(execution.status)}`}>
+                          <Tag size="md" type={getStatusTagType(execution.status)}>
                             {execution.status}
-                          </span>
+                          </Tag>
                           {getFlowTypeBadge(execution.flowType)}
                         </div>
 
@@ -805,7 +721,7 @@ export const ProjectExecutions = ({ project }: { project: Project }) => {
                       <div>
                         {detailLoading ? (
                           <div className="flex items-center justify-center py-12">
-                            <Loader2 className="h-6 w-6 text-blue-500 animate-spin" />
+                            <InlineLoading description="Loading..." />
                           </div>
                         ) : execution.logs && execution.logs.length > 0 ? (
                           <div className="max-h-96 overflow-auto space-y-1 pr-1">
@@ -850,7 +766,7 @@ export const ProjectExecutions = ({ project }: { project: Project }) => {
                       <div className="space-y-4">
                         {detailLoading ? (
                           <div className="flex items-center justify-center py-12">
-                            <Loader2 className="h-6 w-6 text-blue-500 animate-spin" />
+                            <InlineLoading description="Loading..." />
                           </div>
                         ) : execution.triggerType === 'api' ? (
                           <>
@@ -912,29 +828,18 @@ export const ProjectExecutions = ({ project }: { project: Project }) => {
                 );
               })()}
             </div>
-          </div>
-        </div>
-      )}
+        )}
+      </Modal>
 
       {/* Clear Logs Confirmation Modal */}
-      {showClearModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl w-full max-w-md overflow-hidden shadow-xl">
-            {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-gray-200 bg-red-50">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
-                  <Trash2 className="h-5 w-5 text-red-600" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-red-900">{clearAllMode ? 'Clear All Execution Logs' : 'Clear Filtered Execution Logs'}</h3>
-                  <p className="text-sm text-red-600">This action cannot be undone</p>
-                </div>
-              </div>
-            </div>
-            
-            {/* Modal Body */}
-            <div className="p-6 space-y-4">
+      <Modal
+        isOpen={showClearModal}
+        onClose={() => { if (!clearingLogs) setShowClearModal(false); }}
+        title={clearAllMode ? 'Clear All Execution Logs' : 'Clear Filtered Execution Logs'}
+        size="lg"
+      >
+            <div className="space-y-4">
+              <p className="text-sm text-red-600 font-medium">This action cannot be undone</p>
               {clearAllMode ? (
                 <>
                   <p className="text-sm text-gray-600">
@@ -994,40 +899,29 @@ export const ProjectExecutions = ({ project }: { project: Project }) => {
             </div>
             
             {/* Modal Footer */}
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50">
-              <button
+            <div className="flex items-center justify-end gap-3 pt-4 mt-4 border-t border-gray-200">
+              <Button
+                variant="ghost"
                 onClick={() => setShowClearModal(false)}
                 disabled={clearingLogs}
-                className="inline-flex items-center justify-center px-3.5 h-9 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors text-[14px] font-medium whitespace-nowrap"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="danger"
                 onClick={handleClearLogs}
-                disabled={clearingLogs || (!clearAllMode && filteredExecutions.length === 0)}
-                className="px-3 h-9 rounded-lg transition-colors text-[14px] font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap bg-red-600 text-white hover:bg-red-700"
+                disabled={!clearAllMode && filteredExecutions.length === 0}
+                isLoading={clearingLogs}
+                leftIcon={<Trash2 className="h-4 w-4" />}
               >
-                {clearingLogs ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Clearing...
-                  </>
-                ) : clearAllMode ? (
-                  <>
-                    <Trash2 className="h-4 w-4" />
-                    Clear All Executions
-                  </>
-                ) : (
-                  <>
-                    <Trash2 className="h-4 w-4" />
-                    Clear {filteredExecutions.length} Execution{filteredExecutions.length !== 1 ? 's' : ''}
-                  </>
-                )}
-              </button>
+                {clearingLogs
+                  ? 'Clearing...'
+                  : clearAllMode
+                  ? 'Clear All Executions'
+                  : `Clear ${filteredExecutions.length} Execution${filteredExecutions.length !== 1 ? 's' : ''}`}
+              </Button>
             </div>
-          </div>
-        </div>
-      )}
+      </Modal>
     </div>
   );
 };

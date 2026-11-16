@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
-import { XMarkIcon, EyeIcon, EyeSlashIcon } from '../icons';
+import { TextInput, NumberInput, PasswordInput, Select, SelectItem, TextArea, Checkbox, RadioButtonGroup, RadioButton, InlineNotification, IconButton } from '@carbon/react';
+import { Close } from '@carbon/icons-react';
+import { Button } from '../ui/Button';
+import { Modal } from '../ui/Modal';
 import { ConnectionTypeSelector } from './ConnectionTypeSelector';
 import type { Connection, DatabaseConfig, SFTPConfig, HTTPConfig, HTTPAuthConfig, GoogleDriveConfig, DatabaseType, SMTPConfig } from '../../types';
 
@@ -51,11 +54,9 @@ export default function ConnectionModal({
   const [dbPassword, setDbPassword] = useState('');
   const [dbSsl, setDbSsl] = useState(false);
   const [dbConnectionString, setDbConnectionString] = useState('');
-  const [showDbPassword, setShowDbPassword] = useState(false);
   
   // SFTP fields
   const [smtp, setSmtp] = useState<SMTPForm>(SMTP_DEFAULTS);
-  const [showSmtpPassword, setShowSmtpPassword] = useState(false);
   const [sftpHost, setSftpHost] = useState('');
   const [sftpPort, setSftpPort] = useState(22);
   const [sftpUsername, setSftpUsername] = useState('');
@@ -64,7 +65,6 @@ export default function ConnectionModal({
   const [sftpPrivateKey, setSftpPrivateKey] = useState('');
   const [sftpPassphrase, setSftpPassphrase] = useState('');
   const [sftpBasePath, setSftpBasePath] = useState('/');
-  const [showSftpPassword, setShowSftpPassword] = useState(false);
   
   // HTTP fields
   const [httpUrl, setHttpUrl] = useState('');
@@ -84,8 +84,6 @@ export default function ConnectionModal({
   const [httpClientSecret, setHttpClientSecret] = useState('');
   const [httpTokenUrl, setHttpTokenUrl] = useState('');
   const [httpScopes, setHttpScopes] = useState('');
-  const [showHttpPassword, setShowHttpPassword] = useState(false);
-  const [showHttpToken, setShowHttpToken] = useState(false);
   
   // Google Drive fields
   const [gdAuthType, setGdAuthType] = useState<GoogleDriveAuthType>('oauth2');
@@ -97,7 +95,6 @@ export default function ConnectionModal({
   const [gdServiceAccountKey, setGdServiceAccountKey] = useState('');
   const [gdFolderId, setGdFolderId] = useState('');
   const [gdSharedDriveId, setGdSharedDriveId] = useState('');
-  const [showGdClientSecret, setShowGdClientSecret] = useState(false);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -448,550 +445,400 @@ export default function ConnectionModal({
     );
   };
 
+  const numVal = (v: number | string | undefined) => parseInt(String(v ?? ''));
+
   const renderDatabaseForm = () => (
     <div className="space-y-4">
       {/* Only show Database Type selector if generic 'database' type was selected (rare case now) */}
       {connectionType === 'database' && (
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Database Type</label>
-          <select
-            value={dbType}
-            onChange={(e) => handleDbTypeChange(e.target.value as DatabaseDriver)}
-            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
-          >
-            <option value="postgresql">PostgreSQL</option>
-            <option value="mysql">MySQL</option>
-            <option value="sqlite">SQLite</option>
-            <option value="oracle">Oracle</option>
-            <option value="mssql">SQL Server</option>
-            <option value="mongodb">MongoDB</option>
-          </select>
-        </div>
+        <Select
+          id="conn-db-type"
+          labelText="Database Type"
+          value={dbType}
+          onChange={(e) => handleDbTypeChange(e.target.value as DatabaseDriver)}
+        >
+          <SelectItem value="postgresql" text="PostgreSQL" />
+          <SelectItem value="mysql" text="MySQL" />
+          <SelectItem value="sqlite" text="SQLite" />
+          <SelectItem value="oracle" text="Oracle" />
+          <SelectItem value="mssql" text="SQL Server" />
+          <SelectItem value="mongodb" text="MongoDB" />
+        </Select>
       )}
-      
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Connection Name</label>
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="e.g., Production Database"
-          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
-        />
-      </div>
-      
+
+      <TextInput
+        id="conn-db-name"
+        labelText="Connection Name"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="e.g., Production Database"
+      />
+
       {dbType === 'sqlite' ? (
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Database File Path</label>
-          <input
-            type="text"
-            value={dbConnectionString}
-            onChange={(e) => setDbConnectionString(e.target.value)}
-            placeholder="e.g., ./data/mydb.sqlite or /path/to/database.db"
-            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
-          />
-          <p className="text-xs text-gray-500 mt-1">Enter the full path to your SQLite database file</p>
-        </div>
+        <TextInput
+          id="conn-db-file"
+          labelText="Database File Path"
+          value={dbConnectionString}
+          onChange={(e) => setDbConnectionString(e.target.value)}
+          placeholder="e.g., ./data/mydb.sqlite or /path/to/database.db"
+          helperText="Enter the full path to your SQLite database file"
+        />
       ) : (
         <>
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Host</label>
-              <input
-                type="text"
-                value={dbHost}
-                onChange={(e) => setDbHost(e.target.value)}
-                placeholder="localhost"
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Port</label>
-              <input
-                type="number"
-                value={dbPort}
-                onChange={(e) => setDbPort(parseInt(e.target.value) || 0)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
-              />
-            </div>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Database Name</label>
-            <input
-              type="text"
-              value={dbName}
-              onChange={(e) => setDbName(e.target.value)}
-              placeholder="mydatabase"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
+            <TextInput
+              id="conn-db-host"
+              labelText="Host"
+              value={dbHost}
+              onChange={(e) => setDbHost(e.target.value)}
+              placeholder="localhost"
+            />
+            <NumberInput
+              id="conn-db-port"
+              label="Port"
+              value={dbPort}
+              hideSteppers
+              allowEmpty
+              onChange={(_e, { value }) => setDbPort(numVal(value) || 0)}
             />
           </div>
-          
+
+          <TextInput
+            id="conn-db-dbname"
+            labelText="Database Name"
+            value={dbName}
+            onChange={(e) => setDbName(e.target.value)}
+            placeholder="mydatabase"
+          />
+
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
-              <input
-                type="text"
-                value={dbUsername}
-                onChange={(e) => setDbUsername(e.target.value)}
-                placeholder="postgres"
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-              <div className="relative">
-                <input
-                  type={showDbPassword ? 'text' : 'password'}
-                  value={dbPassword}
-                  onChange={(e) => setDbPassword(e.target.value)}
-                  placeholder={connection ? 'เว้นว่าง = ใช้รหัสเดิม' : ''}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 pr-10 focus:ring-primary-500 focus:border-primary-500"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowDbPassword(!showDbPassword)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  {showDbPassword ? <EyeSlashIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="db-ssl"
-              checked={dbSsl}
-              onChange={(e) => setDbSsl(e.target.checked)}
-              className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+            <TextInput
+              id="conn-db-user"
+              labelText="Username"
+              value={dbUsername}
+              onChange={(e) => setDbUsername(e.target.value)}
+              placeholder="postgres"
             />
-            <label htmlFor="db-ssl" className="text-sm text-gray-700">Enable SSL/TLS</label>
+            <PasswordInput
+              id="conn-db-password"
+              labelText="Password"
+              value={dbPassword}
+              onChange={(e) => setDbPassword(e.target.value)}
+              placeholder={connection ? 'เว้นว่าง = ใช้รหัสเดิม' : ''}
+            />
           </div>
+
+          <Checkbox
+            id="db-ssl"
+            labelText="Enable SSL/TLS"
+            checked={dbSsl}
+            onChange={(_e, { checked }) => setDbSsl(checked)}
+          />
         </>
       )}
     </div>
   );
 
-  const inputCls = 'w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500';
   const renderSMTPForm = () => (
     <div className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Connection Name</label>
-        <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Mail server" className={inputCls} />
-      </div>
+      <TextInput id="conn-smtp-name" labelText="Connection Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Mail server" />
 
       <div className="grid grid-cols-3 gap-4">
         <div className="col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">SMTP Host <span className="text-red-500">*</span></label>
-          <input type="text" value={smtp.host} onChange={(e) => setSmtp({ ...smtp, host: e.target.value })} placeholder="smtp.example.com" className={inputCls} />
+          <TextInput id="conn-smtp-host" labelText={<>SMTP Host <span className="text-red-500">*</span></>} value={smtp.host} onChange={(e) => setSmtp({ ...smtp, host: e.target.value })} placeholder="smtp.example.com" />
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Port</label>
-          <input
-            type="number"
-            value={smtp.port}
-            onChange={(e) => {
-              const port = parseInt(e.target.value) || 587;
-              setSmtp({ ...smtp, port, secure: port === 465 ? true : smtp.secure });
-            }}
-            className={inputCls}
-          />
-        </div>
+        <NumberInput
+          id="conn-smtp-port"
+          label="Port"
+          value={smtp.port}
+          hideSteppers
+          allowEmpty
+          onChange={(_e, { value }) => {
+            const port = numVal(value) || 587;
+            setSmtp({ ...smtp, port, secure: port === 465 ? true : smtp.secure });
+          }}
+        />
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-gray-700">
-        <input type="checkbox" checked={smtp.secure} onChange={(e) => setSmtp({ ...smtp, secure: e.target.checked })} />
-        SSL/TLS from the start (usually port 465). Leave off for STARTTLS on 587/25.
-      </label>
+      <Checkbox
+        id="conn-smtp-secure"
+        labelText="SSL/TLS from the start (usually port 465). Leave off for STARTTLS on 587/25."
+        checked={smtp.secure}
+        onChange={(_e, { checked }) => setSmtp({ ...smtp, secure: checked })}
+      />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
-          <input type="text" value={smtp.username} onChange={(e) => setSmtp({ ...smtp, username: e.target.value })} placeholder="Leave blank if no login" className={inputCls} autoComplete="off" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-          <div className="relative">
-            <input
-              type={showSmtpPassword ? 'text' : 'password'}
-              value={smtp.password}
-              onChange={(e) => setSmtp({ ...smtp, password: e.target.value })}
-              placeholder={connection ? 'Leave blank = keep current' : ''}
-              className={`${inputCls} pr-10`}
-              autoComplete="new-password"
-            />
-            <button type="button" onClick={() => setShowSmtpPassword(!showSmtpPassword)} className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600">
-              {showSmtpPassword ? <EyeSlashIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
-            </button>
-          </div>
-        </div>
+        <TextInput id="conn-smtp-user" labelText="Username" value={smtp.username} onChange={(e) => setSmtp({ ...smtp, username: e.target.value })} placeholder="Leave blank if no login" autoComplete="off" />
+        <PasswordInput
+          id="conn-smtp-password"
+          labelText="Password"
+          value={smtp.password}
+          onChange={(e) => setSmtp({ ...smtp, password: e.target.value })}
+          placeholder={connection ? 'Leave blank = keep current' : ''}
+          autoComplete="new-password"
+        />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">From address <span className="text-red-500">*</span></label>
-          <input type="email" value={smtp.fromAddress} onChange={(e) => setSmtp({ ...smtp, fromAddress: e.target.value })} placeholder="noreply@example.com" className={inputCls} />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">From name</label>
-          <input type="text" value={smtp.fromName} onChange={(e) => setSmtp({ ...smtp, fromName: e.target.value })} placeholder="DEH" className={inputCls} />
-        </div>
+        <TextInput id="conn-smtp-from" type="email" labelText={<>From address <span className="text-red-500">*</span></>} value={smtp.fromAddress} onChange={(e) => setSmtp({ ...smtp, fromAddress: e.target.value })} placeholder="noreply@example.com" />
+        <TextInput id="conn-smtp-fromname" labelText="From name" value={smtp.fromName} onChange={(e) => setSmtp({ ...smtp, fromName: e.target.value })} placeholder="DEH" />
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-gray-700">
-        <input type="checkbox" checked={smtp.allowSelfSigned} onChange={(e) => setSmtp({ ...smtp, allowSelfSigned: e.target.checked })} />
-        Accept a self-signed certificate (internal mail servers only)
-      </label>
+      <Checkbox
+        id="conn-smtp-selfsigned"
+        labelText="Accept a self-signed certificate (internal mail servers only)"
+        checked={smtp.allowSelfSigned}
+        onChange={(_e, { checked }) => setSmtp({ ...smtp, allowSelfSigned: checked })}
+      />
     </div>
   );
 
   const renderSFTPForm = () => (
     <div className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Connection Name</label>
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="e.g., Production SFTP"
-          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
-        />
-      </div>
-      
+      <TextInput
+        id="conn-sftp-name"
+        labelText="Connection Name"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="e.g., Production SFTP"
+      />
+
       <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Host</label>
-          <input
-            type="text"
-            value={sftpHost}
-            onChange={(e) => setSftpHost(e.target.value)}
-            placeholder="sftp.example.com"
-            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Port</label>
-          <input
-            type="number"
-            value={sftpPort}
-            onChange={(e) => setSftpPort(parseInt(e.target.value) || 22)}
-            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
-          />
-        </div>
-      </div>
-      
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Username <span className="text-red-500">*</span></label>
-        <input
-          type="text"
-          value={sftpUsername}
-          onChange={(e) => setSftpUsername(e.target.value)}
-          placeholder="SSH username (e.g., sftpuser)"
-          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
+        <TextInput
+          id="conn-sftp-host"
+          labelText="Host"
+          value={sftpHost}
+          onChange={(e) => setSftpHost(e.target.value)}
+          placeholder="sftp.example.com"
         />
-        <p className="text-xs text-gray-500 mt-1">SSH login username — required even when using private key authentication</p>
+        <NumberInput
+          id="conn-sftp-port"
+          label="Port"
+          value={sftpPort}
+          hideSteppers
+          allowEmpty
+          onChange={(_e, { value }) => setSftpPort(numVal(value) || 22)}
+        />
       </div>
-      
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Authentication Type</label>
-        <div className="flex gap-4">
-          <label className="flex items-center gap-2">
-            <input
-              type="radio"
-              value="password"
-              checked={sftpAuthType === 'password'}
-              onChange={(e) => setSftpAuthType(e.target.value as SFTPAuthType)}
-              className="text-primary-600 focus:ring-primary-500"
-            />
-            <span className="text-sm text-gray-700">Password</span>
-          </label>
-          <label className="flex items-center gap-2">
-            <input
-              type="radio"
-              value="private-key"
-              checked={sftpAuthType === 'private-key'}
-              onChange={(e) => setSftpAuthType(e.target.value as SFTPAuthType)}
-              className="text-primary-600 focus:ring-primary-500"
-            />
-            <span className="text-sm text-gray-700">Private Key</span>
-          </label>
-        </div>
-      </div>
-      
+
+      <TextInput
+        id="conn-sftp-user"
+        labelText={<>Username <span className="text-red-500">*</span></>}
+        value={sftpUsername}
+        onChange={(e) => setSftpUsername(e.target.value)}
+        placeholder="SSH username (e.g., boboebud02)"
+        helperText="SSH login username — required even when using private key authentication"
+      />
+
+      <RadioButtonGroup
+        name="conn-sftp-auth"
+        legendText="Authentication Type"
+        valueSelected={sftpAuthType}
+        onChange={(value) => setSftpAuthType(value as SFTPAuthType)}
+      >
+        <RadioButton id="conn-sftp-auth-password" labelText="Password" value="password" />
+        <RadioButton id="conn-sftp-auth-key" labelText="Private Key" value="private-key" />
+      </RadioButtonGroup>
+
       {sftpAuthType === 'password' ? (
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-          <div className="relative">
-            <input
-              type={showSftpPassword ? 'text' : 'password'}
-              value={sftpPassword}
-              onChange={(e) => setSftpPassword(e.target.value)}
-              placeholder={connection ? 'เว้นว่าง = ใช้รหัสเดิม' : ''}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 pr-10 focus:ring-primary-500 focus:border-primary-500"
-            />
-            <button
-              type="button"
-              onClick={() => setShowSftpPassword(!showSftpPassword)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-            >
-              {showSftpPassword ? <EyeSlashIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
-            </button>
-          </div>
-        </div>
+        <PasswordInput
+          id="conn-sftp-password"
+          labelText="Password"
+          value={sftpPassword}
+          onChange={(e) => setSftpPassword(e.target.value)}
+          placeholder={connection ? 'เว้นว่าง = ใช้รหัสเดิม' : ''}
+        />
       ) : (
         <>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Private Key</label>
-            <textarea
-              value={sftpPrivateKey}
-              onChange={(e) => setSftpPrivateKey(e.target.value)}
-              placeholder="Paste OpenSSH, PEM, or PuTTY PPK key here"
-              rows={6}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500 font-mono text-sm"
-            />
-            <p className="text-xs text-gray-500 mt-1">Supports OpenSSH, PEM, and PuTTY PPK v2 formats — PPK keys are auto-converted</p>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Passphrase (Optional)</label>
-            <input
-              type="password"
-              value={sftpPassphrase}
-              onChange={(e) => setSftpPassphrase(e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
-            />
-          </div>
+          <TextArea
+            id="conn-sftp-key"
+            labelText="Private Key"
+            value={sftpPrivateKey}
+            onChange={(e) => setSftpPrivateKey(e.target.value)}
+            placeholder="Paste OpenSSH, PEM, or PuTTY PPK key here"
+            rows={6}
+            className="font-mono text-sm"
+            helperText="Supports OpenSSH, PEM, and PuTTY PPK v2 formats — PPK keys are auto-converted"
+          />
+          <PasswordInput
+            id="conn-sftp-passphrase"
+            labelText="Passphrase (Optional)"
+            value={sftpPassphrase}
+            onChange={(e) => setSftpPassphrase(e.target.value)}
+          />
         </>
       )}
-      
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Base Path</label>
-        <input
-          type="text"
-          value={sftpBasePath}
-          onChange={(e) => setSftpBasePath(e.target.value)}
-          placeholder="/home/username"
-          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
-        />
-        <p className="text-xs text-gray-500 mt-1">Default directory for file operations</p>
-      </div>
+
+      <TextInput
+        id="conn-sftp-basepath"
+        labelText="Base Path"
+        value={sftpBasePath}
+        onChange={(e) => setSftpBasePath(e.target.value)}
+        placeholder="/home/username"
+        helperText="Default directory for file operations"
+      />
     </div>
   );
 
   const renderHTTPForm = () => (
     <div className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Connection Name</label>
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="e.g., Shopify API"
-          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
-        />
-      </div>
-      
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Base URL</label>
-        <input
-          type="text"
-          value={httpUrl}
-          onChange={(e) => setHttpUrl(e.target.value)}
-          placeholder="https://api.example.com"
-          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
-        />
-      </div>
-      
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Timeout (ms)</label>
-        <input
-          type="number"
-          value={httpTimeout}
-          onChange={(e) => setHttpTimeout(parseInt(e.target.value) || 30000)}
-          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
-        />
-      </div>
-      
+      <TextInput
+        id="conn-http-name"
+        labelText="Connection Name"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="e.g., Shopify API"
+      />
+
+      <TextInput
+        id="conn-http-url"
+        labelText="Base URL"
+        value={httpUrl}
+        onChange={(e) => setHttpUrl(e.target.value)}
+        placeholder="https://api.example.com"
+      />
+
+      <NumberInput
+        id="conn-http-timeout"
+        label="Timeout (ms)"
+        value={httpTimeout}
+        hideSteppers
+        allowEmpty
+        onChange={(_e, { value }) => setHttpTimeout(numVal(value) || 30000)}
+      />
+
       {/* Headers */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Custom Headers</label>
-        <div className="flex gap-2 mb-2">
-          <input
-            type="text"
-            value={httpHeaderKey}
-            onChange={(e) => setHttpHeaderKey(e.target.value)}
-            placeholder="Header name"
-            className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500"
-          />
-          <input
-            type="text"
-            value={httpHeaderValue}
-            onChange={(e) => setHttpHeaderValue(e.target.value)}
-            placeholder="Value"
-            className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500"
-          />
-          <button
-            onClick={handleAddHeader}
-            className="inline-flex items-center justify-center px-3 h-9 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-[14px] whitespace-nowrap"
-          >
+        <label className="cds--label">Custom Headers</label>
+        <div className="flex gap-2 mb-2 items-end">
+          <div className="flex-1">
+            <TextInput
+              id="conn-http-header-key"
+              labelText="Header name"
+              hideLabel
+              value={httpHeaderKey}
+              onChange={(e) => setHttpHeaderKey(e.target.value)}
+              placeholder="Header name"
+            />
+          </div>
+          <div className="flex-1">
+            <TextInput
+              id="conn-http-header-value"
+              labelText="Header value"
+              hideLabel
+              value={httpHeaderValue}
+              onChange={(e) => setHttpHeaderValue(e.target.value)}
+              placeholder="Value"
+            />
+          </div>
+          <Button variant="secondary" size="md" onClick={handleAddHeader}>
             Add
-          </button>
+          </Button>
         </div>
         {Object.entries(httpHeaders).length > 0 && (
           <div className="space-y-1">
             {Object.entries(httpHeaders).map(([key, value]) => (
               <div key={key} className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded text-sm">
                 <span className="text-gray-700"><strong>{key}:</strong> {value}</span>
-                <button
-                  onClick={() => handleRemoveHeader(key)}
-                  className="text-red-500 hover:text-red-700"
-                >
-                  <XMarkIcon className="w-4 h-4" />
-                </button>
+                <IconButton kind="ghost" size="sm" label={`Remove header ${key}`} onClick={() => handleRemoveHeader(key)}>
+                  <Close />
+                </IconButton>
               </div>
             ))}
           </div>
         )}
       </div>
-      
+
       {/* Auth Type */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Authentication</label>
-        <select
-          value={httpAuthType}
-          onChange={(e) => setHttpAuthType(e.target.value as HTTPAuthType)}
-          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
-        >
-          <option value="none">None</option>
-          <option value="basic">Basic Auth</option>
-          <option value="bearer">Bearer Token</option>
-          <option value="api-key">API Key</option>
-          <option value="oauth2">OAuth 2.0</option>
-        </select>
-      </div>
-      
+      <Select
+        id="conn-http-auth"
+        labelText="Authentication"
+        value={httpAuthType}
+        onChange={(e) => setHttpAuthType(e.target.value as HTTPAuthType)}
+      >
+        <SelectItem value="none" text="None" />
+        <SelectItem value="basic" text="Basic Auth" />
+        <SelectItem value="bearer" text="Bearer Token" />
+        <SelectItem value="api-key" text="API Key" />
+        <SelectItem value="oauth2" text="OAuth 2.0" />
+      </Select>
+
       {/* Auth Fields */}
       {httpAuthType === 'basic' && (
         <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
-            <input
-              type="text"
-              value={httpUsername}
-              onChange={(e) => setHttpUsername(e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <div className="relative">
-              <input
-                type={showHttpPassword ? 'text' : 'password'}
-                value={httpPassword}
-                onChange={(e) => setHttpPassword(e.target.value)}
-                placeholder={connection ? 'เว้นว่าง = ใช้รหัสเดิม' : ''}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 pr-10 focus:ring-primary-500 focus:border-primary-500"
-              />
-              <button
-                type="button"
-                onClick={() => setShowHttpPassword(!showHttpPassword)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                {showHttpPassword ? <EyeSlashIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
-              </button>
-            </div>
-          </div>
+          <TextInput
+            id="conn-http-user"
+            labelText="Username"
+            value={httpUsername}
+            onChange={(e) => setHttpUsername(e.target.value)}
+          />
+          <PasswordInput
+            id="conn-http-password"
+            labelText="Password"
+            value={httpPassword}
+            onChange={(e) => setHttpPassword(e.target.value)}
+            placeholder={connection ? 'เว้นว่าง = ใช้รหัสเดิม' : ''}
+          />
         </div>
       )}
-      
+
       {httpAuthType === 'bearer' && (
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Bearer Token</label>
-          <div className="relative">
-            <input
-              type={showHttpToken ? 'text' : 'password'}
-              value={httpToken}
-              onChange={(e) => setHttpToken(e.target.value)}
-              placeholder="eyJhbGciOiJIUzI1NiIs..."
-              className="w-full border border-gray-300 rounded-md px-3 py-2 pr-10 focus:ring-primary-500 focus:border-primary-500"
-            />
-            <button
-              type="button"
-              onClick={() => setShowHttpToken(!showHttpToken)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-            >
-              {showHttpToken ? <EyeSlashIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
-            </button>
-          </div>
-        </div>
+        <PasswordInput
+          id="conn-http-token"
+          labelText="Bearer Token"
+          value={httpToken}
+          onChange={(e) => setHttpToken(e.target.value)}
+          placeholder="eyJhbGciOiJIUzI1NiIs..."
+        />
       )}
-      
+
       {httpAuthType === 'api-key' && (
         <>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">API Key Header</label>
-            <input
-              type="text"
-              value={httpApiKeyHeader}
-              onChange={(e) => setHttpApiKeyHeader(e.target.value)}
-              placeholder="X-API-Key"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">API Key</label>
-            <input
-              type="text"
-              value={httpApiKey}
-              onChange={(e) => setHttpApiKey(e.target.value)}
-              placeholder="your-api-key"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
-            />
-          </div>
+          <TextInput
+            id="conn-http-apikey-header"
+            labelText="API Key Header"
+            value={httpApiKeyHeader}
+            onChange={(e) => setHttpApiKeyHeader(e.target.value)}
+            placeholder="X-API-Key"
+          />
+          <TextInput
+            id="conn-http-apikey"
+            labelText="API Key"
+            value={httpApiKey}
+            onChange={(e) => setHttpApiKey(e.target.value)}
+            placeholder="your-api-key"
+          />
         </>
       )}
-      
+
       {httpAuthType === 'oauth2' && (
         <>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Client ID</label>
-            <input
-              type="text"
-              value={httpClientId}
-              onChange={(e) => setHttpClientId(e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Client Secret</label>
-            <input
-              type="password"
-              value={httpClientSecret}
-              onChange={(e) => setHttpClientSecret(e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Token URL</label>
-            <input
-              type="text"
-              value={httpTokenUrl}
-              onChange={(e) => setHttpTokenUrl(e.target.value)}
-              placeholder="https://oauth.example.com/token"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Scopes (comma-separated)</label>
-            <input
-              type="text"
-              value={httpScopes}
-              onChange={(e) => setHttpScopes(e.target.value)}
-              placeholder="read,write,admin"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
-            />
-          </div>
+          <TextInput
+            id="conn-http-client-id"
+            labelText="Client ID"
+            value={httpClientId}
+            onChange={(e) => setHttpClientId(e.target.value)}
+          />
+          <PasswordInput
+            id="conn-http-client-secret"
+            labelText="Client Secret"
+            value={httpClientSecret}
+            onChange={(e) => setHttpClientSecret(e.target.value)}
+          />
+          <TextInput
+            id="conn-http-token-url"
+            labelText="Token URL"
+            value={httpTokenUrl}
+            onChange={(e) => setHttpTokenUrl(e.target.value)}
+            placeholder="https://oauth.example.com/token"
+          />
+          <TextInput
+            id="conn-http-scopes"
+            labelText="Scopes (comma-separated)"
+            value={httpScopes}
+            onChange={(e) => setHttpScopes(e.target.value)}
+            placeholder="read,write,admin"
+          />
         </>
       )}
     </div>
@@ -999,137 +846,89 @@ export default function ConnectionModal({
 
   const renderGoogleDriveForm = () => (
     <div className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Connection Name</label>
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="e.g., My Google Drive"
-          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
-        />
-      </div>
-      
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Authentication Type</label>
-        <div className="flex gap-4">
-          <label className="flex items-center gap-2">
-            <input
-              type="radio"
-              value="oauth2"
-              checked={gdAuthType === 'oauth2'}
-              onChange={(e) => setGdAuthType(e.target.value as GoogleDriveAuthType)}
-              className="text-primary-600 focus:ring-primary-500"
-            />
-            <span className="text-sm text-gray-700">OAuth 2.0</span>
-          </label>
-          <label className="flex items-center gap-2">
-            <input
-              type="radio"
-              value="service-account"
-              checked={gdAuthType === 'service-account'}
-              onChange={(e) => setGdAuthType(e.target.value as GoogleDriveAuthType)}
-              className="text-primary-600 focus:ring-primary-500"
-            />
-            <span className="text-sm text-gray-700">Service Account</span>
-          </label>
-        </div>
-      </div>
-      
+      <TextInput
+        id="conn-gd-name"
+        labelText="Connection Name"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="e.g., My Google Drive"
+      />
+
+      <RadioButtonGroup
+        name="conn-gd-auth"
+        legendText="Authentication Type"
+        valueSelected={gdAuthType}
+        onChange={(value) => setGdAuthType(value as GoogleDriveAuthType)}
+      >
+        <RadioButton id="conn-gd-auth-oauth2" labelText="OAuth 2.0" value="oauth2" />
+        <RadioButton id="conn-gd-auth-sa" labelText="Service Account" value="service-account" />
+      </RadioButtonGroup>
+
       {gdAuthType === 'oauth2' ? (
         <>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Client ID</label>
-            <input
-              type="text"
-              value={gdClientId}
-              onChange={(e) => setGdClientId(e.target.value)}
-              placeholder="xxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Client Secret</label>
-            <div className="relative">
-              <input
-                type={showGdClientSecret ? 'text' : 'password'}
-                value={gdClientSecret}
-                onChange={(e) => setGdClientSecret(e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 pr-10 focus:ring-primary-500 focus:border-primary-500"
-              />
-              <button
-                type="button"
-                onClick={() => setShowGdClientSecret(!showGdClientSecret)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                {showGdClientSecret ? <EyeSlashIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
-              </button>
-            </div>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Redirect URI</label>
-            <input
-              type="text"
-              value={gdRedirectUri}
-              onChange={(e) => setGdRedirectUri(e.target.value)}
-              placeholder="http://localhost:8137/auth/callback"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
-            />
-          </div>
-          
-          <div className="p-3 bg-blue-50 rounded-md">
-            <p className="text-sm text-blue-700">
-              <i className="fas fa-info-circle mr-1"></i>
-              OAuth2 tokens will be generated when you test the connection.
-            </p>
-          </div>
+          <TextInput
+            id="conn-gd-client-id"
+            labelText="Client ID"
+            value={gdClientId}
+            onChange={(e) => setGdClientId(e.target.value)}
+            placeholder="xxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com"
+          />
+
+          <PasswordInput
+            id="conn-gd-client-secret"
+            labelText="Client Secret"
+            value={gdClientSecret}
+            onChange={(e) => setGdClientSecret(e.target.value)}
+          />
+
+          <TextInput
+            id="conn-gd-redirect"
+            labelText="Redirect URI"
+            value={gdRedirectUri}
+            onChange={(e) => setGdRedirectUri(e.target.value)}
+            placeholder="http://localhost:8137/auth/callback"
+          />
+
+          <InlineNotification
+            kind="info"
+            lowContrast
+            hideCloseButton
+            title="OAuth2 tokens will be generated when you test the connection."
+          />
         </>
       ) : (
-        <>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Service Account JSON Key</label>
-            <textarea
-              value={gdServiceAccountKey}
-              onChange={(e) => setGdServiceAccountKey(e.target.value)}
-              placeholder={`{\n  "type": "service_account",\n  "project_id": "...",\n  "private_key_id": "...",\n  "private_key": "...",\n  "client_email": "...",\n  "client_id": "...",\n  "auth_uri": "https://accounts.google.com/o/oauth2/auth",\n  "token_uri": "https://oauth2.googleapis.com/token"\n}`}
-              rows={8}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500 font-mono text-xs"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Paste the contents of your service account JSON key file
-            </p>
-          </div>
-        </>
+        <TextArea
+          id="conn-gd-sa-key"
+          labelText="Service Account JSON Key"
+          value={gdServiceAccountKey}
+          onChange={(e) => setGdServiceAccountKey(e.target.value)}
+          placeholder={`{\n  "type": "service_account",\n  "project_id": "...",\n  "private_key_id": "...",\n  "private_key": "...",\n  "client_email": "...",\n  "client_id": "...",\n  "auth_uri": "https://accounts.google.com/o/oauth2/auth",\n  "token_uri": "https://oauth2.googleapis.com/token"\n}`}
+          rows={8}
+          className="font-mono text-xs"
+          helperText="Paste the contents of your service account JSON key file"
+        />
       )}
-      
-      <div className="border-t border-gray-200 pt-4 mt-4">
-        <p className="text-sm font-medium text-gray-700 mb-2">Optional Settings</p>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Default Folder ID</label>
-          <input
-            type="text"
-            value={gdFolderId}
-            onChange={(e) => setGdFolderId(e.target.value)}
-            placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
-            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
-          />
-          <p className="text-xs text-gray-500 mt-1">Google Drive folder ID for default file operations</p>
-        </div>
-        
-        <div className="mt-3">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Shared Drive ID (Optional)</label>
-          <input
-            type="text"
-            value={gdSharedDriveId}
-            onChange={(e) => setGdSharedDriveId(e.target.value)}
-            placeholder="0AMkZ7d8J9k3lUk9PVA"
-            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
-          />
-          <p className="text-xs text-gray-500 mt-1">For Google Shared Drives (Team Drives)</p>
-        </div>
+
+      <div className="border-t border-gray-200 pt-4 mt-4 space-y-3">
+        <p className="text-sm font-medium text-gray-700">Optional Settings</p>
+
+        <TextInput
+          id="conn-gd-folder"
+          labelText="Default Folder ID"
+          value={gdFolderId}
+          onChange={(e) => setGdFolderId(e.target.value)}
+          placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
+          helperText="Google Drive folder ID for default file operations"
+        />
+
+        <TextInput
+          id="conn-gd-shared-drive"
+          labelText="Shared Drive ID (Optional)"
+          value={gdSharedDriveId}
+          onChange={(e) => setGdSharedDriveId(e.target.value)}
+          placeholder="0AMkZ7d8J9k3lUk9PVA"
+          helperText="For Google Shared Drives (Team Drives)"
+        />
       </div>
     </div>
   );
@@ -1142,57 +941,34 @@ export default function ConnectionModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-6">
-      <div className="absolute inset-0 bg-gray-900/50" onClick={onClose} />
+    <Modal isOpen={isOpen} onClose={onClose} title={connection ? 'Edit Connection' : 'New Connection'} size="md">
+      <div className="sm:min-h-[min(560px,calc(100vh-14rem))]">
+        {error && (
+          <InlineNotification
+            kind="error"
+            lowContrast
+            hideCloseButton
+            title={error}
+            className="mb-4"
+          />
+        )}
 
-      <div className="relative bg-white w-full h-full sm:h-auto sm:max-h-[calc(100vh-3rem)] sm:max-w-lg sm:rounded-xl shadow-xl flex flex-col overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-200 shrink-0">
-          <h3 className="text-base font-semibold text-gray-900">
-            {connection ? 'Edit Connection' : 'New Connection'}
-          </h3>
-          <button onClick={onClose} className="h-8 w-8 -mr-1.5 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100">
-            <XMarkIcon className="w-5 h-5" />
-          </button>
-        </div>
-
-          <div className="flex-1 overflow-y-auto px-5 py-4 sm:min-h-[min(560px,calc(100vh-10rem))]">
-            {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
-                {error}
-              </div>
-            )}
-
-            {renderUnifiedForm()}
-          </div>
-
-          <div className="shrink-0 flex flex-row-reverse gap-2 px-5 py-3 bg-gray-50 border-t border-gray-200">
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={isSubmitting || !name.trim() || !connectionType}
-              className="inline-flex justify-center items-center rounded-lg px-4 h-9 text-[14px] font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors bg-blue-600 text-white hover:bg-blue-700"
-            >
-              {isSubmitting ? (
-                <>
-                  <i className="fas fa-spinner fa-spin mr-2"></i>
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <i className={`fas ${connection ? 'fa-save' : 'fa-plus'} mr-2`}></i>
-                  {connection ? 'Update Connection' : 'Create Connection'}
-                </>
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="inline-flex justify-center items-center rounded-lg border border-gray-300 px-4 h-9 bg-white text-[14px] font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
+        {renderUnifiedForm()}
       </div>
-    </div>
+
+      <div className="flex flex-row-reverse gap-2 pt-4 mt-4 border-t border-gray-200">
+        <Button
+          variant="primary"
+          onClick={handleSubmit}
+          disabled={isSubmitting || !name.trim() || !connectionType}
+          isLoading={isSubmitting}
+        >
+          {isSubmitting ? 'Saving...' : connection ? 'Update Connection' : 'Create Connection'}
+        </Button>
+        <Button variant="secondary" onClick={onClose}>
+          Cancel
+        </Button>
+      </div>
+    </Modal>
   );
 }

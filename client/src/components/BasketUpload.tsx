@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
-import { Upload, File, X, CheckCircle, Loader2 } from 'lucide-react';
+import { Upload, File, X, CheckCircle } from 'lucide-react';
 import { api } from '../config/api';
+import { IconButton, InlineLoading } from '@carbon/react';
 
 interface UploadFile {
   id: string;
@@ -160,7 +161,7 @@ export const BasketUpload = ({ onUploadComplete }: BasketUploadProps) => {
           {files.map((file) => (
             <div
               key={file.id}
-              className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg"
+              className="cds--tile app-tile flex items-center gap-3 p-3"
             >
               <File className="h-5 w-5 text-gray-400" />
               <div className="flex-1 min-w-0">
@@ -170,7 +171,7 @@ export const BasketUpload = ({ onUploadComplete }: BasketUploadProps) => {
                 <p className="text-xs text-gray-500">{formatSize(file.size)}</p>
               </div>
               {file.status === 'uploading' && (
-                <Loader2 className="h-5 w-5 text-blue-500 animate-spin" />
+                <InlineLoading className="!w-auto" />
               )}
               {file.status === 'uploaded' && (
                 <CheckCircle className="h-5 w-5 text-green-500" />
@@ -178,12 +179,9 @@ export const BasketUpload = ({ onUploadComplete }: BasketUploadProps) => {
               {file.status === 'error' && (
                 <span className="text-xs text-red-500">Failed</span>
               )}
-              <button
-                onClick={() => removeFile(file.id)}
-                className="p-1 hover:bg-gray-100 rounded"
-              >
-                <X className="h-4 w-4 text-gray-400" />
-              </button>
+              <IconButton kind="ghost" size="sm" label="Remove" onClick={() => removeFile(file.id)}>
+                <X className="h-4 w-4" />
+              </IconButton>
             </div>
           ))}
         </div>

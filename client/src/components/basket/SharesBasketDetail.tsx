@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import {
-  X, ArrowLeft
-} from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
+import { ComposedModal, ModalHeader, ModalBody, IconButton, TextInput } from '@carbon/react';
+import { Button } from '../ui/Button';
 import { API_URL, apiFetch } from '../../config/api';
 import { ShareFolderExplorer } from '../../pages/FileExplorer';
 
@@ -72,30 +72,29 @@ export const SharesBasketDetail = ({ basket, onBack, isSharedReadOnly = false }:
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl w-full max-w-5xl h-[85vh] flex flex-col">
+    <ComposedModal open onClose={onBack} size="lg" preventCloseOnClickOutside>
         {/* Modal Header with Inline Editing */}
-        <div className="px-5 py-3 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
+        <ModalHeader>
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 flex-1 min-w-0">
-            <button
-              onClick={onBack}
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg flex-shrink-0"
-            >
+            <IconButton kind="ghost" size="md" label="Back" onClick={onBack} className="flex-shrink-0">
               <ArrowLeft className="h-5 w-5" />
-            </button>
+            </IconButton>
             <div className="flex-1 min-w-0">
               {/* Basket Name - Inline Edit */}
               <div className="flex items-center gap-2">
                 {isEditingBasketDetail ? (
-                  <input
-                    type="text"
+                  <TextInput
+                    id="shares-basket-name"
+                    labelText="Basket name"
+                    hideLabel
                     value={editBasketDetailName}
                     onChange={(e) => setEditBasketDetailName(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') saveBasketDetailChanges();
                       if (e.key === 'Escape') cancelEditingBasketDetail();
                     }}
-                    className="text-lg font-semibold text-gray-900 outline-none border-b-2 border-blue-500 bg-transparent px-0 py-0 w-full max-w-xl"
+                    className="w-full max-w-xl"
                     autoFocus
                   />
                 ) : (
@@ -112,15 +111,18 @@ export const SharesBasketDetail = ({ basket, onBack, isSharedReadOnly = false }:
               {/* Basket Description - Inline Edit */}
               <div className="mt-1">
                 {isEditingBasketDetail ? (
-                  <input
-                    type="text"
+                  <TextInput
+                    id="shares-basket-desc"
+                    labelText="Description"
+                    hideLabel
+                    size="sm"
                     value={editBasketDetailDesc}
                     onChange={(e) => setEditBasketDetailDesc(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') saveBasketDetailChanges();
                       if (e.key === 'Escape') cancelEditingBasketDetail();
                     }}
-                    className="text-sm text-gray-600 outline-none border-b-2 border-blue-500 bg-transparent px-0 py-0 w-full max-w-xl"
+                    className="w-full max-w-xl"
                     placeholder="Add description..."
                   />
                 ) : (
@@ -137,34 +139,23 @@ export const SharesBasketDetail = ({ basket, onBack, isSharedReadOnly = false }:
               {/* Edit Actions */}
               {isEditingBasketDetail && (
                 <div className="flex items-center gap-2 mt-2">
-                  <button
-                    onClick={saveBasketDetailChanges}
-                    disabled={!editBasketDetailName.trim()}
-                    className="inline-flex items-center justify-center text-[13px] px-2 h-8 rounded disabled:opacity-50 whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700"
-                  >
+                  <Button size="sm" onClick={saveBasketDetailChanges} disabled={!editBasketDetailName.trim()}>
                     Save
-                  </button>
-                  <button
-                    onClick={cancelEditingBasketDetail}
-                    className="inline-flex items-center justify-center h-9 px-3 text-[14px] font-medium border border-gray-300 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap"
-                  >
+                  </Button>
+                  <Button size="sm" variant="secondary" onClick={cancelEditingBasketDetail}>
                     Cancel
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
           </div>
-          <button onClick={onBack} className="p-2 text-gray-400 hover:text-gray-600 ml-4 flex-shrink-0">
-            <X className="h-5 w-5" />
-          </button>
         </div>
+        </ModalHeader>
 
         {/* Same folder view as the File Explorer; who sees it follows the project's access */}
-        <div className="flex-1 overflow-hidden">
+        <ModalBody className="h-[70vh] overflow-hidden !p-0 !mb-0">
           <ShareFolderExplorer basket={{ id: basket.id, name: basket.name }} readOnly={!canWrite} embedded />
-        </div>
-      </div>
-
-    </div>
+        </ModalBody>
+    </ComposedModal>
   );
 };

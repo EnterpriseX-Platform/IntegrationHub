@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   User, 
   Mail, 
@@ -8,11 +8,9 @@ import {
   Camera,
   Clock,
   Edit2,
-  CheckCircle,
-  XCircle,
-  X
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
+import { TextInput, PasswordInput, IconButton, Tag, Loading, InlineNotification } from '@carbon/react';
 
 interface UserProfile {
   id: string;
@@ -175,7 +173,7 @@ export default function Profile() {
   if (!profile) {
     return (
       <div className="p-6 flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+        <Loading withOverlay={false} small={false} description="Loading profile" />
       </div>
     );
   }
@@ -192,36 +190,28 @@ export default function Profile() {
 
       {/* Success/Error Message */}
       {message && (
-        <div className={`p-4 rounded-xl flex items-center gap-2 ${
-          message.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
-        }`}>
-          {message.type === 'success' ? (
-            <CheckCircle className="w-5 h-5" />
-          ) : (
-            <XCircle className="w-5 h-5" />
-          )}
-          {message.text}
-          <button 
-            onClick={() => setMessage(null)}
-            className="ml-auto text-gray-400 hover:text-gray-600"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+        <InlineNotification
+          lowContrast
+          kind={message.type === 'success' ? 'success' : 'error'}
+          title={message.text}
+          onClose={() => { setMessage(null); return false; }}
+        />
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Profile Card */}
         <div className="lg:col-span-1">
-          <div className="bg-white rounded-xl border border-gray-200 p-6 text-center">
+          <div className="cds--tile app-tile p-6 text-center">
             {/* Avatar */}
             <div className="relative inline-block mb-4">
               <div className="w-24 h-24 rounded-full bg-blue-600 flex items-center justify-center text-white text-3xl font-bold mx-auto">
                 {userInitial}
               </div>
-              <button className="absolute bottom-0 right-0 bg-gray-100 hover:bg-gray-200 p-2 rounded-full border-2 border-white transition-colors">
-                <Camera className="w-4 h-4 text-gray-600" />
-              </button>
+              <div className="absolute bottom-0 right-0">
+                <IconButton kind="ghost" size="sm" label="Change photo">
+                  <Camera className="w-4 h-4" />
+                </IconButton>
+              </div>
             </div>
 
             {/* Name & Email */}
@@ -233,25 +223,17 @@ export default function Profile() {
 
             {/* Role Badge */}
             <div className="mt-4">
-              <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                profile.role === 'admin' 
-                  ? 'bg-purple-100 text-purple-800' 
-                  : 'bg-gray-100 text-gray-800'
-              }`}>
-                <Shield className="w-4 h-4 mr-1" />
+              <Tag size="sm" type={profile.role === 'admin' ? 'purple' : 'gray'} renderIcon={() => <Shield className="w-4 h-4" />}>
                 {profile.role === 'admin' ? 'Administrator' : 'User'}
-              </span>
+              </Tag>
             </div>
 
             {/* Status */}
             <div className="mt-4 pt-4 border-t border-gray-100">
               <div className="flex items-center justify-center gap-2 text-sm">
-                <span className={`w-2 h-2 rounded-full ${
-                  profile.status !== 'inactive' ? 'bg-green-500' : 'bg-red-500'
-                }`}></span>
-                <span className={profile.status !== 'inactive' ? 'text-green-700' : 'text-red-700'}>
+                <Tag size="sm" type={profile.status !== 'inactive' ? 'green' : 'red'}>
                   {profile.status !== 'inactive' ? 'Active Account' : 'Inactive Account'}
-                </span>
+                </Tag>
               </div>
             </div>
 
@@ -272,7 +254,7 @@ export default function Profile() {
         {/* Right Column - Forms */}
         <div className="lg:col-span-2 space-y-6">
           {/* Profile Information */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="cds--tile app-tile p-6">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2">
                 <User className="w-5 h-5 text-gray-500" />
@@ -293,30 +275,22 @@ export default function Profile() {
             {isEditing ? (
               <form onSubmit={handleUpdateProfile} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Full Name
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Email Address
-                    </label>
-                    <input
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
-                  </div>
+                  <TextInput
+                    id="profile-name"
+                    labelText="Full Name"
+                    type="text"
+                    value={formData.name}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, name: e.target.value })}
+                    required
+                  />
+                  <TextInput
+                    id="profile-email"
+                    labelText="Email Address"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, email: e.target.value })}
+                    required
+                  />
                 </div>
                 <div className="flex justify-end gap-3 pt-4">
                   <Button
@@ -361,50 +335,35 @@ export default function Profile() {
           </div>
 
           {/* Change Password */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="cds--tile app-tile p-6">
             <div className="flex items-center gap-2 mb-6">
               <Key className="w-5 h-5 text-gray-500" />
               <h3 className="text-lg font-semibold text-gray-900">Change Password</h3>
             </div>
 
             <form onSubmit={handleChangePassword} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Current Password
-                </label>
-                <input
-                  type="password"
-                  value={formData.currentPassword}
-                  onChange={(e) => setFormData({ ...formData, currentPassword: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              <PasswordInput
+                id="profile-current-password"
+                labelText="Current Password"
+                value={formData.currentPassword}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, currentPassword: e.target.value })}
+                required
+              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <PasswordInput
+                  id="profile-new-password"
+                  labelText="New Password"
+                  value={formData.newPassword}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, newPassword: e.target.value })}
                   required
                 />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    New Password
-                  </label>
-                  <input
-                    type="password"
-                    value={formData.newPassword}
-                    onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Confirm New Password
-                  </label>
-                  <input
-                    type="password"
-                    value={formData.confirmPassword}
-                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  />
-                </div>
+                <PasswordInput
+                  id="profile-confirm-password"
+                  labelText="Confirm New Password"
+                  value={formData.confirmPassword}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                  required
+                />
               </div>
               <div className="flex justify-end pt-4">
                 <Button type="submit" isLoading={loading}>

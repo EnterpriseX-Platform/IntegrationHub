@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
-  ArrowLeft, Clock, Search, Download, Calendar,
+  ArrowLeft, Clock, Download, Calendar,
   CheckCircle2, AlertCircle, Activity, RefreshCw,
   ChevronLeft, ChevronRight, Terminal,
   Timer, Layers,
@@ -12,6 +12,8 @@ import {
 } from 'lucide-react';
 
 import { API_URL, apiFetch } from '../../config/api';
+import { Button } from '../../components/ui/Button';
+import { IconButton, Search as CdsSearch, TextInput, ContentSwitcher, Switch, Loading, Tag } from '@carbon/react';
 
 interface Execution {
   id: string;
@@ -410,7 +412,7 @@ export default function SchedulerLogs() {
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
-        <RefreshCw className="h-10 w-10 text-blue-500 animate-spin mb-4" />
+        <Loading withOverlay={false} description="Loading scheduler data" />
         <p className="text-gray-500">Loading scheduler data...</p>
       </div>
     );
@@ -421,13 +423,13 @@ export default function SchedulerLogs() {
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
         <AlertCircle className="h-16 w-16 text-red-400 mb-4" />
         <p className="text-lg font-medium text-gray-900">{error}</p>
-        <button 
+        <Button
           onClick={() => navigate('/schedulers')}
-          className="mt-4 flex items-center gap-2 px-3.5 h-9 bg-blue-600 text-white rounded-lg hover:bg-blue-700 whitespace-nowrap"
+          className="mt-4"
+          leftIcon={<ArrowLeft className="h-4 w-4" />}
         >
-          <ArrowLeft className="h-4 w-4" />
           Back to Schedulers
-        </button>
+        </Button>
       </div>
     );
   }
@@ -439,18 +441,13 @@ export default function SchedulerLogs() {
         <div className="px-5 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <button 
-                onClick={() => navigate('/schedulers')}
-                className="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-              >
+              <IconButton kind="ghost" size="md" label="Back to Schedulers" onClick={() => navigate('/schedulers')}>
                 <ArrowLeft className="h-5 w-5" />
-              </button>
+              </IconButton>
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-lg font-bold text-gray-900">{scheduler?.flowName}</h1>
-                  <span className="px-1.5 py-0.5 bg-blue-50 text-blue-600 text-[12px] rounded font-medium">
-                    Scheduler
-                  </span>
+                  <Tag size="sm" type="blue">Scheduler</Tag>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
                   <span className="flex items-center gap-1">
@@ -466,14 +463,15 @@ export default function SchedulerLogs() {
             <div className="flex items-center gap-2">
               {/* Date Range Filter */}
               <div className="relative">
-                <button
+                <Button
+                  variant="secondary"
+                  size="md"
                   onClick={() => setShowDatePicker(!showDatePicker)}
-                  className="flex items-center gap-1.5 px-2.5 h-9 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200 text-[14px] whitespace-nowrap"
+                  leftIcon={<Calendar className="h-4 w-4" />}
+                  rightIcon={<ChevronDown className={`h-4 w-4 transition-transform ${showDatePicker ? 'rotate-180' : ''}`} />}
                 >
-                  <Calendar className="h-4 w-4" />
-                  <span>{dateFilterOptions.find(o => o.value === dateFilter)?.label}</span>
-                  <ChevronDown className={`h-4 w-4 transition-transform ${showDatePicker ? 'rotate-180' : ''}`} />
-                </button>
+                  {dateFilterOptions.find(o => o.value === dateFilter)?.label}
+                </Button>
                 
                 {showDatePicker && (
                   <div className="absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-30 min-w-[180px]">
@@ -503,40 +501,38 @@ export default function SchedulerLogs() {
                     <p className="text-sm font-medium text-gray-900 mb-3">Custom Date Range</p>
                     <div className="space-y-3">
                       <div>
-                        <label className="text-xs text-gray-500 block mb-1.5">Start Date</label>
-                        <input
+                        <TextInput
+                          id="scheduler-logs-start-date"
+                          labelText="Start Date"
                           type="date"
                           value={customDateRange.start}
                           onChange={(e) => setCustomDateRange(prev => ({ ...prev, start: e.target.value }))}
-                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                         />
                       </div>
                       <div>
-                        <label className="text-xs text-gray-500 block mb-1.5">End Date</label>
-                        <input
+                        <TextInput
+                          id="scheduler-logs-end-date"
+                          labelText="End Date"
                           type="date"
                           value={customDateRange.end}
                           onChange={(e) => setCustomDateRange(prev => ({ ...prev, end: e.target.value }))}
-                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                         />
                       </div>
                       <div className="flex gap-2 pt-2">
-                        <button
-                          onClick={() => setShowDatePicker(false)}
-                          className="inline-flex items-center justify-center flex-1 px-3.5 h-9 bg-blue-600 text-white text-[14px] font-medium rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
-                        >
+                        <Button size="sm" className="flex-1" onClick={() => setShowDatePicker(false)}>
                           Apply
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => {
                             setDateFilter('all');
                             setCustomDateRange({ start: '', end: '' });
                             setShowDatePicker(false);
                           }}
-                          className="inline-flex items-center justify-center px-3.5 h-9 text-gray-500 text-[14px] hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors whitespace-nowrap"
                         >
                           Reset
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -545,37 +541,33 @@ export default function SchedulerLogs() {
               
               <div className="w-px h-5 bg-gray-300" />
               
-              <button
-                onClick={fetchData}
-                className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                title="Refresh"
-              >
+              <IconButton kind="ghost" size="md" label="Refresh" onClick={fetchData}>
                 <RefreshCw className="h-4 w-4" />
-              </button>
+              </IconButton>
               
               <div className="w-px h-5 bg-gray-300" />
               
               {/* Force Run Button */}
-              <button
+              <Button
+                variant="secondary"
                 onClick={forceRun}
                 disabled={forceRunning}
-                className="flex items-center gap-1.5 px-3 h-9 rounded-lg transition-colors text-[14px] font-medium whitespace-nowrap bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
                 title="Force Run Now"
+                leftIcon={<Play className="h-4 w-4" />}
               >
-                <Play className="h-4 w-4" />
                 {forceRunning ? 'Running...' : 'Force Run'}
-              </button>
+              </Button>
               
               {/* Delete Executions Button */}
-              <button
+              <Button
+                variant="danger"
                 onClick={deleteExecutions}
                 disabled={deleting}
-                className="flex items-center gap-1.5 px-3 h-9 rounded-lg transition-colors text-[14px] font-medium whitespace-nowrap bg-white border border-red-300 text-red-600 hover:bg-red-50"
                 title="Delete execution logs for this year"
+                leftIcon={<Trash2 className="h-4 w-4" />}
               >
-                <Trash2 className="h-4 w-4" />
                 {deleting ? 'Deleting...' : 'Clear Logs'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -618,35 +610,30 @@ export default function SchedulerLogs() {
 
         <div className="grid grid-cols-12 gap-4">
           {/* Left Panel - Execution List */}
-          <div className="col-span-4 bg-white rounded-lg border border-gray-200 flex flex-col h-[calc(100vh-260px)]">
+          <div className="col-span-4 cds--tile app-tile !p-0 flex flex-col h-[calc(100vh-260px)]">
             {/* Filters - Compact */}
             <div className="p-3 border-b border-gray-200">
-              <div className="relative mb-2">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
+              <div className="mb-2">
+                <CdsSearch
+                  id="scheduler-logs-search"
+                  size="md"
+                  labelText="Search executions"
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e: any) => setSearchTerm(e.target.value)}
+                  onClear={() => setSearchTerm('')}
                   placeholder="Search executions..."
-                  className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                 />
               </div>
-              
-              <div className="grid grid-cols-4 gap-0.5 p-0.5 bg-gray-100 rounded-lg">
+
+              <ContentSwitcher
+                size="sm"
+                selectedIndex={Math.max(0, (['all', 'running', 'completed', 'failed'] as const).indexOf(statusFilter as any))}
+                onChange={({ name }: any) => setStatusFilter(name)}
+              >
                 {([['all', 'All'], ['running', 'Running'], ['completed', 'Done'], ['failed', 'Failed']] as const).map(([status, label]) => (
-                  <button
-                    key={status}
-                    onClick={() => setStatusFilter(status)}
-                    className={`h-7 rounded-md text-xs font-medium truncate transition-colors ${
-                      statusFilter === status
-                        ? 'bg-white text-blue-700 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    {label}
-                  </button>
+                  <Switch key={status} name={status} text={label} />
                 ))}
-              </div>
+              </ContentSwitcher>
             </div>
 
             {/* Execution List - Compact Cards */}
@@ -693,12 +680,9 @@ export default function SchedulerLogs() {
                   <Layers className="h-12 w-12 mb-3 text-gray-300" />
                   <p className="text-sm">No executions found</p>
                   {searchTerm && (
-                    <button 
-                      onClick={() => setSearchTerm('')}
-                      className="mt-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
-                    >
+                    <Button variant="ghost" size="sm" className="mt-2" onClick={() => setSearchTerm('')}>
                       Clear search
-                    </button>
+                    </Button>
                   )}
                 </div>
               )}
@@ -707,23 +691,15 @@ export default function SchedulerLogs() {
             {/* Pagination - Compact */}
             {totalPages > 1 && (
               <div className="p-3 border-t border-gray-200 flex items-center justify-between">
-                <button
-                  onClick={() => setPage(p => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                  className="p-1.5 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg disabled:opacity-50"
-                >
+                <IconButton kind="ghost" size="sm" label="Previous page" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>
                   <ChevronLeft className="h-4 w-4" />
-                </button>
+                </IconButton>
                 <span className="text-xs text-gray-500">
                   {page} / {totalPages}
                 </span>
-                <button
-                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                  disabled={page === totalPages}
-                  className="p-1.5 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg disabled:opacity-50"
-                >
+                <IconButton kind="ghost" size="sm" label="Next page" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
                   <ChevronRight className="h-4 w-4" />
-                </button>
+                </IconButton>
               </div>
             )}
           </div>
@@ -731,7 +707,7 @@ export default function SchedulerLogs() {
           {/* Right Panel - Logs */}
           <div className="col-span-8 flex flex-col h-[calc(100vh-260px)]">
             {selectedExecution ? (
-              <div className="bg-white rounded-lg border border-gray-200 flex flex-col h-full overflow-hidden">
+              <div className="cds--tile app-tile !p-0 flex flex-col h-full overflow-hidden">
                 {/* Log Header - Compact */}
                 <div className="px-3 py-2 border-b border-gray-200 bg-gray-50 rounded-t-lg">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -775,13 +751,9 @@ export default function SchedulerLogs() {
                         ))}
                       </div>
                       
-                      <button
-                            onClick={exportLogs}
-                            className="flex items-center gap-1.5 px-3 h-8 text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 rounded-lg text-[13px] whitespace-nowrap"
-                          >
-                            <Download className="h-4 w-4" />
-                            Export
-                          </button>
+                      <Button variant="secondary" size="sm" onClick={exportLogs} leftIcon={<Download className="h-4 w-4" />}>
+                        Export
+                      </Button>
 
                     </div>
                   </div>
@@ -815,8 +787,8 @@ export default function SchedulerLogs() {
                 >
                   {logsLoading ? (
                     <div className="flex flex-col items-center justify-center h-full text-gray-400">
-                      <RefreshCw className="h-8 w-8 animate-spin mb-2" />
-                      <p>Loading logs...</p>
+                      <Loading withOverlay={false} small description="Loading logs" />
+                      <p className="mt-2">Loading logs...</p>
                     </div>
                   ) : filteredLogs.length > 0 ? (
                     <div className="space-y-1">
@@ -871,18 +843,15 @@ export default function SchedulerLogs() {
                     <div className="flex flex-col items-center justify-center h-full text-gray-500">
                       <Terminal className="h-12 w-12 mb-3 text-gray-300" />
                       <p>No logs match your filters</p>
-                      <button 
-                        onClick={() => { setLogLevelFilter('all'); setSearchTerm(''); }}
-                        className="mt-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
-                      >
+                      <Button variant="ghost" size="sm" className="mt-2" onClick={() => { setLogLevelFilter('all'); setSearchTerm(''); }}>
                         Clear filters
-                      </button>
+                      </Button>
                     </div>
                   )}
                 </div>
               </div>
             ) : (
-              <div className="bg-white rounded-xl border border-gray-200 flex items-center justify-center h-full shadow-sm">
+              <div className="cds--tile app-tile flex items-center justify-center h-full">
                 <div className="text-center text-gray-400">
                   <Layers className="h-16 w-16 mx-auto mb-4 text-gray-300" />
                   <p className="text-lg font-medium text-gray-600">Select an execution</p>

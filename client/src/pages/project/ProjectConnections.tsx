@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react';
 import { 
   Plug, 
   Plus, 
-  Search, X, AlertCircle, CheckCircle
+  AlertCircle, CheckCircle
 } from 'lucide-react';
+import { Search, Loading, InlineNotification } from '@carbon/react';
 import { Button } from '../../components/ui/Button';
+import { Modal } from '../../components/ui/Modal';
 import ConnectionModal from '../../components/modals/ConnectionModal';
 import { ConnectionIcon } from '../../components/connections/ConnectionIcon';
 import { ActionButtons, StatusBadge } from '../../components/connections/ActionButtons';
@@ -289,7 +291,7 @@ export const ProjectConnections = ({ project }: { project: Project }) => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+        <Loading withOverlay={false} small description="Loading connections" />
       </div>
     );
   }
@@ -304,25 +306,22 @@ export const ProjectConnections = ({ project }: { project: Project }) => {
             Manage connections to external systems
           </p>
         </div>
-        <button
-          onClick={handleNew}
-          className="flex items-center gap-2 px-3 h-9 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700"
-        >
-          <Plus className="h-4 w-4" />
+        <Button onClick={handleNew} leftIcon={<Plus className="h-4 w-4" />}>
           Add Connection
-        </button>
+        </Button>
       </div>
 
       {/* Search and View Toggle */}
       <div className="flex items-center gap-3 mb-6">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <input
-            type="text"
+        <div className="flex-1 max-w-md">
+          <Search
+            id="project-connections-search"
+            size="md"
+            labelText="Search connections"
             placeholder="Search connections..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm"
+            onChange={(e: any) => setSearchQuery(e.target?.value ?? '')}
+            onClear={() => setSearchQuery('')}
           />
         </div>
         
@@ -346,10 +345,10 @@ export const ProjectConnections = ({ project }: { project: Project }) => {
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, connection)}
                   onDragEnd={handleDragEnd}
-                  className={`bg-white rounded-lg border px-4 py-2.5 cursor-move transition-all duration-200 group flex flex-wrap items-center gap-x-4 gap-y-2 relative
+                  className={`cds--tile app-tile !px-4 !py-2.5 cursor-move transition-all duration-200 group flex flex-wrap items-center gap-x-4 gap-y-2 relative
                     ${dragOverConnectionId === connection.id && draggedConnection?.id !== connection.id 
                       ? 'opacity-30 scale-[0.98] border-purple-400' 
-                      : 'hover:shadow-md hover:border-purple-200 border-gray-200'}
+                      : ''}
                     ${draggedConnection?.id === connection.id ? 'opacity-40' : ''}
                   `}
                 >
@@ -426,13 +425,9 @@ export const ProjectConnections = ({ project }: { project: Project }) => {
             }
           </p>
           {!searchQuery && (
-            <button
-              onClick={handleNew}
-              className="flex items-center gap-2 px-3 h-9 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 mx-auto whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700"
-            >
-              <Plus className="h-4 w-4" />
+            <Button onClick={handleNew} leftIcon={<Plus className="h-4 w-4" />}>
               Add Connection
-            </button>
+            </Button>
           )}
         </div>
       )}
@@ -459,119 +454,97 @@ export const ProjectConnections = ({ project }: { project: Project }) => {
 
       {/* Toast Notification */}
       {notification && (
-        <div className="fixed top-4 right-4 z-[60] animate-in slide-in-from-top-2 fade-in duration-300">
-          <div className={`flex items-start gap-3 px-4 py-3 rounded-lg shadow-lg border max-w-md ${
-            notification.type === 'success'
-              ? 'bg-green-50 border-green-200 text-green-800'
-              : 'bg-red-50 border-red-200 text-red-800'
-          }`}>
-            {notification.type === 'success' ? (
-              <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-            ) : (
-              <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
-            )}
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-sm">{notification.title}</p>
-              <p className="text-xs mt-0.5 opacity-80 break-words">{notification.message}</p>
-            </div>
-            <button
-              onClick={() => setNotification(null)}
-              className="p-1 hover:bg-black/10 rounded transition-colors flex-shrink-0"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
+        <div className="fixed top-4 right-4 z-[60] max-w-md">
+          <InlineNotification
+            kind={notification.type}
+            lowContrast
+            title={notification.title}
+            subtitle={notification.message}
+            onCloseButtonClick={() => setNotification(null)}
+          />
         </div>
       )}
 
       {/* Test Result Modal */}
-      {testResult && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm mx-4">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">Test Connection</h2>
-              <button
-                onClick={() => setTestResult(null)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="h-5 w-5 text-gray-500" />
-              </button>
-            </div>
-            <div className="p-6">
-              <div className={`flex items-center gap-3 mb-3 ${testResult.success ? 'text-green-500' : 'text-red-500'}`}>
-                {testResult.success ? (
-                  <CheckCircle className="h-10 w-10" />
-                ) : (
-                  <AlertCircle className="h-10 w-10" />
-                )}
-              </div>
-              <p className="text-sm text-gray-600">
-                <strong>{testResult.connectionName}</strong>
-              </p>
-              <p className={`text-sm mt-2 ${testResult.success ? 'text-green-600' : 'text-red-600'}`}>
-                {testResult.message}
-              </p>
-              {testResult.error && (
-                <div className="mt-3 p-2.5 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-xs font-medium text-red-700 mb-1">Error Detail:</p>
-                  <p className="text-xs text-red-600 break-words">{testResult.error}</p>
-                </div>
-              )}
-              {testResult.latency && (
-                <p className="text-xs text-gray-400 mt-2">
-                  <i className="fas fa-clock mr-1"></i>
-                  Latency: {testResult.latency}
-                </p>
+      <Modal
+        isOpen={!!testResult}
+        onClose={() => setTestResult(null)}
+        title="Test Connection"
+        size="sm"
+      >
+        {testResult && (
+          <>
+            <div className={`flex items-center gap-3 mb-3 ${testResult.success ? 'text-green-500' : 'text-red-500'}`}>
+              {testResult.success ? (
+                <CheckCircle className="h-10 w-10" />
+              ) : (
+                <AlertCircle className="h-10 w-10" />
               )}
             </div>
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+            <p className="text-sm text-gray-600">
+              <strong>{testResult.connectionName}</strong>
+            </p>
+            <p className={`text-sm mt-2 ${testResult.success ? 'text-green-600' : 'text-red-600'}`}>
+              {testResult.message}
+            </p>
+            {testResult.error && (
+              <InlineNotification
+                className="mt-3"
+                kind="error"
+                lowContrast
+                hideCloseButton
+                title="Error Detail:"
+                subtitle={testResult.error}
+              />
+            )}
+            {testResult.latency && (
+              <p className="text-xs text-gray-400 mt-2">
+                <i className="fas fa-clock mr-1"></i>
+                Latency: {testResult.latency}
+              </p>
+            )}
+            <div className="flex items-center justify-end gap-3 pt-4 mt-4 border-t border-gray-200">
               <Button onClick={() => setTestResult(null)}>
                 OK
               </Button>
             </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </Modal>
 
       {/* Delete Confirmation Modal */}
-      {showDeleteModal && connectionToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm mx-4">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">Delete Connection</h2>
-              <button 
-                onClick={() => setShowDeleteModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="h-5 w-5 text-gray-500" />
-              </button>
+      <Modal
+        isOpen={showDeleteModal && !!connectionToDelete}
+        onClose={() => setShowDeleteModal(false)}
+        title="Delete Connection"
+        size="sm"
+      >
+        {connectionToDelete && (
+          <>
+            <div className="flex items-center gap-3 text-amber-500 mb-3">
+              <AlertCircle className="h-8 w-8" />
             </div>
-            <div className="p-6">
-              <div className="flex items-center gap-3 text-amber-500 mb-3">
-                <AlertCircle className="h-8 w-8" />
-              </div>
-              <p className="text-sm text-gray-600">
-                Are you sure you want to delete <strong>{connectionToDelete.name}</strong>?
-              </p>
-              <p className="text-sm text-gray-500 mt-2">
-                This action cannot be undone. Flows using this connection may fail.
-              </p>
-            </div>
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+            <p className="text-sm text-gray-600">
+              Are you sure you want to delete <strong>{connectionToDelete.name}</strong>?
+            </p>
+            <p className="text-sm text-gray-500 mt-2">
+              This action cannot be undone. Flows using this connection may fail.
+            </p>
+            <div className="flex items-center justify-end gap-3 pt-4 mt-4 border-t border-gray-200">
               <Button variant="ghost" onClick={() => setShowDeleteModal(false)}>
                 Cancel
               </Button>
-              <Button 
-                variant="danger" 
+              <Button
+                variant="danger"
                 onClick={handleDeleteConfirm}
                 isLoading={isDeleting}
               >
                 Delete Connection
               </Button>
             </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </Modal>
     </div>
   );
 };
