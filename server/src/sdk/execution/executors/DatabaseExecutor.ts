@@ -506,6 +506,121 @@ export class DatabaseExecutor extends NodeExecutor {
     return t && /^[a-z0-9_]+$/i.test(t) ? `$${n}::${t}` : `$${n}`;
   }
 
+  /**
+   * bulk-insert for PostgreSQL (through the Prisma client of the connection).
+   * Same modes as Oracle: append / truncate / delete-all / delete-by-key, all in
+   * one transaction. Values go as text with a ::type cast taken from the table,
+   * so "00001" into an int column or "2026-01-15" into a date column just works.
+   */
+  private async bulkInsertPostgres(
+    client: any, data: DatabaseNodeData, context: ExecutionContext,
+    rows: any[], fileColumns: string[], allDbColumns: string[], batchSize: number,
+  ): Promise<any> {
+    const types = await this.pgColumnTypes(client, data.table!);
+    if (types.size === 0) {
+      throw new Error(`bulk-insert: table ${data.table} not found (or this connection is not PostgreSQL/Oracle)`);
+    }
+    const truncateMode = (data as any).truncateMode || 'truncate';
+    const mode = data.importMode
+      ?? (data.truncateFirst ? (truncateMode === 'delete' ? 'delete-all' : 'truncate') : 'append');
+    const keySpecs = (data.deleteKeys || [])
+      .map((k: any) => (typeof k === 'string' ? { column: k } : k))
+      .filter((k: any) => k && k.column) as { column: string; prefixLength?: number; value?: string }[];
+    if (mode === 'delete-by-key' && keySpecs.length === 0) {
+      throw new Error('Import mode "delete-by-key" requires deleteKeys[] — list at least one column to match for deletion.');
+    }
+
+    const extraCols = data.extraColumns || [];
+    const ident = (c: string) => c.split('.').map(p => `"${p.replace(/"/g, '')}"`).join('.');
+    const table = ident(data.table!);
+    const textOf = (v: any): string | null =>
+      (v === null || v === undefined || v === '' ? null
+        : v instanceof Date ? v.toISOString()
+        : typeof v === 'object' ? JSON.stringify(v) : String(v));
+    const pick = (row: any, col: string) => {
+      if (row[col] !== undefined) return row[col];
+      const k = Object.keys(row).find(x => x.toLowerCase() === col.toLowerCase());
+      return k === undefined ? undefined : row[k];
+    };
+    const toValues = (row: any): any[] => {
+      const out: any[] = [];
+      if (data.idColumn) out.push(crypto.randomUUID());
+      fileColumns.forEach(c => out.push(textOf(pick(row, c))));
+      for (const e of extraCols) {
+        const r = this.resolveTemplate(e.value, context);
+        out.push(r === 'NULL' ? null : textOf(r));
+      }
+      return out;
+    };
+
+    const start = Date.now();
+    // PostgreSQL takes at most 65535 parameters per statement
+    const perBatch = Math.max(1, Math.min(batchSize, Math.floor(30000 / Math.max(1, allDbColumns.length))));
+    let inserted = 0;
+
+    await client.$transaction(async (tx: any) => {
+      const cleanupKey = `_bulkCleanupDone:${data.table}`;
+      if ((mode === 'truncate' || mode === 'delete-all') && !context.variables.get(cleanupKey)) {
+        context.variables.set(cleanupKey, true);
+        const n = await tx.$executeRawUnsafe(mode === 'truncate' ? `TRUNCATE TABLE ${table}` : `DELETE FROM ${table}`);
+        this.log(context, 'info', mode === 'truncate' ? `✓ Truncated ${data.table}` : `✓ Deleted ${n} rows from ${data.table}`);
+      } else if (mode === 'delete-by-key') {
+        const explicit: Record<string, any> = {};
+        for (const k of keySpecs) {
+          if (k.value === undefined || k.value === '') continue;
+          const v = this.resolveTemplate(String(k.value), context);
+          if (v != null && String(v) !== '' && !/\{\{.*\}\}/.test(String(v))) explicit[k.column] = v;
+        }
+        const propOf = (col: string) => {
+          const ci = (data.columns || []).indexOf(col);
+          return ci >= 0 && data.fileColumns?.[ci] ? data.fileColumns[ci] : col;
+        };
+        const doneKey = `_bulkDeletedTuples:${data.table}`;
+        const done: Set<string> = context.variables.get(doneKey) instanceof Set ? context.variables.get(doneKey) : new Set<string>();
+        const conds = keySpecs.map((k, i) =>
+          k.prefixLength
+            ? `CAST(${ident(k.column)} AS TEXT) LIKE $${i + 1} || '%'`
+            : `${ident(k.column)} = ${this.castPlaceholder(i + 1, k.column, types)}`);
+        let deleted = 0;
+        for (const r of rows) {
+          const tup = keySpecs.map(k => {
+            const raw = k.column in explicit ? explicit[k.column] : pick(r, propOf(k.column));
+            const t = textOf(raw);
+            return t != null && k.prefixLength ? t.slice(0, k.prefixLength) : t;
+          });
+          const sig = JSON.stringify(tup);
+          if (done.has(sig)) continue;
+          done.add(sig);
+          deleted += await tx.$executeRawUnsafe(`DELETE FROM ${table} WHERE ${conds.join(' AND ')}`, ...tup);
+        }
+        context.variables.set(doneKey, done);
+        this.log(context, 'info', `✓ Deleted ${deleted} rows matching (${keySpecs.map(k => k.column).join(',')})`);
+      }
+
+      const cols = allDbColumns.map(ident).join(', ');
+      for (let i = 0; i < rows.length; i += perBatch) {
+        const batch = rows.slice(i, i + perBatch);
+        const params: any[] = [];
+        const tuples = batch.map(row => {
+          const vals = toValues(row);
+          return '(' + vals.map((v, j) => {
+            params.push(v);
+            return this.castPlaceholder(params.length, allDbColumns[j], types);
+          }).join(', ') + ')';
+        });
+        try {
+          inserted += await tx.$executeRawUnsafe(`INSERT INTO ${table} (${cols}) VALUES ${tuples.join(', ')}`, ...params);
+        } catch (e: any) {
+          throw new Error(`Rows ${i + 1}-${i + batch.length} failed: ${e.message}`);
+        }
+      }
+    }, { timeout: 30 * 60 * 1000, maxWait: 60 * 1000 });
+
+    const sec = (Date.now() - start) / 1000;
+    this.log(context, 'info', `Bulk insert completed: ${inserted.toLocaleString()} rows in ${sec.toFixed(1)}s`);
+    return { rows: [], rowCount: inserted, inserted, command: 'BULK-INSERT', table: data.table, batchSize: perBatch, durationSec: sec };
+  }
+
   private async executeInsert(data: DatabaseNodeData, context: ExecutionContext): Promise<any> {
     if (!data.table) {
       throw new Error('Table name is required for INSERT');
@@ -732,7 +847,7 @@ export class DatabaseExecutor extends NodeExecutor {
 
     return this.executeWithConnection(data.connectionId, async (client, isOracle) => {
       if (!isOracle) {
-        throw new Error('bulk-insert is currently only supported for Oracle connections');
+        return this.bulkInsertPostgres(client, data, context, rows, fileColumns, allDbColumns, batchSize);
       }
 
       const conn = client as oracledb.Connection;

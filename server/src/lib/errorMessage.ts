@@ -18,3 +18,23 @@ export function errorMessage(err: unknown, fallback = 'Unknown error'): string {
   if (e.code) return String(e.code);
   return typeof err === 'string' ? err : fallback;
 }
+
+/**
+ * HTTP status for a thrown value: Prisma "record not found" is 404, a broken
+ * reference (unknown user, table…) is 400; anything else is a server error.
+ */
+export function errorStatus(err: unknown): number {
+  const code = (err as any)?.code;
+  if (code === 'P2025') return 404;
+  if (code === 'P2003' || code === 'P2002') return 400;
+  return 500;
+}
+
+/** errorMessage, with Prisma codes turned into words a user can act on. */
+export function errorText(err: unknown): string {
+  const code = (err as any)?.code;
+  if (code === 'P2025') return 'Not found';
+  if (code === 'P2003') return 'A referenced record does not exist';
+  if (code === 'P2002') return 'Already exists';
+  return errorMessage(err);
+}

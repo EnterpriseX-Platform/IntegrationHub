@@ -500,6 +500,13 @@ router.post('/', async (req: Request, res: Response) => {
       return res.status(403).json({ success: false, error: 'You do not have access to this project' });
     }
 
+    if (config !== undefined && config !== null && (typeof config !== 'object' || Array.isArray(config))) {
+      return res.status(400).json({ success: false, error: 'config must be an object' });
+    }
+    if (type && !/^[a-z][a-z0-9-]{1,40}$/.test(String(type))) {
+      return res.status(400).json({ success: false, error: 'Invalid connection type' });
+    }
+
     // Validate required fields
     if (!projectId || !name || !type) {
       const response: ApiResponseWrapper = {
@@ -653,10 +660,12 @@ router.post('/position', adminOnly, async (req: Request, res: Response) => {
 
     // Update positions in transaction
     await prisma.$transaction(
-      positions.map((item: { connectionId: string; position: number }) =>
-        prisma.connection.update({
+      positions
+        .filter((item: any) => item && typeof item.connectionId === 'string' && Number.isFinite(Number(item.position)))
+        .map((item: { connectionId: string; position: number }) =>
+        prisma.connection.updateMany({ // updateMany: an unknown id is skipped, not a 500
           where: { id: item.connectionId },
-          data: { displayOrder: item.position },
+          data: { displayOrder: Number(item.position) },
         })
       )
     );

@@ -46,6 +46,7 @@ router.post('/folders', async (req: Request, res: Response) => {
 // PUT /folders/:id — rename folder
 router.put('/folders/:id', async (req: Request, res: Response) => {
   const { name } = req.body as { name: string };
+  if (!name || !String(name).trim()) { res.status(400).json({ success: false, error: 'Name cannot be empty' }); return; }
   try {
     const folder = await prisma.dataViewFolder.update({
       where: { id: req.params.id },
@@ -120,6 +121,9 @@ router.post('/', async (req: Request, res: Response) => {
   if (!datasetId) { res.status(400).json({ success: false, error: 'datasetId required' }); return; }
 
   try {
+    if (!(await prisma.wbDataset.findUnique({ where: { id: datasetId }, select: { id: true } }))) {
+      res.status(404).json({ success: false, error: 'Dataset not found' }); return;
+    }
     const view = await prisma.dataView.create({
       data: {
         name: name.trim(),

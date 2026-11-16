@@ -13,7 +13,7 @@ import * as iconv from 'iconv-lite';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { errorMessage } from '../lib/errorMessage';
+import { errorMessage, errorStatus, errorText } from '../lib/errorMessage';
 import { maskConfig, mergeSecrets } from '../lib/connectionSecrets';
 
 // Tiny cuid-style id generator: 'c' + base36 timestamp + 16 hex random chars.
@@ -498,6 +498,17 @@ async function bulkInsert(connectionId: string, tableName: string, columns: ColS
   return inserted;
 }
 
+/** Text for a filter option. A Date becomes "2026-01-15" (or a full ISO
+ *  timestamp when it has a time part) — never Date.toString(), which the
+ *  database cannot read back ("GMT+0700 (Indochina Time)"). */
+function optionText(v: any): string {
+  if (v instanceof Date) {
+    const local = new Date(v.getTime() - v.getTimezoneOffset() * 60000).toISOString();
+    return local.endsWith('T00:00:00.000Z') ? local.slice(0, 10) : local.replace('Z', '');
+  }
+  return String(v);
+}
+
 // ── Query from target DB ──────────────────────────────────────────────────────
 
 async function buildRepoFolderWhere(folderId: string, engine: DbEngine): Promise<string> {
@@ -506,7 +517,10 @@ async function buildRepoFolderWhere(folderId: string, engine: DbEngine): Promise
   while (current) {
     const folder: any = await prisma.repoFolder.findUnique({ where: { id: current } });
     if (!folder) break;
-    parts.unshift(`${quoteIdent(folder.partitionField, engine)} = '${folder.partitionValue.replace(/'/g, "''")}'`);
+    // Data Repository folders only group tables; they carry no partition
+    if (folder.partitionField && folder.partitionValue != null) {
+      parts.unshift(`${quoteIdent(folder.partitionField, engine)} = '${String(folder.partitionValue).replace(/'/g, "''")}'`);
+    }
     current = folder.parentId;
   }
   return parts.join(' AND ');
@@ -798,7 +812,12 @@ async function fetchFromSource(connectionId: string, sql: string): Promise<{ col
 
   if (engine === 'postgresql') {
     return withPgClient(cfg, async (client) => {
-      const result = await client.query(cleanSql);
+      const raw: any = await client.query(cleanSql);
+      // Several statements come back as an array: show the last one that
+      // returned columns (or the last one), like other SQL tools do.
+      const result: any = Array.isArray(raw)
+        ? ([...raw].reverse().find((r: any) => (r.fields || []).length > 0) || raw[raw.length - 1])
+        : raw;
       const fields = result.fields || [];
       const columns: ColSchema[] = fields.map((f: any) => ({ name: f.name, type: 'TEXT', nullable: true }));
       const rows = result.rows || [];
@@ -945,7 +964,7 @@ router.get('/connections', async (_req: Request, res: Response) => {
   try {
     const connections = await prisma.repoConnection.findMany({ orderBy: { createdAt: 'asc' } });
     res.json({ success: true, data: { connections: connections.map(c => ({ ...c, config: maskConfig(c.config) })) } });
-  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
+  } catch (err: any) { res.status(errorStatus(err)).json({ success: false, error: errorText(err) }); }
 });
 
 router.post('/connections', async (req: Request, res: Response) => {
@@ -956,7 +975,7 @@ router.post('/connections', async (req: Request, res: Response) => {
       data: { id: `rpc${crypto.randomBytes(10).toString('hex')}`, name, type, config: JSON.stringify(config || {}) },
     });
     res.json({ success: true, data: { connection: { ...conn, config: maskConfig(conn.config) } } });
-  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
+  } catch (err: any) { res.status(errorStatus(err)).json({ success: false, error: errorText(err) }); }
 });
 
 router.put('/connections/:id', async (req: Request, res: Response) => {
@@ -980,14 +999,14 @@ router.put('/connections/:id', async (req: Request, res: Response) => {
       },
     });
     res.json({ success: true, data: { connection: { ...conn, config: maskConfig(conn.config) } } });
-  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
+  } catch (err: any) { res.status(errorStatus(err)).json({ success: false, error: errorText(err) }); }
 });
 
 router.delete('/connections/:id', async (req: Request, res: Response) => {
   try {
     await prisma.repoConnection.delete({ where: { id: req.params.id } });
     res.json({ success: true });
-  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
+  } catch (err: any) { res.status(errorStatus(err)).json({ success: false, error: errorText(err) }); }
 });
 
 // Discover tables from a connection's database
@@ -1019,7 +1038,7 @@ router.get('/connections/:id/tables', async (req: Request, res: Response) => {
 
     res.json({ success: true, data: { tables } });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: errorMessage(err) });
+    res.status(errorStatus(err)).json({ success: false, error: errorText(err) });
   }
 });
 
@@ -1077,7 +1096,7 @@ router.get('/connections/:id/columns', async (req: Request, res: Response) => {
 
     res.json({ success: true, data: { columns } });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: errorMessage(err) });
+    res.status(errorStatus(err)).json({ success: false, error: errorText(err) });
   }
 });
 
@@ -1113,7 +1132,7 @@ router.post('/connections/:id/test', async (req: Request, res: Response) => {
     res.json({ success: true, data: { connected: ok, count: tables } });
   } catch (err: any) {
     await prisma.repoConnection.update({ where: { id: req.params.id }, data: { status: 'Error' } }).catch(() => {});
-    res.status(500).json({ success: false, error: errorMessage(err) });
+    res.status(errorStatus(err)).json({ success: false, error: errorText(err) });
   }
 });
 
@@ -1123,7 +1142,7 @@ router.get('/api-keys', async (_req: Request, res: Response) => {
   try {
     const keys = await prisma.repoApiKey.findMany({ orderBy: { createdAt: 'desc' } });
     res.json({ success: true, data: { keys } });
-  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
+  } catch (err: any) { res.status(errorStatus(err)).json({ success: false, error: errorText(err) }); }
 });
 
 router.post('/api-keys', async (req: Request, res: Response) => {
@@ -1139,7 +1158,7 @@ router.post('/api-keys', async (req: Request, res: Response) => {
       },
     });
     res.json({ success: true, data: { key } });
-  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
+  } catch (err: any) { res.status(errorStatus(err)).json({ success: false, error: errorText(err) }); }
 });
 
 router.put('/api-keys/:id', async (req: Request, res: Response) => {
@@ -1154,14 +1173,14 @@ router.put('/api-keys/:id', async (req: Request, res: Response) => {
       },
     });
     res.json({ success: true, data: { key } });
-  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
+  } catch (err: any) { res.status(errorStatus(err)).json({ success: false, error: errorText(err) }); }
 });
 
 router.delete('/api-keys/:id', async (req: Request, res: Response) => {
   try {
     await prisma.repoApiKey.delete({ where: { id: req.params.id } });
     res.json({ success: true });
-  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
+  } catch (err: any) { res.status(errorStatus(err)).json({ success: false, error: errorText(err) }); }
 });
 
 // ─── Tables ───────────────────────────────────────────────────────────────────
@@ -1175,7 +1194,7 @@ router.get('/tables', async (req: Request, res: Response) => {
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
     });
     res.json({ success: true, data: { tables } });
-  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
+  } catch (err: any) { res.status(errorStatus(err)).json({ success: false, error: errorText(err) }); }
 });
 
 router.get('/tables/:id', async (req: Request, res: Response) => {
@@ -1189,7 +1208,7 @@ router.get('/tables/:id', async (req: Request, res: Response) => {
     });
     if (!table) { res.status(404).json({ success: false, error: 'Table not found' }); return; }
     res.json({ success: true, data: { table } });
-  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
+  } catch (err: any) { res.status(errorStatus(err)).json({ success: false, error: errorText(err) }); }
 });
 
 // ─── Table access (admin) ────────────────────────────────────────────────────
@@ -1209,7 +1228,7 @@ router.get('/tables/:id/members', async (req: Request, res: Response) => {
       prisma.userGroup.findMany({ select: { id: true, name: true, _count: { select: { members: true } } }, orderBy: { name: 'asc' } }),
     ]);
     res.json({ success: true, data: { members, users, groups } });
-  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
+  } catch (err: any) { res.status(errorStatus(err)).json({ success: false, error: errorText(err) }); }
 });
 
 router.post('/tables/:id/members', async (req: Request, res: Response) => {
@@ -1224,14 +1243,14 @@ router.post('/tables/:id/members', async (req: Request, res: Response) => {
       ? await prisma.repoTableMember.upsert({ where: { tableId_userId: { tableId, userId } }, create: { tableId, userId, role }, update: { role } })
       : await prisma.repoTableMember.upsert({ where: { tableId_groupId: { tableId, groupId } }, create: { tableId, groupId, role }, update: { role } });
     res.json({ success: true, data: member });
-  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
+  } catch (err: any) { res.status(errorStatus(err)).json({ success: false, error: errorText(err) }); }
 });
 
 router.delete('/tables/:id/members/:memberId', async (req: Request, res: Response) => {
   try {
     await prisma.repoTableMember.deleteMany({ where: { id: req.params.memberId, tableId: req.params.id } });
     res.json({ success: true });
-  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
+  } catch (err: any) { res.status(errorStatus(err)).json({ success: false, error: errorText(err) }); }
 });
 
 // Create new table reference in repository
@@ -1252,7 +1271,7 @@ router.post('/tables', async (req: Request, res: Response) => {
       },
     });
     res.json({ success: true, data: { table } });
-  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
+  } catch (err: any) { res.status(errorStatus(err)).json({ success: false, error: errorText(err) }); }
 });
 
 router.put('/tables/:id', async (req: Request, res: Response) => {
@@ -1270,7 +1289,7 @@ router.put('/tables/:id', async (req: Request, res: Response) => {
       },
     });
     res.json({ success: true, data: { table } });
-  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
+  } catch (err: any) { res.status(errorStatus(err)).json({ success: false, error: errorText(err) }); }
 });
 
 router.delete('/tables/:id', async (req: Request, res: Response) => {
@@ -1278,7 +1297,7 @@ router.delete('/tables/:id', async (req: Request, res: Response) => {
     // Only remove from repository — never drop the actual database table
     await prisma.repoTable.delete({ where: { id: req.params.id } });
     res.json({ success: true });
-  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
+  } catch (err: any) { res.status(errorStatus(err)).json({ success: false, error: errorText(err) }); }
 });
 
 // POST /tables/:id/import — parse file and store into the table's connection DB
@@ -1656,7 +1675,7 @@ router.get('/tables/:id/last-import-config', async (req: Request, res: Response)
     try { parsed = JSON.parse(table.lastImportConfig); } catch { parsed = null; }
     res.json({ success: true, data: parsed });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: errorMessage(err) });
+    res.status(errorStatus(err)).json({ success: false, error: errorText(err) });
   }
 });
 
@@ -1684,7 +1703,7 @@ router.post('/tables/:id/sync', async (req: Request, res: Response) => {
       await prisma.repoTable.update({ where: { id: table.id }, data: { syncStatus: 'error', syncError: err.message } });
       throw err;
     }
-  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
+  } catch (err: any) { res.status(errorStatus(err)).json({ success: false, error: errorText(err) }); }
 });
 
 // POST /tables/:id/query — query with paging + optional folder filter
@@ -1715,7 +1734,7 @@ router.post('/tables/:id/query', async (req: Request, res: Response) => {
         throw queryErr;
       }
     }
-  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
+  } catch (err: any) { res.status(errorStatus(err)).json({ success: false, error: errorText(err) }); }
 });
 
 // ─── SQL Editor: saved statements ────────────────────────────────────────────
@@ -1727,7 +1746,7 @@ router.get('/sql/saved', async (_req: Request, res: Response) => {
   try {
     const queries = await prisma.repoSqlQuery.findMany({ orderBy: [{ updatedAt: 'desc' }] });
     res.json({ success: true, data: { queries } });
-  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
+  } catch (err: any) { res.status(errorStatus(err)).json({ success: false, error: errorText(err) }); }
 });
 
 router.post('/sql/saved', async (req: Request, res: Response) => {
@@ -1746,12 +1765,13 @@ router.post('/sql/saved', async (req: Request, res: Response) => {
       },
     });
     res.json({ success: true, data: { query } });
-  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
+  } catch (err: any) { res.status(errorStatus(err)).json({ success: false, error: errorText(err) }); }
 });
 
 router.put('/sql/saved/:id', async (req: Request, res: Response) => {
   try {
     const { name, sql, connectionId } = req.body;
+    if (name !== undefined && !String(name).trim()) { res.status(400).json({ success: false, error: 'Name cannot be empty' }); return; }
     const query = await prisma.repoSqlQuery.update({
       where: { id: req.params.id },
       data: {
@@ -1761,14 +1781,14 @@ router.put('/sql/saved/:id', async (req: Request, res: Response) => {
       },
     });
     res.json({ success: true, data: { query } });
-  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
+  } catch (err: any) { res.status(errorStatus(err)).json({ success: false, error: errorText(err) }); }
 });
 
 router.delete('/sql/saved/:id', async (req: Request, res: Response) => {
   try {
     await prisma.repoSqlQuery.delete({ where: { id: req.params.id } });
     res.json({ success: true });
-  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
+  } catch (err: any) { res.status(errorStatus(err)).json({ success: false, error: errorText(err) }); }
 });
 
 // ─── SQL Editor: execute arbitrary SQL ───────────────────────────────────────
@@ -1787,7 +1807,7 @@ router.post('/sql/execute', async (req: Request, res: Response) => {
       },
     });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: errorMessage(err) });
+    res.status(errorStatus(err)).json({ success: false, error: errorText(err) });
   }
 });
 
@@ -1818,7 +1838,7 @@ router.post('/sql/dml', async (req: Request, res: Response) => {
     }
     res.json({ success: true, data: { rowCount } });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: errorMessage(err) });
+    res.status(errorStatus(err)).json({ success: false, error: errorText(err) });
   }
 });
 
@@ -1833,7 +1853,7 @@ router.post('/sql/bulk-insert', async (req: Request, res: Response) => {
     const rowCount = await bulkInsert(connectionId, tableName, colSchemas, rows);
     res.json({ success: true, data: { rowCount } });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: errorMessage(err) });
+    res.status(errorStatus(err)).json({ success: false, error: errorText(err) });
   }
 });
 
@@ -1866,7 +1886,7 @@ router.get('/folders', async (req: Request, res: Response) => {
       return;
     }
     res.json({ success: true, data: { folders } });
-  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
+  } catch (err: any) { res.status(errorStatus(err)).json({ success: false, error: errorText(err) }); }
 });
 
 router.post('/folders', async (req: Request, res: Response) => {
@@ -1883,12 +1903,23 @@ router.post('/folders', async (req: Request, res: Response) => {
       },
     });
     res.json({ success: true, data: { folder } });
-  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
+  } catch (err: any) { res.status(errorStatus(err)).json({ success: false, error: errorText(err) }); }
 });
 
 router.put('/folders/:id', async (req: Request, res: Response) => {
   try {
     const { name, parentId, sortOrder } = req.body;
+    if (name !== undefined && !String(name).trim()) { res.status(400).json({ success: false, error: 'Name cannot be empty' }); return; }
+    if (parentId) {
+      // Walk up from the new parent: meeting this folder means a loop
+      let cur: string | null = parentId;
+      for (let depth = 0; cur && depth < 100; depth++) {
+        if (cur === req.params.id) { res.status(400).json({ success: false, error: 'A folder cannot be moved inside itself' }); return; }
+        const p: { parentId: string | null } | null = await prisma.repoFolder.findUnique({ where: { id: cur }, select: { parentId: true } });
+        if (!p) { res.status(404).json({ success: false, error: 'Parent folder not found' }); return; }
+        cur = p.parentId;
+      }
+    }
     const folder = await prisma.repoFolder.update({
       where: { id: req.params.id },
       data: {
@@ -1898,7 +1929,7 @@ router.put('/folders/:id', async (req: Request, res: Response) => {
       },
     });
     res.json({ success: true, data: { folder } });
-  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
+  } catch (err: any) { res.status(errorStatus(err)).json({ success: false, error: errorText(err) }); }
 });
 
 router.delete('/folders/:id', async (req: Request, res: Response) => {
@@ -1909,7 +1940,7 @@ router.delete('/folders/:id', async (req: Request, res: Response) => {
     await prisma.repoFolder.updateMany({ where: { parentId: req.params.id }, data: { parentId: null } });
     await prisma.repoFolder.delete({ where: { id: req.params.id } });
     res.json({ success: true });
-  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
+  } catch (err: any) { res.status(errorStatus(err)).json({ success: false, error: errorText(err) }); }
 });
 
 // ── Reorder (batch update sortOrder / folderId) ─────────────────────────────
@@ -1932,7 +1963,7 @@ router.post('/reorder', async (req: Request, res: Response) => {
       }
     }
     res.json({ success: true });
-  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
+  } catch (err: any) { res.status(errorStatus(err)).json({ success: false, error: errorText(err) }); }
 });
 
 // ── Table structure (columns from actual DB) ─────────────────────────────────
@@ -1998,13 +2029,15 @@ router.get('/tables/:id/structure', async (req: Request, res: Response) => {
     if (!table.connectionId) { res.status(400).json({ success: false, error: 'No connection configured' }); return; }
     const tableName = table.name;
     const { engine, columns } = await readLiveColumns(table.connectionId, tableName);
+    // The UI shows data.error in the Properties tab
+    if (columns.length === 0) { res.json({ success: true, data: { columns, tableName, engine, error: 'Table does not exist in the database' } }); return; }
     res.json({ success: true, data: { columns, tableName, engine } });
   } catch (err: any) {
     const msg = err.message || '';
     if (msg.includes('ORA-00942') || msg.includes('does not exist')) {
       res.json({ success: true, data: { columns: [], tableName: '', engine: '', error: 'Table does not exist in the database' } });
     } else {
-      res.status(500).json({ success: false, error: errorMessage(err) });
+      res.status(errorStatus(err)).json({ success: false, error: errorText(err) });
     }
   }
 });
@@ -2035,6 +2068,15 @@ router.get('/tables/:id/export', async (req: Request, res: Response) => {
     } catch { /* malformed filters param — fall back to the whole table */ }
     const filt = buildFilterClause(exportFilters, engine, 1);
     const where = filt.sql ? `WHERE ${filt.sql}` : '';
+
+    // Check the table answers before any header goes out, so a missing table
+    // is an error the UI can show rather than an empty download.
+    try {
+      await runSelectRows(engine, cfg, `SELECT * FROM ${tbl} WHERE 1 = 0`, []);
+    } catch (probeErr: any) {
+      res.status(404).json({ success: false, error: `Cannot read table: ${errorMessage(probeErr)}` });
+      return;
+    }
 
     res.setHeader('Content-Disposition', `attachment; filename="${safeFile}.${fmt}"`);
     res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -2193,7 +2235,7 @@ router.get('/tables/:id/export', async (req: Request, res: Response) => {
   } catch (err: any) {
     console.error('[export] error:', err);
     if (!res.headersSent) {
-      res.status(500).json({ success: false, error: errorMessage(err) });
+      res.status(errorStatus(err)).json({ success: false, error: errorText(err) });
     } else {
       res.end();
     }
@@ -2211,10 +2253,11 @@ async function updateRepoRow(
   rid: string,
   newValues: Record<string, any>,
   originalRow: Record<string, any>
-): Promise<void> {
+): Promise<number> {
   const { engine, cfg } = await getConnInfo(connectionId);
   const q = (n: string) => quoteIdent(n, engine);
   const tbl = q(tableName);
+  let affected = 0;
   // The grid sends every column back as text. Write only what the user
   // actually changed — rewriting an untouched DATE with its display string
   // ("2026-05-28T09:47:07.000Z") fails on Oracle.
@@ -2222,13 +2265,13 @@ async function updateRepoRow(
   const hasOriginal = originalRow && Object.keys(originalRow).length > 0;
   const updateCols = columns.filter(c =>
     c.name in newValues && (!hasOriginal || asText(newValues[c.name]) !== asText(originalRow[c.name])));
-  if (updateCols.length === 0) return;
+  if (updateCols.length === 0) return -1; // nothing changed
 
   if (engine === 'postgresql') {
     await withPgClient(cfg, async (client) => {
       const setClauses = updateCols.map((c, i) => `${q(c.name)} = $${i + 2}`).join(', ');
       const params = [rid, ...updateCols.map(c => castValue(newValues[c.name], c.type))];
-      await client.query(`UPDATE ${tbl} SET ${setClauses} WHERE ctid = $1::tid`, params);
+      affected = (await client.query(`UPDATE ${tbl} SET ${setClauses} WHERE ctid = $1::tid`, params)).rowCount || 0;
     });
   } else if (engine === 'oracle') {
     await withOracleConn(cfg, async (c) => {
@@ -2244,7 +2287,7 @@ async function updateRepoRow(
         const v = castValue(newValues[col.name], col.type);
         binds[`v${i}`] = typeof v === 'string' && ISO_TS.test(v) ? new Date(v) : v;
       });
-      await c.execute(`UPDATE ${tbl} SET ${setClauses} WHERE ROWID = CHARTOROWID(:rid)`, binds);
+      affected = (await c.execute(`UPDATE ${tbl} SET ${setClauses} WHERE ROWID = CHARTOROWID(:rid)`, binds) as any).rowsAffected || 0;
       await c.commit();
     });
   } else if (engine === 'mysql') {
@@ -2255,10 +2298,12 @@ async function updateRepoRow(
       const whereClauses = whereEntries.map(([k, v]) => v === null ? `${q(k)} IS NULL` : `${q(k)} = ?`).join(' AND ');
       const setParams = updateCols.map(col => castValue(newValues[col.name], col.type));
       const whereParams = whereEntries.filter(([, v]) => v !== null).map(([, v]) => v);
-      await c.execute(`UPDATE ${tbl} SET ${setColExprs} WHERE ${whereClauses} LIMIT 1`, [...setParams, ...whereParams]);
+      const [r]: any = await c.execute(`UPDATE ${tbl} SET ${setColExprs} WHERE ${whereClauses} LIMIT 1`, [...setParams, ...whereParams]);
+      affected = r?.affectedRows || 0;
       await c.commit();
     });
   }
+  return affected;
 }
 
 async function deleteRepoRow(
@@ -2266,20 +2311,21 @@ async function deleteRepoRow(
   tableName: string,
   rid: string,
   originalRow: Record<string, any>
-): Promise<void> {
+): Promise<number> {
   const { engine, cfg } = await getConnInfo(connectionId);
   const q = (n: string) => quoteIdent(n, engine);
   const tbl = q(tableName);
+  let affected = 0;
 
   if (engine === 'postgresql') {
     await withPgClient(cfg, async (client) => {
-      await client.query(`DELETE FROM ${tbl} WHERE ctid = $1::tid`, [rid]);
+      affected = (await client.query(`DELETE FROM ${tbl} WHERE ctid = $1::tid`, [rid])).rowCount || 0;
     });
   } else if (engine === 'oracle') {
     await withOracleConn(cfg, async (c) => {
       // Use CHARTOROWID() to explicitly convert the string bind to ROWID type
       // to avoid ORA-01410 (invalid ROWID) on implicit conversion.
-      await c.execute(`DELETE FROM ${tbl} WHERE ROWID = CHARTOROWID(:1)`, [rid]);
+      affected = (await c.execute(`DELETE FROM ${tbl} WHERE ROWID = CHARTOROWID(:1)`, [rid]) as any).rowsAffected || 0;
       await c.commit();
     });
   } else if (engine === 'mysql') {
@@ -2288,10 +2334,12 @@ async function deleteRepoRow(
       const whereEntries = Object.entries(originalRow).filter(([k]) => k !== '_rid');
       const whereClauses = whereEntries.map(([k, v]) => v === null ? `${q(k)} IS NULL` : `${q(k)} = ?`).join(' AND ');
       const whereParams = whereEntries.filter(([, v]) => v !== null).map(([, v]) => v);
-      await c.execute(`DELETE FROM ${tbl} WHERE ${whereClauses} LIMIT 1`, whereParams);
+      const [r]: any = await c.execute(`DELETE FROM ${tbl} WHERE ${whereClauses} LIMIT 1`, whereParams);
+      affected = r?.affectedRows || 0;
       await c.commit();
     });
   }
+  return affected;
 }
 
 // ─── Row CRUD endpoints ───────────────────────────────────────────────────────
@@ -2304,7 +2352,7 @@ router.get('/tables/:id/schema', async (req: Request, res: Response) => {
     let columns: ColSchema[] = [];
     try { columns = JSON.parse(table.schema || '[]'); } catch {}
     res.json({ success: true, data: { columns } });
-  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
+  } catch (err: any) { res.status(errorStatus(err)).json({ success: false, error: errorText(err) }); }
 });
 
 // POST /tables/:id/rows — insert a single row
@@ -2317,13 +2365,21 @@ router.post('/tables/:id/rows', async (req: Request, res: Response) => {
     if (!values || typeof values !== 'object') { res.status(400).json({ success: false, error: 'values object required' }); return; }
     let columns: ColSchema[] = [];
     try { columns = JSON.parse(table.schema || '[]'); } catch {}
-    if (columns.length === 0) { res.status(400).json({ success: false, error: 'Table has no schema — import data first' }); return; }
+    if (columns.length === 0) {
+      // Tables added from "discover" have no cached schema yet: read it live
+      try {
+        const live = await readLiveColumns(table.connectionId, table.name);
+        columns = live.columns.map(c => ({ name: String(c.name), type: 'TEXT', nullable: true } as ColSchema));
+        if (columns.length > 0) await prisma.repoTable.update({ where: { id: table.id }, data: { schema: JSON.stringify(columns) } });
+      } catch { /* fall through */ }
+    }
+    if (columns.length === 0) { res.status(400).json({ success: false, error: 'Table has no columns — import data first' }); return; }
     const tableName = physicalTableName(table.name);
     await bulkInsert(table.connectionId, tableName, columns, [values]);
     const newCount = (table.rowCount || 0) + 1;
     await prisma.repoTable.update({ where: { id: table.id }, data: { rowCount: newCount } });
     res.json({ success: true, data: { rowCount: newCount } });
-  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
+  } catch (err: any) { res.status(errorStatus(err)).json({ success: false, error: errorText(err) }); }
 });
 
 // PATCH /tables/:id/rows — update a row by _rid
@@ -2340,9 +2396,10 @@ router.patch('/tables/:id/rows', async (req: Request, res: Response) => {
     let columns: ColSchema[] = [];
     try { columns = JSON.parse(table.schema || '[]'); } catch {}
     const tableName = physicalTableName(table.name);
-    await updateRepoRow(table.connectionId, tableName, columns, rid, newValues, originalRow || {});
+    const changed = await updateRepoRow(table.connectionId, tableName, columns, rid, newValues, originalRow || {});
+    if (changed === 0) { res.status(409).json({ success: false, error: 'Row not found — it may have been changed or deleted. Reload and try again.' }); return; }
     res.json({ success: true });
-  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
+  } catch (err: any) { res.status(errorStatus(err)).json({ success: false, error: errorText(err) }); }
 });
 
 // DELETE /tables/:id/rows — delete a row by _rid
@@ -2354,11 +2411,12 @@ router.delete('/tables/:id/rows', async (req: Request, res: Response) => {
     const { rid, originalRow } = req.body;
     if (!rid) { res.status(400).json({ success: false, error: 'rid required' }); return; }
     const tableName = physicalTableName(table.name);
-    await deleteRepoRow(table.connectionId, tableName, rid, originalRow || {});
+    const removed = await deleteRepoRow(table.connectionId, tableName, rid, originalRow || {});
+    if (removed === 0) { res.status(409).json({ success: false, error: 'Row not found — it may have been changed or deleted. Reload and try again.' }); return; }
     const newCount = Math.max(0, (table.rowCount || 1) - 1);
     await prisma.repoTable.update({ where: { id: table.id }, data: { rowCount: newCount } });
     res.json({ success: true, data: { rowCount: newCount } });
-  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
+  } catch (err: any) { res.status(errorStatus(err)).json({ success: false, error: errorText(err) }); }
 });
 
 // GET /tables/:id/distinct?column=X&limit=200 — return distinct values for one column
@@ -2440,7 +2498,7 @@ router.get('/tables/:id/distinct', async (req: Request, res: Response) => {
       options = valueRows.map(r => {
         const v = pick(r, 'v');
         const l = pick(r, 'l');
-        return { value: v === null || v === undefined ? '' : String(v), label: l === null || l === undefined ? String(v ?? '') : String(l) };
+        return { value: v === null || v === undefined ? '' : optionText(v), label: l === null || l === undefined ? optionText(v ?? '') : optionText(l) };
       });
 
       // labelSource written as SCHEMA.TABLE.CODE.NAME — names come from there
@@ -2470,7 +2528,7 @@ router.get('/tables/:id/distinct', async (req: Request, res: Response) => {
       },
     });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: errorMessage(err) });
+    res.status(errorStatus(err)).json({ success: false, error: errorText(err) });
   }
 });
 
@@ -2527,7 +2585,7 @@ router.get('/tables/:id/suggest', async (req: Request, res: Response) => {
       .map(v => String(v));
     res.json({ success: true, data: { values } });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: errorMessage(err) });
+    res.status(errorStatus(err)).json({ success: false, error: errorText(err) });
   }
 });
 
@@ -2598,7 +2656,7 @@ router.post('/tables/:id/clear', async (req: Request, res: Response) => {
     res.json({ success: true, data: { rowsDeleted: deleted, rowCount: newCount } });
   } catch (err: any) {
     console.error('clear failed:', err);
-    res.status(500).json({ success: false, error: errorMessage(err) });
+    res.status(errorStatus(err)).json({ success: false, error: errorText(err) });
   }
 });
 
@@ -2624,7 +2682,7 @@ router.get('/ext/tables', repoApiKeyAuth, async (_req: Request, res: Response) =
       orderBy: { name: 'asc' },
     });
     res.json({ success: true, data: { tables } });
-  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
+  } catch (err: any) { res.status(errorStatus(err)).json({ success: false, error: errorText(err) }); }
 });
 
 // POST /data-repository/ext/query — query table via API key
@@ -2640,7 +2698,7 @@ router.post('/ext/query', repoApiKeyAuth, async (req: Request, res: Response) =>
     const conds = normalizeFilters(filters, await allowedFilterColumnsFor(table, filterColumnNames(filters)));
     const result = await queryRepoTable(table.connectionId, tableName, folderId, Math.min(Number(limit), 5000), Number(offset), conds);
     res.json({ success: true, data: result });
-  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
+  } catch (err: any) { res.status(errorStatus(err)).json({ success: false, error: errorText(err) }); }
 });
 
 // POST /data-repository/ext/push — append rows via API key (write/admin permission required)
@@ -2658,7 +2716,7 @@ router.post('/ext/push', repoApiKeyAuth, async (req: Request, res: Response) => 
     const newCount = (table.rowCount || 0) + inserted;
     await prisma.repoTable.update({ where: { id: tableId }, data: { rowCount: newCount } });
     res.json({ success: true, data: { inserted, totalRows: newCount } });
-  } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
+  } catch (err: any) { res.status(errorStatus(err)).json({ success: false, error: errorText(err) }); }
 });
 
 export default router;

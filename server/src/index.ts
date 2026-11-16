@@ -9,7 +9,6 @@ import flowsRouter from './routes/flows';
 import executionsRouter from './routes/executions';
 import connectionsRouter from './routes/connections';
 import connectionSftpRouter from './routes/connectionSftp';
-import sftpRouter from './routes/sftp';
 import basketRouter from './routes/basket';
 import basketsRouter from './routes/baskets';
 import basketSessionsRouter from './routes/basket-sessions';
@@ -201,7 +200,6 @@ app.use(`${API_PREFIX}/flows`, flowsRouter);
 app.use(`${API_PREFIX}/executions`, executionsRouter);
 app.use(`${API_PREFIX}/connections`, connectionSftpRouter); // SFTP browser on SFTP connections
 app.use(`${API_PREFIX}/connections`, connectionsRouter);
-app.use(`${API_PREFIX}/sftp`, sftpRouter); // SFTP Server management
 app.use(`${API_PREFIX}/basket`, basketRouter);
 app.use(`${API_PREFIX}/baskets`, basketsRouter);
 app.use(`${API_PREFIX}/baskets`, basketSessionsRouter);
@@ -254,6 +252,10 @@ app.use((_req: Request, res: Response) => {
 
 // Error handler
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  // body-parser: malformed JSON or an oversized body is the caller's mistake
+  const bp: any = err;
+  if (bp?.type === 'entity.parse.failed') { res.status(400).json({ success: false, error: 'Request body is not valid JSON' }); return; }
+  if (bp?.type === 'entity.too.large') { res.status(413).json({ success: false, error: 'Request body is too large' }); return; }
   console.error('Error:', err);
   res.status(500).json({
     success: false,

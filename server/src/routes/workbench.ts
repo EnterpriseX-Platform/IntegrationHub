@@ -11,6 +11,30 @@ import * as oracledb from 'oracledb';
 import { errorMessage } from '../lib/errorMessage';
 
 const router = Router();
+
+/**
+ * One WHERE condition for a workbench filter, or '' to skip it.
+ * - A comparison with an empty value is "no filter": the pivot screen sends
+ *   {op:'!=', value:''} for every field, which broke numeric columns and hid
+ *   the NULL group on text ones.
+ * - LIKE compares the text form, so it works on numeric and date columns too.
+ */
+function filterCondition(col: string, f: { op: string; value: any }): string {
+  const raw = f.value === null || f.value === undefined ? '' : String(f.value);
+  const v = raw.replace(/'/g, "''");
+  const asText = `CAST(${col} AS VARCHAR(4000))`;
+  if (['=', '!=', '>', '<', '>=', '<=', 'LIKE', 'NOT LIKE'].includes(f.op) && raw === '') return '';
+  switch (f.op) {
+    case '=': case '!=': case '>': case '<': case '>=': case '<=':
+      return `${col} ${f.op} '${v}'`;
+    case 'LIKE':     return `${asText} LIKE '%${v}%'`;
+    case 'NOT LIKE': return `${asText} NOT LIKE '%${v}%'`;
+    case 'IS NULL':     return `${col} IS NULL`;
+    case 'IS NOT NULL': return `${col} IS NOT NULL`;
+    default: return '';
+  }
+}
+
 router.use(authMiddleware);
 
 // Not tied to a project, so admin only (the /ext routes use their own API key)
@@ -374,6 +398,7 @@ router.post('/datasets', async (req: Request, res: Response) => {
 
     // Fetch schema live from connection
     const columns = await getTableSchema(connectionId, tableName);
+    if (!columns || columns.length === 0) { res.status(404).json({ success: false, error: `Table "${tableName}" was not found or has no columns` }); return; }
 
     const dataset = await prisma.wbDataset.create({
       data: {
@@ -403,6 +428,8 @@ router.put('/datasets/:id', async (req: Request, res: Response) => {
 
 router.delete('/datasets/:id', async (req: Request, res: Response) => {
   try {
+    // Views built on this dataset cannot open without it
+    await prisma.dataView.deleteMany({ where: { datasetId: req.params.id } });
     await prisma.wbDataset.delete({ where: { id: req.params.id } });
     res.json({ success: true });
   } catch (err: any) { res.status(500).json({ success: false, error: errorMessage(err) }); }
@@ -445,7 +472,10 @@ router.post('/datasets/:datasetId/folders', async (req: Request, res: Response) 
       if (!parent) { res.status(400).json({ success: false, error: 'Parent folder not found' }); return; }
       parentPath = parent.path;
     }
-    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+    // Keep letters of any script (Thai too); make the path unique among siblings
+    const base = String(name).toLowerCase().replace(/[^\p{L}\p{M}\p{N}]+/gu, '_').replace(/^_|_$/g, '') || 'folder';
+    let slug = base;
+    for (let n = 2; await prisma.wbFolder.findFirst({ where: { datasetId: req.params.datasetId, path: parentPath ? `${parentPath}/${slug}` : slug } }); n++) slug = `${base}_${n}`;
     const path = parentPath ? `${parentPath}/${slug}` : slug;
 
     const folder = await prisma.wbFolder.create({
@@ -551,20 +581,8 @@ router.post('/datasets/:id/query', async (req: Request, res: Response) => {
     const whereParts: string[] = [];
     for (const f of filters) {
       const col = `"${f.field.replace(/"/g, '""')}"`;
-      let condition = '';
-      switch (f.op) {
-        case '=':   condition = `${col} = '${f.value.replace(/'/g, "''")}'`; break;
-        case '!=':  condition = `${col} != '${f.value.replace(/'/g, "''")}'`; break;
-        case '>':   condition = `${col} > '${f.value.replace(/'/g, "''")}'`; break;
-        case '<':   condition = `${col} < '${f.value.replace(/'/g, "''")}'`; break;
-        case '>=':  condition = `${col} >= '${f.value.replace(/'/g, "''")}'`; break;
-        case '<=':  condition = `${col} <= '${f.value.replace(/'/g, "''")}'`; break;
-        case 'LIKE':    condition = `${col} LIKE '%${f.value.replace(/'/g, "''")}%'`; break;
-        case 'NOT LIKE':condition = `${col} NOT LIKE '%${f.value.replace(/'/g, "''")}%'`; break;
-        case 'IS NULL': condition = `${col} IS NULL`; break;
-        case 'IS NOT NULL': condition = `${col} IS NOT NULL`; break;
-        default: continue;
-      }
+      let condition = filterCondition(col, f);
+      if (!condition) continue;
       if (whereParts.length > 0) {
         condition = `${String(f.logic).toUpperCase() === 'OR' ? 'OR' : 'AND'} ${condition}`;
       }
@@ -611,20 +629,8 @@ router.post('/datasets/:id/pivot', async (req: Request, res: Response) => {
     const whereParts: string[] = [];
     for (const f of filters) {
       const col = esc(f.field);
-      let condition = '';
-      switch (f.op) {
-        case '=':   condition = `${col} = '${f.value.replace(/'/g, "''")}'`; break;
-        case '!=':  condition = `${col} != '${f.value.replace(/'/g, "''")}'`; break;
-        case '>':   condition = `${col} > '${f.value.replace(/'/g, "''")}'`; break;
-        case '<':   condition = `${col} < '${f.value.replace(/'/g, "''")}'`; break;
-        case '>=':  condition = `${col} >= '${f.value.replace(/'/g, "''")}'`; break;
-        case '<=':  condition = `${col} <= '${f.value.replace(/'/g, "''")}'`; break;
-        case 'LIKE':    condition = `${col} LIKE '%${f.value.replace(/'/g, "''")}%'`; break;
-        case 'NOT LIKE':condition = `${col} NOT LIKE '%${f.value.replace(/'/g, "''")}%'`; break;
-        case 'IS NULL': condition = `${col} IS NULL`; break;
-        case 'IS NOT NULL': condition = `${col} IS NOT NULL`; break;
-        default: continue;
-      }
+      let condition = filterCondition(col, f);
+      if (!condition) continue;
       if (whereParts.length > 0) {
         condition = `${String(f.logic).toUpperCase() === 'OR' ? 'OR' : 'AND'} ${condition}`;
       }
@@ -788,7 +794,8 @@ router.post('/export-excel', async (req: Request, res: Response) => {
 
     const safeFileName = fileName.replace(/[^\w\u0E00-\u0E7F\s-]/g, '_').slice(0, 100);
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(safeFileName)}.xlsx"`);
+    // ASCII fallback plus RFC 5987 name, so Thai names come out right
+    res.setHeader('Content-Disposition', `attachment; filename="${safeFileName.replace(/[^\x20-\x7e]/g, '_').replace(/"/g, '')}.xlsx"; filename*=UTF-8''${encodeURIComponent(safeFileName)}.xlsx`);
 
     await workbook.xlsx.write(res);
     res.end();
