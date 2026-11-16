@@ -1396,10 +1396,8 @@ export const ProjectBaskets = ({ project }: { project: Project }) => {
                 )}
               </div>
             </div>
-            </ModalHeader>
-
             {/* Tabs */}
-            <div className="px-5 flex-shrink-0">
+            <div className="-mb-2 mt-3">
               <Tabs
                 selectedIndex={['sessions', 'history', 'settings'].indexOf(activeTab)}
                 onChange={({ selectedIndex }: { selectedIndex: number }) => {
@@ -1415,6 +1413,8 @@ export const ProjectBaskets = ({ project }: { project: Project }) => {
                 </TabList>
               </Tabs>
             </div>
+
+            </ModalHeader>
 
             {/* Tab Content */}
             <ModalBody className={`overflow-auto relative !p-0 !mb-0 ${(fullscreenSession || fullscreenHistorySession) ? 'h-[80vh]' : 'h-[65vh]'}`}>

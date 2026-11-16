@@ -652,7 +652,7 @@ export function ShareFolderExplorer({ basket: single, readOnly = false, embedded
               </div>
             </div>
 
-            <div className="flex flex-shrink-0 flex-wrap items-center gap-1.5">
+            <div className="flex min-w-0 max-w-full flex-wrap items-center justify-end gap-1.5">
               {copyMessage && (
                 <Tag size="sm" type={/Copied|Uploaded \d+ file/.test(copyMessage) && !copyMessage.includes(':') ? 'green' : 'warm-gray'}>
                   {copyMessage}
