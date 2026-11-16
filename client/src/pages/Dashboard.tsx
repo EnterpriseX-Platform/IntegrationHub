@@ -1,13 +1,14 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FolderOpen, Layers, Plug, ArrowRight,
-  Loader2, Clock, Activity, CheckCircle2, AlertCircle,
+  Clock, Activity, CheckCircle2, AlertCircle,
   Play, Pause, Inbox, RefreshCw,
   Zap
 } from 'lucide-react';
 
 import { API_URL } from '../config/api';
+import { IconButton, Loading, Link as CdsLink } from '@carbon/react';
 
 const colorMap: Record<string, { bg: string; text: string; border: string; light: string }> = {
   blue: { bg: 'bg-blue-500', text: 'text-blue-600', border: 'border-blue-400', light: 'bg-blue-50' },
@@ -97,7 +98,7 @@ const KpiCard = ({
   return (
     <div
       onClick={onClick}
-      className="bg-white px-4 py-4 cursor-pointer transition-colors hover:bg-gray-100 min-w-0"
+      className="cds--tile cds--tile--clickable app-tile min-w-0"
     >
       <div className="flex items-center gap-2 text-sm text-gray-600 min-w-0">
         <Icon className={`h-4 w-4 shrink-0 ${tint[color] || 'text-gray-500'}`} />
@@ -126,7 +127,7 @@ const ProjectCard = ({ project, onClick }: { project: Project; onClick: () => vo
   return (
     <div
       onClick={onClick}
-      className="bg-white rounded-lg border border-gray-200 cursor-pointer transition-colors hover:border-blue-300 overflow-hidden group"
+      className="cds--tile cds--tile--clickable app-tile !p-0 overflow-hidden group"
     >
       <div className="p-3">
         <div className="flex items-center gap-2.5">
@@ -312,9 +313,8 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
-        <Loader2 className="h-10 w-10 text-blue-500 animate-spin mb-4" />
-        <p className="text-gray-500">Loading dashboard...</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <Loading withOverlay={false} description="Loading dashboard" />
       </div>
     );
   }
@@ -329,12 +329,9 @@ export default function Dashboard() {
               <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
               <p className="text-gray-500 text-sm mt-1">Platform overview and activity</p>
             </div>
-            <button
-              onClick={fetchData}
-              className="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-            >
+            <IconButton kind="ghost" label="Refresh" onClick={fetchData}>
               <RefreshCw className="h-5 w-5" />
-            </button>
+            </IconButton>
           </div>
         </div>
       </header>
@@ -416,7 +413,7 @@ export default function Dashboard() {
         </div>
 
         {/* Live Activity Panel */}
-        <div className="bg-white p-4">
+        <div className="cds--tile app-tile">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
@@ -528,13 +525,13 @@ export default function Dashboard() {
         <div>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900">Recent Projects</h2>
-            <button 
-              onClick={() => navigate('/projects')}
-              className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+            <CdsLink
+              href="#"
+              renderIcon={() => <ArrowRight className="h-4 w-4" />}
+              onClick={(e: React.MouseEvent) => { e.preventDefault(); navigate('/projects'); }}
             >
               View all projects
-              <ArrowRight className="h-4 w-4" />
-            </button>
+            </CdsLink>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-3">
             {projects.map((project) => (

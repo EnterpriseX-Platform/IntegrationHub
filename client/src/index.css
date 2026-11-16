@@ -360,3 +360,6 @@ main button.bg-blue-600, main a.bg-blue-600 { white-space: nowrap; }
 
 /* lucide icons are stroke-only; Carbon fills every svg inside buttons */
 .cds--btn svg.lucide, .cds--btn .lucide, .cds--header svg.lucide, .cds--side-nav svg.lucide { fill: none; }
+
+/* Tiles that used to be white cards: keep the page's own padding/layout */
+.cds--tile.app-tile { min-block-size: 0; }

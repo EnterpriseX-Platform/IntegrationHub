@@ -6,14 +6,12 @@ import {
   AlertTriangle,
   Zap,
   TrendingUp,
-  RefreshCw,
   Layers,
   Globe,
   ChevronRight,
   X,
   ArrowUpRight,
   Download,
-  Loader2,
 } from 'lucide-react';
 import {
   BarChart,
@@ -27,6 +25,8 @@ import {
   Area,
 } from 'recharts';
 import { API_URL } from '../config/api';
+import { Button } from '../components/ui/Button';
+import { Toggle, ContentSwitcher, Switch, Loading } from '@carbon/react';
 
 type TimeRange = '24h' | '7d' | '30d';
 type ViewMode = 'overview' | 'project' | 'flow' | 'api';
@@ -442,7 +442,7 @@ export default function Executions() {
   if (loading) {
     return (
       <div className="p-6 flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+        <Loading withOverlay={false} small description="Loading executions" />
       </div>
     );
   }
@@ -468,59 +468,53 @@ export default function Executions() {
         </div>
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           {viewMode !== 'overview' && (
-            <button
+            <Button
+              variant="ghost"
+              leftIcon={<X />}
               onClick={() => {
                 setViewMode('overview');
                 setSelectedProject(null);
                 setSelectedFlow(null);
               }}
-              className="flex items-center gap-2 px-3 h-9 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors whitespace-nowrap"
             >
-              <X className="h-4 w-4" />
               Back
-            </button>
+            </Button>
           )}
-          <button
+          <Button
+            variant="secondary"
             onClick={exportReport}
-            disabled={exporting}
+            isLoading={exporting}
             title="รายงานประวัติการเชื่อมโยงข้อมูล"
-            className="flex items-center gap-2 px-3 h-9 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+            leftIcon={<Download />}
           >
-            {exporting
-              ? <Loader2 className="h-4 w-4 animate-spin" />
-              : <Download className="h-4 w-4" />}
             Export
-          </button>
-          <button
-            onClick={() => setAutoRefresh(!autoRefresh)}
-            className={`flex items-center gap-1.5 h-9 px-3 text-[14px] whitespace-nowrap rounded-lg transition-colors ${
-              autoRefresh ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
-            }`}
+          </Button>
+          <Toggle
+            id="executions-live"
+            size="sm"
+            labelText=""
+            hideLabel
+            labelA="Paused"
+            labelB="Live"
+            toggled={autoRefresh}
+            onToggle={(v: boolean) => setAutoRefresh(v)}
+          />
+          <ContentSwitcher
+            size="md"
+            className="!w-[12rem] shrink-0"
+            selectedIndex={(['24h', '7d', '30d'] as TimeRange[]).indexOf(timeRange)}
+            onChange={({ name }: any) => setTimeRange(name as TimeRange)}
           >
-            <RefreshCw className={`h-4 w-4 ${autoRefresh ? 'animate-spin' : ''}`} />
-            {autoRefresh ? 'Live' : 'Paused'}
-          </button>
-          <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
-            {(['24h', '7d', '30d'] as TimeRange[]).map(range => (
-              <button
-                key={range}
-                onClick={() => setTimeRange(range)}
-                className={`inline-flex items-center justify-center px-3 h-9 rounded-lg text-[14px] font-medium transition-colors ${
-                  timeRange === range
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
-                } whitespace-nowrap`}
-              >
-                {range === '24h' ? '24H' : range === '7d' ? '7D' : '30D'}
-              </button>
-            ))}
-          </div>
+            <Switch name="24h" text="24H" />
+            <Switch name="7d" text="7D" />
+            <Switch name="30d" text="30D" />
+          </ContentSwitcher>
         </div>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
-        <div className="bg-white rounded-lg border border-gray-200 px-2.5 py-2 sm:p-3 min-w-0">
+        <div className="cds--tile app-tile px-2.5 py-2 sm:p-3 min-w-0">
           <div className="flex items-center gap-1.5 text-gray-500 mb-1 min-w-0">
             <Zap className="h-3.5 w-3.5 shrink-0" />
             <span className="text-[12px] sm:text-xs font-medium truncate">Throughput</span>
@@ -531,7 +525,7 @@ export default function Executions() {
           <div className="text-[12px] text-gray-500 truncate">req/hour</div>
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 px-2.5 py-2 sm:p-3 min-w-0">
+        <div className="cds--tile app-tile px-2.5 py-2 sm:p-3 min-w-0">
           <div className="flex items-center gap-1.5 text-gray-500 mb-1 min-w-0">
             <Clock className="h-3.5 w-3.5 shrink-0" />
             <span className="text-[12px] sm:text-xs font-medium truncate">Avg Response</span>
@@ -542,7 +536,7 @@ export default function Executions() {
           <div className="text-[12px] text-gray-500 truncate">p95: {formatDuration(overallStats.p95Duration)}</div>
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 px-2.5 py-2 sm:p-3 min-w-0">
+        <div className="cds--tile app-tile px-2.5 py-2 sm:p-3 min-w-0">
           <div className="flex items-center gap-1.5 text-gray-500 mb-1 min-w-0">
             <TrendingUp className="h-3.5 w-3.5 shrink-0" />
             <span className="text-[12px] sm:text-xs font-medium truncate">Success Rate</span>
@@ -566,7 +560,7 @@ export default function Executions() {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 px-2.5 py-2 sm:p-3 min-w-0">
+        <div className="cds--tile app-tile px-2.5 py-2 sm:p-3 min-w-0">
           <div className="flex items-center gap-1.5 text-gray-500 mb-1 min-w-0">
             <Activity className="h-3.5 w-3.5 shrink-0" />
             <span className="text-[12px] sm:text-xs font-medium truncate">Active</span>
@@ -577,7 +571,7 @@ export default function Executions() {
           <div className="text-[12px] text-gray-500 truncate">running now</div>
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 px-2.5 py-2 sm:p-3 min-w-0">
+        <div className="cds--tile app-tile px-2.5 py-2 sm:p-3 min-w-0">
           <div className="flex items-center gap-1.5 text-gray-500 mb-1 min-w-0">
             <Layers className="h-3.5 w-3.5 shrink-0" />
             <span className="text-[12px] sm:text-xs font-medium truncate">Total</span>
@@ -593,7 +587,7 @@ export default function Executions() {
       {viewMode === 'overview' ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Project Activity - Left Side */}
-          <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
+          <div className="lg:col-span-2 cds--tile app-tile p-4 sm:p-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4 sm:mb-6">
               <div className="min-w-0">
                 <h3 className="text-lg font-semibold text-gray-900">Project Activity</h3>
@@ -669,7 +663,7 @@ export default function Executions() {
         {/* Charts - Right Side */}
         <div className="space-y-4">
           {/* Execution Timeline with Success/Fail Lines */}
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="cds--tile app-tile p-4">
             <h3 className="text-sm font-semibold text-gray-900 mb-2">Execution Timeline</h3>
             <div className="h-28">
               <ResponsiveContainer width="100%" height="100%">
@@ -708,7 +702,7 @@ export default function Executions() {
           </div>
 
           {/* Response Time Trend */}
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="cds--tile app-tile p-4">
             <h3 className="text-sm font-semibold text-gray-900 mb-2">Response Time</h3>
             <div className="h-28">
               <ResponsiveContainer width="100%" height="100%">
@@ -733,7 +727,7 @@ export default function Executions() {
           </div>
 
           {/* Error Rate Trend */}
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="cds--tile app-tile p-4">
             <h3 className="text-sm font-semibold text-gray-900 mb-2">Error Rate</h3>
             <div className="h-28">
               <ResponsiveContainer width="100%" height="100%">
@@ -762,14 +756,14 @@ export default function Executions() {
         <div className="space-y-6">
           {/* Project Summary Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="cds--tile app-tile p-4">
               <div className="text-gray-500 text-sm mb-1">Total Executions</div>
               <div className="text-3xl font-bold text-gray-900">{selectedProjectData.total}</div>
               <div className="text-gray-400 text-xs mt-1">
                 {selectedProjectData.throughput.toFixed(1)} / hour
               </div>
             </div>
-            <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="cds--tile app-tile p-4">
               <div className="text-gray-500 text-sm mb-1">Success Rate</div>
               <div className="text-3xl font-bold text-gray-900">
                 {((selectedProjectData.success / selectedProjectData.total) * 100).toFixed(1)}%
@@ -778,7 +772,7 @@ export default function Executions() {
                 {selectedProjectData.success} succeeded
               </div>
             </div>
-            <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="cds--tile app-tile p-4">
               <div className="text-gray-500 text-sm mb-1">Avg Response</div>
               <div className="text-3xl font-bold text-gray-900">
                 {formatDuration(selectedProjectData.avgDuration)}
@@ -802,7 +796,7 @@ export default function Executions() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Flows List */}
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div className="cds--tile app-tile p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Flows</h3>
               <div className="space-y-2">
                 {flowStats.map(flow => (
@@ -838,7 +832,7 @@ export default function Executions() {
             </div>
 
             {/* Hourly Heatmap */}
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div className="cds--tile app-tile p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Activity Heatmap</h3>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
