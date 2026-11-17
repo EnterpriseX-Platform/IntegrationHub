@@ -5,7 +5,7 @@ import { CronExpressionParser } from 'cron-parser';
 import { prisma } from '../lib/prisma';
 import { resolveScheduleParameters, parseParametersJson } from '../lib/scheduler-params';
 import {
-  ExecutionEngine,
+  createExecutionEngine,
   DatabaseExecutor,
   TransformExecutor,
   ConditionExecutor,
@@ -192,7 +192,7 @@ class SchedulerService {
 
       const resolvedParams = resolveScheduleParameters(parameters || [], timezone || 'Asia/Bangkok');
 
-      const engine = new ExecutionEngine({
+      const engine = createExecutionEngine({
         connections: new Map(),
         deadlineAt: executionDeadline(),
         onLog: (log) => console.log(`[ScheduledExecution] ${log.level}: ${log.message}`),

@@ -4,7 +4,7 @@ import { apiService } from '../services/apiService';
 import { ApiResponseWrapper, Flow, Execution } from '../types';
 import { schedulerService } from '../services/scheduler';
 import {
-  ExecutionEngine,
+  createExecutionEngine,
   DatabaseExecutor,
   ApiInputExecutor,
   ApiOutputExecutor,
@@ -267,7 +267,7 @@ router.post('/:id/execute', async (req: Request, res: Response) => {
     (async () => {
       try {
         // Initialize Execution Engine with parameter injection middleware
-        const engine = new ExecutionEngine({
+        const engine = createExecutionEngine({
           connections: new Map(),
           deadlineAt: executionDeadline(execution.startedAt.getTime()),
           onLog: (log) => console.log(`[Execution] ${log.level}: ${log.message}`),
@@ -584,7 +584,7 @@ router.post('/:id/test', async (req: Request, res: Response): Promise<Response> 
     }
 
     // Initialize Execution Engine with apiSpec for schema-based transforms
-    const engine = new ExecutionEngine({
+    const engine = createExecutionEngine({
       connections: new Map(),
       apiSpec: config.apiSpec,
       onLog: (log) => console.log(`[Execution] ${log.level}: ${log.message}`),
@@ -744,7 +744,7 @@ router.post('/:id/test-event', async (req: Request, res: Response): Promise<Resp
     }
 
     // Initialize Execution Engine for Event Flow
-    const engine = new ExecutionEngine({
+    const engine = createExecutionEngine({
       connections: new Map(),
       onLog: (log) => console.log(`[EventFlow] ${log.level}: ${log.message}`),
     });

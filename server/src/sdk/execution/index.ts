@@ -3,6 +3,7 @@
 export * from './types';
 export { NodeExecutor } from './NodeExecutor';
 export { ExecutionEngine } from './ExecutionEngine';
+export { GoEngineProxy, createExecutionEngine } from './GoEngineProxy';
 
 // Built-in executors
 export { DatabaseExecutor } from './executors/DatabaseExecutor';

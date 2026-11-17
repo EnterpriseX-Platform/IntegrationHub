@@ -350,7 +350,7 @@ router.post('/:id/run-now', async (req: Request, res: Response): Promise<Respons
     const baseParams = resolveScheduleParameters(parseParams(scheduler.parameters), scheduler.timezone);
     const finalParams = { ...baseParams, ...(overrideParams || {}) };
 
-    const { ExecutionEngine,
+    const { createExecutionEngine,
       DatabaseExecutor, TransformExecutor, ConditionExecutor, HttpRequestExecutor,
       FileReadExecutor, FileWriteExecutor, BasketTriggerExecutor, SFTPActionExecutor,
       DelayExecutor, ForEachExecutor, OcrExecutor,
@@ -376,7 +376,7 @@ router.post('/:id/run-now', async (req: Request, res: Response): Promise<Respons
     // Execute async
     (async () => {
       try {
-        const engine = new ExecutionEngine({
+        const engine = createExecutionEngine({
           connections: new Map(),
           deadlineAt: executionDeadline(),
           onLog: (log) => console.log(`[ScheduledManual] ${log.level}: ${log.message}`),

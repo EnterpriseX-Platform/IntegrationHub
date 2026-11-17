@@ -6,7 +6,7 @@
 
 import { Router, Request, Response, NextFunction } from 'express';
 import { prisma } from '../lib/prisma';
-import { ExecutionEngine } from '../sdk/execution';
+import { createExecutionEngine } from '../sdk/execution';
 import { DatabaseExecutor } from '../sdk/execution/executors/DatabaseExecutor';
 import { HttpRequestExecutor } from '../sdk/execution/executors/HttpRequestExecutor';
 import { FileReadExecutor } from '../sdk/execution/executors/FileReadExecutor';
@@ -271,7 +271,7 @@ async function executeDeployedFlow(
     const startTime = Date.now();
 
     // Initialize Execution Engine with apiSpec for schema-based transforms
-    const engine = new ExecutionEngine({
+    const engine = createExecutionEngine({
       connections: new Map(),
       apiSpec: config.apiSpec, // Pass apiSpec for response schema transforms
       onLog: (log) => console.log(`[API ${operationId}] ${log.level}: ${log.message}`),
