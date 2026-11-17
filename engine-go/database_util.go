@@ -6,7 +6,6 @@ package main
 
 import (
 	"crypto/rand"
-	"encoding/json"
 	"fmt"
 	"math"
 	"math/big"
@@ -442,11 +441,9 @@ func dbIndex(row any, key string) (any, bool) {
 
 // dbDeepCopyJSON round-trips through JSON (for log data snapshots).
 func dbDeepCopyJSON(v any) any {
-	b, err := json.Marshal(dbJSONable(v))
+	out, err := jsDecode(jsEncode(dbJSONable(v)))
 	if err != nil {
 		return v
 	}
-	var out any
-	_ = json.Unmarshal(b, &out)
 	return out
 }

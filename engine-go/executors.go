@@ -212,11 +212,11 @@ func execCondition(r *Run, node *Node, ctx *Ctx) (any, error) {
 	summary := map[string]any{}
 	in := asMap(input)
 	if rows, ok := in["rows"].([]any); ok {
-		summary["rowCount"] = float64(len(rows))
+		jsSet(summary, "rowCount", float64(len(rows)))
 	} else if rc, ok := in["rowCount"]; ok && rc != nil {
-		summary["rowCount"] = rc
+		jsSet(summary, "rowCount", rc)
 	} else if arr, ok := input.([]any); ok {
-		summary["rowCount"] = float64(len(arr))
+		jsSet(summary, "rowCount", float64(len(arr)))
 	}
 	if next == nil {
 		next = undefinedV
@@ -253,7 +253,7 @@ func evaluateCondition(r *Run, ctx *Ctx, cond string) (bool, error) {
 					return jsString(t)
 				case []any:
 					return strconv.FormatBool(len(t) > 0)
-				case map[string]any:
+				case map[string]any, time.Time:
 					return "true"
 				}
 				return jsString(v)
@@ -277,8 +277,7 @@ func evaluateCondition(r *Run, ctx *Ctx, cond string) (bool, error) {
 					return "undefined"
 				}
 			}
-			b, _ := json.Marshal(v)
-			return string(b)
+			return string(jsEncode(v))
 		})
 	}
 	v, err := goja.New().RunString(expr)
@@ -426,7 +425,7 @@ func execAggregateSplit(r *Run, node *Node, ctx *Ctx) (any, error) {
 	ctx.set("__aggregate_"+node.ID+"_results", []any{})
 	out := om("__isAggregate", true, "__aggregateType", "fan-out", "branches", ids, "strategy", strategy)
 	if v, ok := ctx.Vars["input"]; ok {
-		out["input"] = v
+		jsSet(out, "input", v)
 	}
 	return out, nil
 }
@@ -504,9 +503,9 @@ func execAggregateJoin(r *Run, node *Node, ctx *Ctx) (any, error) {
 	}
 	summary := om("total", float64(len(results)), "success", succ, "failed", fail)
 	if !math.IsNaN(avg) {
-		summary["avgDuration"] = avg
+		jsSet(summary, "avgDuration", avg)
 	} else {
-		summary["avgDuration"] = nil
+		jsSet(summary, "avgDuration", nil)
 	}
 	return om("__isAggregate", true, "__aggregateType", "fan-in", "status", "completed",
 		"results", aggregated, "summary", summary), nil

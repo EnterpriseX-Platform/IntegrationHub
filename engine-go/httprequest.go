@@ -189,10 +189,10 @@ func mergedHeaders(d map[string]any, conn *connHTTP, ctx *Ctx) map[string]any {
 		if conn.AuthType != "" && conn.AuthType != "none" && conn.Auth != nil {
 			switch conn.AuthType {
 			case "basic":
-				h["Authorization"] = "Basic " + base64.StdEncoding.EncodeToString([]byte(conn.Auth["username"]+":"+conn.Auth["password"]))
+				jsSet(h, "Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(conn.Auth["username"]+":"+conn.Auth["password"])))
 			case "bearer":
 				if conn.Auth["token"] != "" {
-					h["Authorization"] = "Bearer " + conn.Auth["token"]
+					jsSet(h, "Authorization", "Bearer "+conn.Auth["token"])
 				}
 			case "api-key":
 				name := conn.Auth["apiKeyHeader"]
@@ -365,8 +365,7 @@ func axiosQuery(p map[string]any, order []string) string {
 			var s string
 			switch t := x.(type) {
 			case map[string]any, []any:
-				b, _ := json.Marshal(t)
-				s = string(b)
+				s = string(jsEncode(t))
 			default:
 				s = jsString(t)
 			}
@@ -459,7 +458,7 @@ func httpDownload(r *Run, node *Node, ctx *Ctx, resp *httpResp, u string) (any, 
 	out := om("status", float64(resp.status), "url", u, "localPath", full, "fileName", name,
 		"size", float64(st.Size()), "timestamp", isoNow())
 	if ct, ok := resp.headers["content-type"]; ok {
-		out["contentType"] = ct
+		jsSet(out, "contentType", ct)
 	}
 	return out, nil
 }
@@ -574,8 +573,7 @@ func httpPaginated(r *Run, node *Node, base httpReq, d map[string]any) (any, err
 				}
 			}
 		}
-		sigB, _ := json.Marshal(pageItems)
-		sig := string(sigB)
+		sig := string(jsEncode(pageItems))
 		if pageItems == nil {
 			sig = "[]"
 		}
@@ -603,8 +601,7 @@ func httpPaginated(r *Run, node *Node, base httpReq, d map[string]any) (any, err
 	if itemsPath != "" {
 		var m any = map[string]any{}
 		if last != nil && last.data != nil {
-			b, _ := json.Marshal(last.data)
-			_ = json.Unmarshal(b, &m)
+			m, _ = jsDecode(jsEncode(last.data))
 		}
 		setPath(m, itemsPath, all)
 		if totalPath != "" {

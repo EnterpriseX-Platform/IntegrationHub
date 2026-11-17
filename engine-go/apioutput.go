@@ -62,7 +62,7 @@ func execAPIOutput(r *Run, node *Node, ctx *Ctx) (any, error) {
 	if truthy(d["wrapInDataKey"]) && !truthy(prop(body, "data")) {
 		res := map[string]any{"data": body}
 		if truthy(d["includeMetadata"]) {
-			res["_meta"] = pxMetadata(body)
+			jsSet(res, "_meta", pxMetadata(body))
 		}
 		body = res
 	}
@@ -74,7 +74,7 @@ func execAPIOutput(r *Run, node *Node, ctx *Ctx) (any, error) {
 	resp := om("statusCode", pxStatus(d), "body", body, "headers", headers)
 	logData := om("statusCode", resp["statusCode"], "headers", headers, "body", body, "transformMode", mode)
 	if fm, ok := d["fieldMappings"]; ok {
-		logData["fieldMappings"] = fm
+		jsSet(logData, "fieldMappings", fm)
 	}
 	r.log("debug", node.ID, "API Output Response", pxClean(logData))
 	return pxClean(resp), nil
@@ -136,7 +136,7 @@ func pxSchemaTransform(r *Run, nodeID string) any {
 		for i, o := range ops {
 			ids[i] = prop(o, "id")
 		}
-		logData["availableOperations"] = ids
+		jsSet(logData, "availableOperations", ids)
 	}
 	r.log("debug", nodeID, "API Output Schema Transform", pxClean(logData))
 
@@ -220,6 +220,7 @@ func pxSchemaTransform(r *Run, nodeID string) any {
 					res[k] = pxValueBySchema(prop(input, k), ps)
 				}
 			}
+			jsOrder(res, pxSortedMapKeys(props)) // schema property order
 			return res
 		}
 		var first any = undefinedV
@@ -249,9 +250,11 @@ func pxItemBySchema(item, schema any) any {
 	if !ok {
 		return res
 	}
-	for _, name := range pxSortedMapKeys(props) {
+	order := pxSortedMapKeys(props)
+	for _, name := range order {
 		res[name] = pxValueBySchema(pxFindField(item, name), props[name])
 	}
+	jsOrder(res, order) // schema property order
 	return res
 }
 
@@ -485,11 +488,11 @@ func pxSetByPath(obj map[string]any, path string, v any) {
 		next, ok := cur[k].(map[string]any)
 		if !ok {
 			next = map[string]any{}
-			cur[k] = next
+			jsSet(cur, k, next)
 		}
 		cur = next
 	}
-	cur[keys[len(keys)-1]] = v
+	jsSet(cur, keys[len(keys)-1], v)
 }
 
 func pxConvertResponseType(body any, t string) any {
@@ -525,9 +528,9 @@ func pxMetadata(body any) map[string]any {
 	meta := map[string]any{"timestamp": isoNow()}
 	switch t := body.(type) {
 	case []any:
-		meta["count"] = float64(len(t))
+		jsSet(meta, "count", float64(len(t)))
 	case map[string]any:
-		meta["count"] = float64(len(t))
+		jsSet(meta, "count", float64(len(t)))
 	}
 	return meta
 }
@@ -741,6 +744,7 @@ func pxClean(v any) any {
 			}
 			out[k] = pxClean(x)
 		}
+		copyOrder(out, t)
 		return out
 	case []any:
 		out := make([]any, len(t))

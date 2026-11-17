@@ -83,7 +83,7 @@ func execFileRead(r *Run, node *Node, ctx *Ctx) (any, error) {
 		}
 		dl := om("filePath", f.path, "fileName", fileName)
 		if f.size != fioUndef {
-			dl["size"] = f.size
+			jsSet(dl, "size", f.size)
 		}
 		return om(
 			"_fileDownload", dl,

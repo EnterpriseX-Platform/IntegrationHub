@@ -173,11 +173,11 @@ func sbExecuteUpload(r *Run, node *Node, config, d map[string]any, ctx *Ctx) (an
 	}
 	if len(files) == 0 {
 		m := base()
-		m["filesFound"] = float64(0)
-		m["uploads"] = []any{}
-		m["status"] = "no_files"
-		m["message"] = fmt.Sprintf("No %s files matching \"%s\" found", fileStatus, pattern)
-		m["executedAt"] = sbISO(sbNow())
+		jsSet(m, "filesFound", float64(0))
+		jsSet(m, "uploads", []any{})
+		jsSet(m, "status", "no_files")
+		jsSet(m, "message", fmt.Sprintf("No %s files matching \"%s\" found", fileStatus, pattern))
+		jsSet(m, "executedAt", sbISO(sbNow()))
 		return m, nil
 	}
 
@@ -241,15 +241,15 @@ func sbExecuteUpload(r *Run, node *Node, config, d map[string]any, ctx *Ctx) (an
 	}
 
 	m := base()
-	m["filesFound"] = float64(len(files))
+	jsSet(m, "filesFound", float64(len(files)))
 	ups := make([]any, len(uploads))
 	for i, u := range uploads {
 		ups[i] = u
 	}
-	m["uploads"] = ups
-	m["sessionResult"] = sessionResult
-	m["status"] = "success"
-	m["executedAt"] = sbISO(sbNow())
+	jsSet(m, "uploads", ups)
+	jsSet(m, "sessionResult", sessionResult)
+	jsSet(m, "status", "success")
+	jsSet(m, "executedAt", sbISO(sbNow()))
 	return m, nil
 }
 
@@ -312,7 +312,7 @@ func sbUploadSingleFile(config, f, d map[string]any) map[string]any {
 			m := om("fileId", sbS(f, "id"), "localFile", local, "fileName", original, "remotePath", full,
 				"remoteFileName", finalName, "size", float64(sbI(f, "size")), "encrypted", encrypted, "success", true)
 			if encAlg != "" {
-				m["encryptionAlgorithm"] = encAlg
+				jsSet(m, "encryptionAlgorithm", encAlg)
 			}
 			return m
 		}
@@ -464,15 +464,15 @@ func sbExecuteDownload(config, d map[string]any) (any, error) {
 					if err := sbUnlink(lp); err != nil {
 						return err
 					}
-					dl["localPath"] = out
-					dl["fileName"] = sbBasename(out)
-					dl["decrypted"] = true
-					dl["decryptionAlgorithm"] = alg
+					jsSet(dl, "localPath", out)
+					jsSet(dl, "fileName", sbBasename(out))
+					jsSet(dl, "decrypted", true)
+					jsSet(dl, "decryptionAlgorithm", alg)
 					size, err := sbStatSize(out)
 					if err != nil {
 						return err
 					}
-					dl["size"] = float64(size)
+					jsSet(dl, "size", float64(size))
 					if fid, ok := dl["fileId"].(string); ok && fid != "" {
 						return sbUpdate("basket_files", fid, true, sbObj{{"fileName", dl["fileName"]}, {"originalName", dl["fileName"]}, {"path", out}, {"size", int32(size)}})
 					}
@@ -522,10 +522,10 @@ func sbExecuteDownload(config, d map[string]any) (any, error) {
 	)
 	sbPut(out, "basketId", basketID)
 	if len(extracted) > 0 {
-		out["extractedFiles"] = extracted
+		jsSet(out, "extractedFiles", extracted)
 	}
 	if len(decrypted) > 0 {
-		out["decryptedFiles"] = decrypted
+		jsSet(out, "decryptedFiles", decrypted)
 	}
 	return out, nil
 }
@@ -823,7 +823,7 @@ func sbDownloadFiles(config map[string]any, remotePath, localPath, pattern strin
 		}
 		dl := om("fileName", f.Name, "remotePath", remoteFile, "localPath", localFile, "size", float64(f.Size), "success", true)
 		if sessionID != "" {
-			dl["sessionId"] = sessionID
+			jsSet(dl, "sessionId", sessionID)
 		}
 		sbPut(dl, "fileId", fileID)
 		downloads = append(downloads, dl)

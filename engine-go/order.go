@@ -16,6 +16,7 @@ import (
 	"sort"
 	"strconv"
 	"sync"
+	"time"
 )
 
 // The registry stores only the key list, never the map, so it does not keep
@@ -224,7 +225,7 @@ func jsEncodeTo(buf *bytes.Buffer, v any) {
 			jsEncodeTo(buf, x)
 		}
 		buf.WriteByte(']')
-	case float64, string, bool:
+	case float64, string, bool, time.Time:
 		writeScalar(buf, t)
 	default:
 		// Structs and other types use their own (or encoding/json's) encoding.

@@ -276,11 +276,13 @@ func dbTestNode(t *testing.T, data string) *Node {
 	return &n
 }
 
+// dbTestOut compares values: JS-encoded (dates, numbers) then keys sorted.
 func dbTestOut(t *testing.T, v any) string {
-	b, err := json.Marshal(v)
-	if err != nil {
+	var m any
+	if err := json.Unmarshal(jsEncode(v), &m); err != nil {
 		t.Fatal(err)
 	}
+	b, _ := json.Marshal(m)
 	return string(b)
 }
 

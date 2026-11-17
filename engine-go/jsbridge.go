@@ -7,6 +7,7 @@ package main
 
 import (
 	"strconv"
+	"time"
 
 	"github.com/dop251/goja"
 )
@@ -23,6 +24,11 @@ func jsIn(vm *goja.Runtime, v any) goja.Value {
 		return vm.NewDynamicArray(&jsArrObj{vm: vm, a: &t})
 	case nil:
 		return goja.Null()
+	case time.Time:
+		d, err := vm.New(vm.Get("Date"), vm.ToValue(t.UnixMilli()))
+		if err == nil {
+			return d
+		}
 	}
 	return vm.ToValue(v)
 }
@@ -129,9 +135,8 @@ func jsOut(v goja.Value) any {
 	case "Array":
 		return jsOutArray(o)
 	case "Date":
-		// JSON value of a Date, as JSON.stringify would write it
-		if f, ok := o.Get("toISOString").Export().(func(goja.FunctionCall) goja.Value); ok {
-			return f(goja.FunctionCall{This: o}).String()
+		if t, ok := o.Export().(time.Time); ok {
+			return t.UTC()
 		}
 		return o.String()
 	case "Function":

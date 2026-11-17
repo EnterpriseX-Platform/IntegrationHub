@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"math"
+	"time"
 )
 
 // jsonStringify encodes v like JavaScript's JSON.stringify: object keys in
@@ -63,6 +64,10 @@ func writeJS(buf *bytes.Buffer, v any, raw json.RawMessage) {
 }
 
 func writeScalar(buf *bytes.Buffer, v any) {
+	if t, ok := v.(time.Time); ok {
+		buf.WriteString(`"` + jsISO(t) + `"`)
+		return
+	}
 	if f, ok := v.(float64); ok {
 		if math.IsNaN(f) || math.IsInf(f, 0) {
 			buf.WriteString("null") // JSON.stringify(NaN) === "null"

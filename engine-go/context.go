@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 // Ctx is one execution context. Branches and for-each workers get a copy of
@@ -303,6 +304,8 @@ func jsString(v any) string {
 		return strings.Join(s, ",")
 	case map[string]any:
 		return "[object Object]"
+	case time.Time:
+		return jsDateString(t)
 	}
 	return ""
 }

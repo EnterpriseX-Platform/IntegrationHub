@@ -674,7 +674,7 @@ func fioXJSON(v any) any {
 			}
 		}
 		if fioXTruthy(t.result) {
-			m["result"] = fioXJSON(t.result)
+			jsSet(m, "result", fioXJSON(t.result))
 		}
 		return m
 	case fioXHyper:

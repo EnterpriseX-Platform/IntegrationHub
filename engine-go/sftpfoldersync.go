@@ -302,8 +302,8 @@ func sbEnsureProjectBasket(projectID string) (map[string]any, error) {
 	} else if link["name"] != pname || link["projectBasket"] != true {
 		for _, l := range links {
 			if l["basketId"] == bid {
-				l["name"] = pname
-				l["projectBasket"] = true
+				jsSet(l, "name", pname)
+				jsSet(l, "projectBasket", true)
 			}
 		}
 		if err := write(links); err != nil {
@@ -732,7 +732,7 @@ func sbDownloadNewFolders(config map[string]any, o sbFolderSyncOpts, logf func(l
 			logf("info", fmt.Sprintf("  %s %s in %ss", rf.Name, sbFormatSize(rf.Size), sbToFixed(float64(time.Since(t0).Milliseconds())/1000, 0)))
 			fm := om("name", local.Name, "size", float64(local.Size), "path", local.Path)
 			if local.Decrypted {
-				fm["decrypted"] = true
+				jsSet(fm, "decrypted", true)
 			}
 			files = append(files, fm)
 			dirBytes += local.Size

@@ -163,7 +163,7 @@ func (e *dbExec) selectOp() (any, error) {
 	sqlText = dbResolveStr(e.ctx, sqlText)
 	ld := om("sql", sqlText, "connectionId", e.d["connectionId"])
 	if p, ok := asMap(e.ctx.Input)["params"]; ok {
-		ld["inputParams"] = p
+		jsSet(ld, "inputParams", p)
 	}
 	e.log("debug", "Database SELECT", ld)
 	return e.withConnection(func(c *dbClient) (any, error) {
@@ -279,7 +279,7 @@ func (e *dbExec) codeOp() (any, error) {
 
 	withSummary := func(m map[string]any) map[string]any {
 		if isObj && hasSummary {
-			m["summary"] = summary
+			jsSet(m, "summary", summary)
 		}
 		return m
 	}
@@ -472,7 +472,7 @@ func (e *dbExec) updateOp() (any, error) {
 		}
 		ld := om("table", e.d["table"], "sql", sqlText, "parameters", vals)
 		if w, ok := e.d["whereClause"]; ok {
-			ld["whereClause"] = w
+			jsSet(ld, "whereClause", w)
 		}
 		e.log("debug", "Database UPDATE", ld)
 		var n float64
@@ -505,7 +505,7 @@ func (e *dbExec) deleteOp() (any, error) {
 		}
 		ld := om("table", e.d["table"], "sql", sqlText)
 		if w, ok := e.d["whereClause"]; ok {
-			ld["whereClause"] = w
+			jsSet(ld, "whereClause", w)
 		}
 		e.log("debug", "Database DELETE", ld)
 		var n float64

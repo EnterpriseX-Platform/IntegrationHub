@@ -130,17 +130,8 @@ func fioStr(v any) string {
 	return "[object Object]"
 }
 
-// fioDateString is Date.prototype.toString (the zone name is Go's abbreviation).
-func fioDateString(t time.Time) string {
-	t = t.Local()
-	_, off := t.Zone()
-	sign := "+"
-	if off < 0 {
-		sign, off = "-", -off
-	}
-	name, _ := t.Zone()
-	return fmt.Sprintf("%s GMT%s%02d%02d (%s)", t.Format("Mon Jan 02 2006 15:04:05"), sign, off/3600, (off%3600)/60, name)
-}
+// fioDateString is Date.prototype.toString.
+func fioDateString(t time.Time) string { return jsDateString(t) }
 
 // fioToNumber is JavaScript's Number(v).
 func fioToNumber(v any) float64 {

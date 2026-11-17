@@ -71,7 +71,7 @@ func fioZipWrite(r *Run, node *Node, ctx *Ctx, d map[string]any) (any, error) {
 	for k, v := range d {
 		cfg[k] = v
 	}
-	cfg["targetFolder"] = targetFolder
+	jsSet(cfg, "targetFolder", targetFolder)
 	res, err := fioWriteDest(r, ctx, d, fioContent{buf: zipBytes}, fileName, cfg, targetFolder)
 	if err != nil {
 		return nil, err

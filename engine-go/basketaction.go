@@ -104,14 +104,14 @@ func execBasketAction(r *Run, node *Node, ctx *Ctx) (any, error) {
 		return nil, err
 	}
 	if truthy(d["deleteSource"]) {
-		result["deleted"] = sbDeleteSourceFiles(files)
+		jsSet(result, "deleted", sbDeleteSourceFiles(files))
 	}
 	if folderID != "" {
-		result["folderId"] = folderID
+		jsSet(result, "folderId", folderID)
 	} else {
-		result["folderId"] = nil
+		jsSet(result, "folderId", nil)
 	}
-	result["timestamp"] = sbISO(sbNow())
+	jsSet(result, "timestamp", sbISO(sbNow()))
 	return result, nil
 }
 
@@ -245,7 +245,7 @@ func sbExtractToBasket(r *Run, d map[string]any, ctx *Ctx) (any, error) {
 		"extracted", float64(count), "totalSize", float64(total), "status", "success", "timestamp", sbISO(sbNow()),
 	)
 	if sessionID != "" {
-		out["sessionId"] = sessionID
+		jsSet(out, "sessionId", sessionID)
 	}
 	return out, nil
 }

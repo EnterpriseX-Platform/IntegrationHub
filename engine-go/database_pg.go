@@ -222,12 +222,12 @@ func dbPgValue(v any) any {
 		}
 		return dbDecimalString(t.Int, int(t.Exp))
 	case time.Time:
-		return dbISO(t)
+		return t.UTC().Truncate(time.Millisecond) // a JS Date (ms precision): ISO in JSON, toString() in text
 	case pgtype.Time:
 		if !t.Valid {
 			return nil
 		}
-		return dbISO(time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC).Add(time.Duration(t.Microseconds) * time.Microsecond))
+		return time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC).Add(time.Duration(t.Microseconds) * time.Microsecond).Truncate(time.Millisecond)
 	case [16]byte:
 		return fmt.Sprintf("%x-%x-%x-%x-%x", t[0:4], t[4:6], t[6:8], t[8:10], t[10:16])
 	case []byte:

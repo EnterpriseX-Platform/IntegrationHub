@@ -127,8 +127,12 @@ export const ApiFlowDesigner = () => {
           }
         }
         
-        if (config.apiSpec) {
-          setApiSpec(config.apiSpec);
+        if (config.apiSpec && typeof config.apiSpec === 'object') {
+          // A spec saved in another shape (e.g. raw OpenAPI) must not crash
+          // the page: keep the defaults for anything it lacks.
+          const spec = { ...DEFAULT_SPEC, ...config.apiSpec };
+          if (!Array.isArray(spec.operations)) spec.operations = [];
+          setApiSpec(spec);
         }
         if (config.deployment) {
           setRequireApiKey(config.deployment.requireApiKey ?? true);

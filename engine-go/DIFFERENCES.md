@@ -49,13 +49,17 @@ inside it can differ:
 
 ## Values
 
-- Dates read from the database or produced by basket/sftp nodes are ISO
-  strings (what they become in stored results anyway). A later node that
-  calls Date methods on them, or puts one directly in a `{{template}}`,
-  sees the ISO string instead of `Date.toString()`.
-- Object key order follows JavaScript (column order for rows, file order for
-  CSV/xlsx, source order for JSON). Keys an executor adds conditionally after
-  building an object may come out in a different position than in Node.
+- Dates from the database and the basket/session tables behave like the
+  JavaScript Date objects Prisma returns: toISOString() in JSON,
+  Date.toString() in text and templates (e.g. a CSV cell
+  "Thu Jan 01 2026 07:00:00 GMT+0700 (Indochina Time)"), a real Date inside
+  a transform. The long zone name comes from a table of common zones; other
+  zones show Go's abbreviation. Dates handed to the Node server for a
+  fallback node arrive as ISO strings.
+- Object key order follows JavaScript everywhere data flows (row columns,
+  file headers, JSON, object literals, assignments). Keys added through a
+  computed key in a loop keep their insertion order only where the code
+  records it.
 
 ## Behaviour fixed instead of copied
 

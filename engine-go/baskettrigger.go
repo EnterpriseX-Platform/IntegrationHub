@@ -126,9 +126,9 @@ func execBasketTrigger(r *Run, node *Node, ctx *Ctx) (any, error) {
 				continue
 			}
 			js := sbJSRow(f)
-			js["sessionId"] = sbS(s, "id")
-			js["sessionName"] = sbS(s, "batchName")
-			js["sessionStatus"] = sbS(s, "status")
+			jsSet(js, "sessionId", sbS(s, "id"))
+			jsSet(js, "sessionName", sbS(s, "batchName"))
+			jsSet(js, "sessionStatus", sbS(s, "status"))
 			allFiles = append(allFiles, js)
 		}
 	}

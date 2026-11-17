@@ -274,7 +274,7 @@ func pxOCRProcess(r *Run, node *Node, d map[string]any, ctx *Ctx, base string, a
 	uploadURL := pxJoinURL(base, ep) + "?serverLocation=" + loc
 	logData := om("fileName", fileName, "workflowName", wfName)
 	if l, ok := d["language"]; ok {
-		logData["language"] = l
+		jsSet(logData, "language", l)
 	}
 	r.log("info", node.ID, "Uploading to: "+uploadURL, logData)
 

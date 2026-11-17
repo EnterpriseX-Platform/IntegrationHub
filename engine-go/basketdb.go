@@ -70,7 +70,7 @@ func sbJSRow(row map[string]any) map[string]any {
 func sbJSVal(v any) any {
 	switch t := v.(type) {
 	case time.Time:
-		return sbISO(t)
+		return t.UTC() // Prisma gives Date objects; JSON makes them ISO strings
 	case int32:
 		return float64(t)
 	case int64:
