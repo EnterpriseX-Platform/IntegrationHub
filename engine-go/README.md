@@ -17,8 +17,9 @@ engine-go  ──POST /internal/engine/node (one node)────▶ Node serve
   deadlines, `varName` handling.
 - Node types with a native Go executor run in Go: `api-input`, `delay`,
   `transform` (JavaScript through goja), `condition`, `for-each`,
-  `aggregate-split`, `aggregate-join`.
-- Every other node type (database, http-request, file-read/write,
+  `aggregate-split`, `aggregate-join`, `http-request` (request bytes,
+  responses and errors identical to the axios executor).
+- Every other node type (database, file-read/write,
   sftp-action, basket-*, email, ocr, encrypt/decrypt, api-output, …) is run
   on the Node server with its original TypeScript executor. The Node server
   keeps the real context objects, so values JSON cannot carry (Set, Map,
