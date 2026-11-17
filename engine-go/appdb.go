@@ -47,7 +47,16 @@ func appQuery(sql string, args ...any) ([]map[string]any, error) {
 	if err != nil {
 		return nil, err
 	}
-	return pgx.CollectRows(rows, pgx.RowToMap)
+	fields := rows.FieldDescriptions()
+	names := make([]string, len(fields))
+	for i, f := range fields {
+		names[i] = f.Name
+	}
+	out, err := pgx.CollectRows(rows, pgx.RowToMap)
+	for _, m := range out {
+		jsOrder(m, names) // column order, like the model field order Prisma returns
+	}
+	return out, err
 }
 
 // appExec runs a statement on the application database and returns the

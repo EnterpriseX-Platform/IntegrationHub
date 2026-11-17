@@ -33,8 +33,8 @@ type fallbackRequest struct {
 	CtxID         string                `json:"ctxId"`
 	ParentCtxID   string                `json:"parentCtxId,omitempty"`
 	Node          *Node                 `json:"node"`
-	Input         any                   `json:"input"`
-	VarUpdates    map[string]any        `json:"varUpdates"`
+	Input         jsVal                 `json:"input"`
+	VarUpdates    map[string]jsVal      `json:"varUpdates"`
 	ResultUpdates map[string]NodeResult `json:"resultUpdates"`
 }
 
@@ -49,12 +49,12 @@ func (f *Fallback) execute(node *Node, ctx *Ctx) (NodeResult, error) {
 	if f.url == "" {
 		return NodeResult{}, fmt.Errorf("No executor registered for node type: %s", node.Type)
 	}
-	updates := map[string]any{}
+	updates := map[string]jsVal{}
 	for k := range ctx.dirty {
-		updates[k] = ctx.Vars[k]
+		updates[k] = jsVal{ctx.Vars[k]}
 	}
 	req := fallbackRequest{
-		RunID: f.runID, CtxID: ctx.ID, ParentCtxID: ctx.Parent, Node: node, Input: ctx.Input,
+		RunID: f.runID, CtxID: ctx.ID, ParentCtxID: ctx.Parent, Node: node, Input: jsVal{ctx.Input},
 		VarUpdates: updates, ResultUpdates: ctx.run.results.takeUnsent(),
 	}
 	body, err := json.Marshal(req)
@@ -74,6 +74,16 @@ func (f *Fallback) execute(node *Node, ctx *Ctx) (NodeResult, error) {
 	var out fallbackResponse
 	if err := json.Unmarshal(raw, &out); err != nil {
 		return NodeResult{}, fmt.Errorf("engine: bad reply from the Node server (HTTP %d) for node %s", resp.StatusCode, node.ID)
+	}
+	// Values again with their JavaScript key order.
+	if ordered, err := jsDecode(raw); err == nil {
+		om := asMap(ordered)
+		if vc, ok := om["varChanges"].(map[string]any); ok {
+			out.VarChanges = vc
+		}
+		if res, ok := om["result"].(map[string]any); ok {
+			out.Result.Output = res["output"]
+		}
 	}
 	// Node now knows this context and all pending changes.
 	ctx.Parent = ""

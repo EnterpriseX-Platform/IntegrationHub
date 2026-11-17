@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"math"
 	"os"
 	"regexp"
@@ -32,14 +33,14 @@ var nativeExecutors = map[string]nativeFn{
 
 func execAPIInput(r *Run, node *Node, ctx *Ctx) (any, error) {
 	in := asMap(ctx.Input)
-	out := map[string]any{
-		"method":  in["method"],
-		"path":    in["path"],
-		"headers": in["headers"],
-		"query":   orEmpty(in["query"]),
-		"body":    in["body"],
-		"params":  orEmpty(in["params"]),
-	}
+	out := om(
+		"method", in["method"],
+		"path", in["path"],
+		"headers", in["headers"],
+		"query", orEmpty(in["query"]),
+		"body", in["body"],
+		"params", orEmpty(in["params"]),
+	)
 	r.log("debug", node.ID, "API Input Request", out)
 	return out, nil
 }
@@ -78,7 +79,7 @@ func execDelay(r *Run, node *Node, ctx *Ctx) (any, error) {
 	}
 	ms = math.Min(ms, 5*60*1000)
 	time.Sleep(time.Duration(ms) * time.Millisecond)
-	return map[string]any{"delayed": ms, "unit": unit, "resumedAt": isoNow()}, nil
+	return om("delayed", ms, "unit", unit, "resumedAt", isoNow()), nil
 }
 
 func isoNow() string { return time.Now().UTC().Format("2006-01-02T15:04:05.000Z") }
@@ -112,18 +113,19 @@ func execTransform(r *Run, node *Node, ctx *Ctx) (any, error) {
 		return nil, fmt.Errorf("Transform code execution failed: %s", jsErr(err))
 	}
 	call, _ := goja.AssertFunction(fn)
-	ret, err := call(goja.Undefined(), vm.ToValue(input), vm.ToValue(ctx.Vars), contextObject(vm, r, ctx))
+	ret, err := call(goja.Undefined(), jsIn(vm, input), jsIn(vm, varsObject(ctx)), contextObject(vm, r, ctx))
 	if err != nil {
 		if needsNode(err) {
 			return nil, errUseFallback
 		}
 		return nil, fmt.Errorf("Transform code execution failed: %s", jsErr(err))
 	}
-	return exportValue(ret), nil
+	return jsOut(ret), nil
 }
 
 func applyMapping(mapping map[string]any, ctx *Ctx) map[string]any {
 	out := map[string]any{}
+	defer copyOrder(out, mapping)
 	for k, v := range mapping {
 		switch t := v.(type) {
 		case string:
@@ -140,21 +142,20 @@ func applyMapping(mapping map[string]any, ctx *Ctx) map[string]any {
 // ── condition ────────────────────────────────────────────────────────────────
 
 var (
-	execExists    = regexp.MustCompile(`executions\.exists\(`)
-	wholeTemplate = regexp.MustCompile(`^\{\{(.+)\}\}$`)
-	identPath     = regexp.MustCompile(`[a-zA-Z_][a-zA-Z0-9_-]*(?:(?:\.[a-zA-Z_][a-zA-Z0-9_-]*)|(?:\[\d+\]))*`)
-	inlineTpl     = regexp.MustCompile(`\{\{\s*([^{}]+?)\s*\}\}`)
-	operators     = regexp.MustCompile(`[><=!&|]`)
+	execExistsArgs = regexp.MustCompile(`executions\.exists\(([^)]+)\)`)
+	execExistsAll  = regexp.MustCompile(`executions\.exists\([^)]+\)`)
+	existsKeyValue = regexp.MustCompile(`(\w+)\s*=\s*(.+)`)
+	existsTplEnds  = regexp.MustCompile(`^\{\{|\}\}$`)
+	wholeTemplate  = regexp.MustCompile(`^\{\{(.+)\}\}$`)
+	identPath      = regexp.MustCompile(`[a-zA-Z_][a-zA-Z0-9_-]*(?:(?:\.[a-zA-Z_][a-zA-Z0-9_-]*)|(?:\[\d+\]))*`)
+	inlineTpl      = regexp.MustCompile(`\{\{\s*([^{}]+?)\s*\}\}`)
+	operators      = regexp.MustCompile(`[><=!&|]`)
 )
 
 func execCondition(r *Run, node *Node, ctx *Ctx) (any, error) {
 	cond := str(node.Data, "condition")
 	if cond == "" {
 		return nil, errors.New("Condition node missing condition expression")
-	}
-	// Duplicate checks read past executions from the database: Node does that.
-	if execExists.MatchString(cond) || truthy(node.Data["checkDuplicate"]) {
-		return nil, errUseFallback
 	}
 	input := any(map[string]any{})
 	var prevVar any
@@ -173,7 +174,28 @@ func execCondition(r *Run, node *Node, ctx *Ctx) (any, error) {
 	}
 	ctx.set("_conditionInput", input)
 
-	result, err := evaluateCondition(r, ctx, cond)
+	// executions.exists(key={{value}}) → true/false from past runs
+	processed := cond
+	existsArgs := execExistsArgs.FindStringSubmatch(cond)
+	if existsArgs != nil {
+		exists := processExecutionExists(r, ctx, existsArgs[1])
+		processed = execExistsAll.ReplaceAllString(cond, strconv.FormatBool(exists))
+	}
+	// legacy checkDuplicate flag
+	var duplicateCheck any = undefinedV
+	if truthy(node.Data["checkDuplicate"]) && existsArgs == nil {
+		params := asMap(ctx.Vars["_triggerParams"])
+		key := strOr(node.Data, "duplicateKey", "year")
+		if val, ok := params[key]; ok {
+			isDup := checkDuplicateExecution(r.flow.OperationID, key, jsString(val))
+			duplicateCheck = om("checked", true, "passed", !isDup, "isDuplicate", isDup, "key", key, "value", val)
+			ctx.set("executionsExists", isDup)
+			ctx.set("duplicateKey", key)
+			ctx.set("duplicateValue", val)
+		}
+	}
+
+	result, err := evaluateCondition(r, ctx, processed)
 	if err != nil {
 		return nil, err
 	}
@@ -196,17 +218,17 @@ func execCondition(r *Run, node *Node, ctx *Ctx) (any, error) {
 	} else if arr, ok := input.([]any); ok {
 		summary["rowCount"] = float64(len(arr))
 	}
-	out := map[string]any{
-		"condition": cond, "processedCondition": cond, "result": result,
-		"inputSummary": summary,
+	if next == nil {
+		next = undefinedV
 	}
-	if next != nil {
-		out["nextNodeId"] = next
+	if prevVar == nil {
+		prevVar = undefinedV
 	}
-	if prevVar != nil {
-		out["prevNodeVarName"] = prevVar
-	}
-	return out, nil
+	return om(
+		"condition", cond, "processedCondition", processed, "result", result,
+		"nextNodeId", next, "prevNodeVarName", prevVar,
+		"inputSummary", summary, "duplicateCheck", duplicateCheck,
+	), nil
 }
 
 func evaluateCondition(r *Run, ctx *Ctx, cond string) (bool, error) {
@@ -282,8 +304,8 @@ func execForEach(r *Run, node *Node, ctx *Ctx) (any, error) {
 	items, found := resolveSourceArray(source, ctx)
 	if !found || items == nil {
 		r.log("warn", node.ID, fmt.Sprintf(`For-each source "%s" is empty or unset — no items to process.`, source), nil)
-		return map[string]any{"items": []any{}, "itemVar": itemVar, "indexVar": indexVar, "totalItems": 0.0,
-			"matchedItems": 0.0, "deferredItems": 0.0, "maxItems": 0.0, "workers": 1.0}, nil
+		return om("items", []any{}, "itemVar", itemVar, "indexVar", indexVar, "totalItems", 0.0,
+			"matchedItems", 0.0, "deferredItems", 0.0, "maxItems", 0.0, "workers", 1.0), nil
 	}
 	arr, ok := items.([]any)
 	if !ok {
@@ -319,8 +341,8 @@ func execForEach(r *Run, node *Node, ctx *Ctx) (any, error) {
 			jsNumber(matched), jsNumber(maxItems), jsNumber(maxItems), jsNumber(deferred)), nil)
 		ctx.set("__foreach_incomplete", true)
 	}
-	return map[string]any{"items": filtered, "itemVar": itemVar, "indexVar": indexVar, "totalItems": float64(len(filtered)),
-		"matchedItems": matched, "deferredItems": deferred, "maxItems": maxItems, "workers": workers}, nil
+	return om("items", filtered, "itemVar", itemVar, "indexVar", indexVar, "totalItems", float64(len(filtered)),
+		"matchedItems", matched, "deferredItems", deferred, "maxItems", maxItems, "workers", workers), nil
 }
 
 func orOne(f float64) float64 {
@@ -398,11 +420,11 @@ func execAggregateSplit(r *Run, node *Node, ctx *Ctx) (any, error) {
 	for i := range ids {
 		ids[i] = fmt.Sprintf("%s-branch-%d", node.ID, i+1)
 	}
-	ctx.set("__aggregate_"+node.ID+"_branches", map[string]any{
-		"type": "fan-out", "totalBranches": branches, "strategy": strategy, "branchIds": ids, "createdAt": isoNow(),
-	})
+	ctx.set("__aggregate_"+node.ID+"_branches", om(
+		"type", "fan-out", "totalBranches", branches, "strategy", strategy, "branchIds", ids, "createdAt", isoNow(),
+	))
 	ctx.set("__aggregate_"+node.ID+"_results", []any{})
-	out := map[string]any{"__isAggregate": true, "__aggregateType": "fan-out", "branches": ids, "strategy": strategy}
+	out := om("__isAggregate", true, "__aggregateType", "fan-out", "branches", ids, "strategy", strategy)
 	if v, ok := ctx.Vars["input"]; ok {
 		out["input"] = v
 	}
@@ -441,8 +463,8 @@ func execAggregateJoin(r *Run, node *Node, ctx *Ctx) (any, error) {
 		wait = float64(len(results)) < w
 	}
 	if wait {
-		return map[string]any{"__isAggregate": true, "__aggregateType": "fan-in", "status": "waiting",
-			"received": float64(len(results)), "expected": total, "waitFor": waitFor}, nil
+		return om("__isAggregate", true, "__aggregateType", "fan-in", "status", "waiting",
+			"received", float64(len(results)), "expected", total, "waitFor", waitFor), nil
 	}
 	var aggregated any
 	if waitFor == "any" {
@@ -460,10 +482,10 @@ func execAggregateJoin(r *Run, node *Node, ctx *Ctx) (any, error) {
 			if truthy(m["success"]) {
 				ok = append(ok, m["data"])
 			} else {
-				failed = append(failed, map[string]any{"error": m["error"], "branchId": m["branchId"]})
+				failed = append(failed, om("error", m["error"], "branchId", m["branchId"]))
 			}
 		}
-		aggregated = map[string]any{"allResults": results, "successfulResults": ok, "failedResults": failed}
+		aggregated = om("allResults", results, "successfulResults", ok, "failedResults", failed)
 	}
 	succ, fail, dur := 0.0, 0.0, 0.0
 	for _, x := range results {
@@ -480,14 +502,14 @@ func execAggregateJoin(r *Run, node *Node, ctx *Ctx) (any, error) {
 	if len(results) > 0 {
 		avg = dur / float64(len(results))
 	}
-	summary := map[string]any{"total": float64(len(results)), "success": succ, "failed": fail}
+	summary := om("total", float64(len(results)), "success", succ, "failed", fail)
 	if !math.IsNaN(avg) {
 		summary["avgDuration"] = avg
 	} else {
 		summary["avgDuration"] = nil
 	}
-	return map[string]any{"__isAggregate": true, "__aggregateType": "fan-in", "status": "completed",
-		"results": aggregated, "summary": summary}, nil
+	return om("__isAggregate", true, "__aggregateType", "fan-in", "status", "completed",
+		"results", aggregated, "summary", summary), nil
 }
 
 // ── JS helpers ───────────────────────────────────────────────────────────────
@@ -519,9 +541,15 @@ func newVM(r *Run, ctx *Ctx) *goja.Runtime {
 func contextObject(vm *goja.Runtime, r *Run, ctx *Ctx) goja.Value {
 	o := vm.NewObject()
 	vars := vm.NewObject()
-	_ = vars.Set("get", func(k string) any { return ctx.Vars[k] })
+	_ = vars.Set("get", func(k string) goja.Value {
+		v, ok := ctx.Vars[k]
+		if !ok {
+			return goja.Undefined()
+		}
+		return jsIn(vm, v)
+	})
 	_ = vars.Set("has", func(k string) bool { _, ok := ctx.Vars[k]; return ok })
-	_ = vars.Set("set", func(k string, v goja.Value) { ctx.set(k, exportValue(v)) })
+	_ = vars.Set("set", func(k string, v goja.Value) { ctx.set(k, jsOut(v)) })
 	results := vm.NewObject()
 	_ = results.Set("get", func(k string) any {
 		if res, ok := r.results.get(k); ok {
@@ -534,7 +562,7 @@ func contextObject(vm *goja.Runtime, r *Run, ctx *Ctx) goja.Value {
 	})
 	_ = o.Set("variables", vars)
 	_ = o.Set("nodeResults", results)
-	_ = o.Set("input", ctx.Input)
+	_ = o.Set("input", jsIn(vm, ctx.Input))
 	_ = o.Set("flow", map[string]any{"operationId": r.flow.OperationID})
 	return o
 }
@@ -579,4 +607,68 @@ func exportValue(v goja.Value) any {
 	var out any
 	_ = json.Unmarshal(b, &out)
 	return out
+}
+
+// varsObject is Object.fromEntries(context.variables): a new object whose
+// values are the live variable values.
+func varsObject(ctx *Ctx) map[string]any {
+	m := make(map[string]any, len(ctx.Vars))
+	for k, v := range ctx.Vars {
+		m[k] = v
+	}
+	return m
+}
+
+// processExecutionExists ports ConditionExecutor.processExecutionExists:
+// "year={{year}}" or "'year', {{year}}".
+func processExecutionExists(r *Run, ctx *Ctx, args string) bool {
+	var key string
+	var val any
+	found := false
+	if m := existsKeyValue.FindStringSubmatch(args); m != nil {
+		key = m[1]
+		val, found = ctx.valueByPath(existsTplEnds.ReplaceAllString(strings.TrimSpace(m[2]), ""))
+	} else {
+		parts := strings.Split(args, ",")
+		if len(parts) >= 2 {
+			key = strings.Trim(strings.TrimSpace(parts[0]), `'"`)
+			val, found = ctx.valueByPath(existsTplEnds.ReplaceAllString(strings.TrimSpace(parts[1]), ""))
+		}
+	}
+	if key == "" || !found {
+		log.Printf("[ConditionExecutor] Invalid executions.exists() format: %s", args)
+		return false
+	}
+	exists := checkDuplicateExecution(r.flow.OperationID, key, jsString(val))
+	ctx.set("executionsExists", exists)
+	ctx.set("executionsCheckKey", key)
+	ctx.set("executionsCheckValue", val)
+	return exists
+}
+
+// checkDuplicateExecution: did a successful run of this flow in the last 365
+// days use parameter key=value? (last 50 runs, like the TypeScript).
+func checkDuplicateExecution(flowID, key, value string) bool {
+	rows, err := appQuery(`SELECT result FROM executions WHERE "flowId" = $1 AND status = 'Success'
+		AND "startedAt" >= $2 ORDER BY "startedAt" DESC LIMIT 50`, flowID, time.Now().AddDate(0, 0, -365))
+	if err != nil {
+		log.Printf("[ConditionExecutor] Error checking duplicate execution: %v", err)
+		return false
+	}
+	for _, row := range rows {
+		s, _ := row["result"].(string)
+		if s == "" {
+			continue
+		}
+		res, err := jsDecode([]byte(s))
+		if err != nil {
+			continue
+		}
+		params := asMap(asMap(asMap(res)["trigger"])["parameters"])
+		if v, ok := params[key]; ok && jsString(v) == value {
+			log.Printf("[ConditionExecutor] Duplicate found: Flow %s already executed with %s=%s", flowID, key, value)
+			return true
+		}
+	}
+	return false
 }

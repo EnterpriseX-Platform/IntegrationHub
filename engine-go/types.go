@@ -28,9 +28,30 @@ func (n *Node) UnmarshalJSON(b []byte) error {
 	n.ID, n.Type, n.rawData = aux.ID, aux.Type, aux.Data
 	n.Data = nil
 	if len(aux.Data) > 0 && string(aux.Data) != "null" {
-		return json.Unmarshal(aux.Data, &n.Data)
+		v, err := jsDecode(aux.Data)
+		if err != nil {
+			return err
+		}
+		n.Data, _ = v.(map[string]any)
 	}
 	return nil
+}
+
+// MarshalJSON sends the node with its data exactly as received.
+func (n Node) MarshalJSON() ([]byte, error) {
+	data := []byte(n.rawData)
+	if len(data) == 0 {
+		data = jsEncode(n.Data)
+	}
+	var buf bytes.Buffer
+	buf.WriteString(`{"id":`)
+	writeScalar(&buf, n.ID)
+	buf.WriteString(`,"type":`)
+	writeScalar(&buf, n.Type)
+	buf.WriteString(`,"data":`)
+	buf.Write(data)
+	buf.WriteByte('}')
+	return buf.Bytes(), nil
 }
 
 // keyOrder returns the keys of the object at data.<field> in their original
@@ -136,4 +157,5 @@ type ExecuteRequest struct {
 	DeadlineAt    int64          `json:"deadlineAt"` // epoch ms, 0 = none
 	CallbackURL   string         `json:"callbackUrl"`
 	CallbackToken string         `json:"callbackToken"`
+	ApiSpec       any            `json:"apiSpec,omitempty"` // OpenAPI spec for api-output (context.apiSpec)
 }

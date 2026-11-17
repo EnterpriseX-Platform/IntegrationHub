@@ -3,7 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"sort"
+	"math"
 )
 
 // jsonStringify encodes v like JavaScript's JSON.stringify: object keys in
@@ -26,14 +26,12 @@ func writeJS(buf *bytes.Buffer, v any, raw json.RawMessage) {
 				keys, seen[k] = append(keys, k), true
 			}
 		}
-		var rest []string
-		for k := range t {
+		// keys not in the flow JSON: the map's own (recorded) order
+		for _, k := range jsKeys(t) {
 			if !seen[k] {
-				rest = append(rest, k)
+				keys = append(keys, k)
 			}
 		}
-		sort.Strings(rest)
-		keys = append(keys, rest...)
 		buf.WriteByte('{')
 		for i, k := range keys {
 			if i > 0 {
@@ -66,6 +64,10 @@ func writeJS(buf *bytes.Buffer, v any, raw json.RawMessage) {
 
 func writeScalar(buf *bytes.Buffer, v any) {
 	if f, ok := v.(float64); ok {
+		if math.IsNaN(f) || math.IsInf(f, 0) {
+			buf.WriteString("null") // JSON.stringify(NaN) === "null"
+			return
+		}
 		buf.WriteString(jsNumber(f))
 		return
 	}

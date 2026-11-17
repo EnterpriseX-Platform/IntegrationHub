@@ -50,7 +50,7 @@ func execHTTPRequest(r *Run, node *Node, ctx *Ctx) (any, error) {
 		conn = &connHTTP{}
 		b, _ := json.Marshal(raw["config"])
 		_ = json.Unmarshal(b, conn)
-		r.log("debug", node.ID, "Using connection: "+id, map[string]any{"baseUrl": conn.BaseURL, "authType": conn.AuthType})
+		r.log("debug", node.ID, "Using connection: "+id, om("baseUrl", conn.BaseURL, "authType", conn.AuthType))
 	}
 
 	rawURL := str(d, "url")
@@ -116,7 +116,7 @@ func execHTTPRequest(r *Run, node *Node, ctx *Ctx) (any, error) {
 
 	req := httpReq{method: method, url: u, headers: headers, params: params, paramOrder: node.keyOrder("queryParams"), body: body, bodyRaw: firstRaw(bodyRawStr, node.field("body")), hasBody: hasBody,
 		timeout: time.Duration(timeout) * time.Millisecond, insecure: insecure, stream: truthy(d["downloadFile"])}
-	logData := map[string]any{"url": u, "method": strings.ToLower(method), "headers": headers, "queryParams": params, "body": body, "timeout": timeout}
+	logData := om("url", u, "method", strings.ToLower(method), "headers", headers, "queryParams", params, "body", body, "timeout", timeout)
 	r.log("debug", node.ID, fmt.Sprintf("HTTP Request: %s %s", method, u), logData)
 
 	if truthy(d["paginate"]) && !truthy(d["downloadFile"]) {
@@ -129,16 +129,14 @@ func execHTTPRequest(r *Run, node *Node, ctx *Ctx) (any, error) {
 	}
 	defer resp.raw.Body.Close()
 	if req.stream {
-		r.log("debug", node.ID, fmt.Sprintf("HTTP Response: %d %s", resp.status, resp.statusText),
-			map[string]any{"status": float64(resp.status), "statusText": resp.statusText, "headers": resp.headers, "data": "<stream>"})
+		r.log("debug", node.ID, fmt.Sprintf("HTTP Response: %d %s", resp.status, resp.statusText), om("status", float64(resp.status), "statusText", resp.statusText, "headers", resp.headers, "data", "<stream>"))
 		return httpDownload(r, node, ctx, resp, u)
 	}
-	r.log("debug", node.ID, fmt.Sprintf("HTTP Response: %d %s", resp.status, resp.statusText),
-		map[string]any{"status": float64(resp.status), "statusText": resp.statusText, "headers": resp.headers, "data": resp.data})
-	return map[string]any{
-		"status": float64(resp.status), "statusText": resp.statusText, "headers": resp.headers,
-		"data": resp.data, "url": u, "timestamp": isoNow(),
-	}, nil
+	r.log("debug", node.ID, fmt.Sprintf("HTTP Response: %d %s", resp.status, resp.statusText), om("status", float64(resp.status), "statusText", resp.statusText, "headers", resp.headers, "data", resp.data))
+	return om(
+		"status", float64(resp.status), "statusText", resp.statusText, "headers", resp.headers,
+		"data", resp.data, "url", u, "timestamp", isoNow(),
+	), nil
 }
 
 // httpTemplate is HttpRequestExecutor.resolveTemplate: always a string.
@@ -175,6 +173,7 @@ func resolveObject(ctx *Ctx, v any) any {
 		for k, x := range t {
 			out[k] = resolveObject(ctx, x)
 		}
+		copyOrder(out, t)
 		return out
 	}
 	return v
@@ -316,8 +315,7 @@ func (q httpReq) do() (*httpResp, error) {
 	if !q.stream || res.StatusCode >= 300 {
 		raw, _ := io.ReadAll(res.Body)
 		res.Body.Close()
-		var parsed any
-		if len(bytes.TrimSpace(raw)) > 0 && json.Unmarshal(raw, &parsed) == nil {
+		if parsed, err := jsDecode(raw); len(bytes.TrimSpace(raw)) > 0 && err == nil {
 			out.data = parsed
 		} else {
 			out.data = string(raw)
@@ -458,8 +456,8 @@ func httpDownload(r *Run, node *Node, ctx *Ctx, resp *httpResp, u string) (any, 
 	}
 	f.Close()
 	st, _ := os.Stat(full)
-	out := map[string]any{"status": float64(resp.status), "url": u, "localPath": full, "fileName": name,
-		"size": float64(st.Size()), "timestamp": isoNow()}
+	out := om("status", float64(resp.status), "url", u, "localPath", full, "fileName", name,
+		"size", float64(st.Size()), "timestamp", isoNow())
 	if ct, ok := resp.headers["content-type"]; ok {
 		out["contentType"] = ct
 	}
@@ -506,15 +504,14 @@ func httpUpload(r *Run, node *Node, ctx *Ctx, u string, conn *connHTTP) (any, er
 	}
 	req := httpReq{method: method, url: u, headers: mergedHeaders(d, conn, ctx), params: params, paramOrder: node.keyOrder("queryParams"),
 		timeout: time.Duration(timeout) * time.Millisecond, rawBody: &buf, contentType: mw.FormDataContentType()}
-	r.log("debug", node.ID, fmt.Sprintf("Upload request: %s %s", method, u),
-		map[string]any{"fileName": name, "fileSize": float64(st.Size()), "fieldName": field, "formFields": d["formFields"]})
+	r.log("debug", node.ID, fmt.Sprintf("Upload request: %s %s", method, u), om("fileName", name, "fileSize", float64(st.Size()), "fieldName", field, "formFields", d["formFields"]))
 	resp, err := req.do()
 	if err != nil {
 		return nil, err
 	}
 	r.log("debug", node.ID, fmt.Sprintf("Upload response: %d", resp.status), resp.data)
-	return map[string]any{"status": float64(resp.status), "statusText": resp.statusText, "headers": resp.headers,
-		"data": resp.data, "url": u, "uploadedFile": name, "uploadedSize": float64(st.Size()), "timestamp": isoNow()}, nil
+	return om("status", float64(resp.status), "statusText", resp.statusText, "headers", resp.headers,
+		"data", resp.data, "url", u, "uploadedFile", name, "uploadedSize", float64(st.Size()), "timestamp", isoNow()), nil
 }
 
 func httpPaginated(r *Run, node *Node, base httpReq, d map[string]any) (any, error) {
@@ -546,10 +543,9 @@ func httpPaginated(r *Run, node *Node, base httpReq, d map[string]any) (any, err
 		q := base
 		if where == "body" {
 			b := map[string]any{}
-			for k, v := range asMap(base.body) {
-				b[k] = v
-			}
-			b[limitParam], b[offsetParam] = pageSize, offset
+			jsAssign(b, asMap(base.body))
+			jsSet(b, limitParam, pageSize)
+			jsSet(b, offsetParam, offset)
 			q.body, q.hasBody = b, true
 		} else {
 			p := map[string]any{}
@@ -616,10 +612,9 @@ func httpPaginated(r *Run, node *Node, base httpReq, d map[string]any) (any, err
 		}
 		merged = m
 	}
-	r.log("info", node.ID, fmt.Sprintf("Paginated fetch complete: %d items across %s page(s)", len(all), jsNumber(pages)),
-		map[string]any{"url": base.url, "pages": pages, "total": finalTotal})
-	out := map[string]any{"status": 200.0, "statusText": "OK", "headers": map[string]any{}, "data": merged,
-		"url": base.url, "pages": pages, "total": finalTotal, "timestamp": isoNow()}
+	r.log("info", node.ID, fmt.Sprintf("Paginated fetch complete: %d items across %s page(s)", len(all), jsNumber(pages)), om("url", base.url, "pages", pages, "total", finalTotal))
+	out := om("status", 200.0, "statusText", "OK", "headers", map[string]any{}, "data", merged,
+		"url", base.url, "pages", pages, "total", finalTotal, "timestamp", isoNow())
 	if last != nil {
 		out["status"], out["statusText"], out["headers"] = float64(last.status), last.statusText, last.headers
 	}

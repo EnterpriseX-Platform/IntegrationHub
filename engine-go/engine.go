@@ -46,7 +46,7 @@ func (r *Run) log(level, nodeID, msg string, data any) {
 
 // nodeLog is the engine's 'node:log' event (progress lines in the run log).
 func (r *Run) nodeLog(nodeID, msg string) {
-	r.emit(map[string]any{"event": "node:log", "nodeId": nodeID, "message": msg})
+	r.emit(om("event", "node:log", "nodeId", nodeID, "message", msg))
 }
 
 func (r *Run) checkDeadline() error {
@@ -287,10 +287,10 @@ func (r *Run) runForEach(node *Node, ctx *Ctx, fe map[string]any) error {
 				}
 				if err != nil {
 					mu.Lock()
-					errs = append(errs, map[string]any{"index": float64(idx), "error": err.Error()})
+					errs = append(errs, om("index", float64(idx), "error", err.Error()))
 					mu.Unlock()
 					r.nodeLog(node.ID, fmt.Sprintf("Worker error at item %d: %s", idx+1, err.Error()))
-					batch[idx-start] = map[string]any{"index": float64(idx), "success": false, "error": err.Error()}
+					batch[idx-start] = om("index", float64(idx), "success", false, "error", err.Error())
 					return
 				}
 				last := r.lastInChain(body)
@@ -298,7 +298,7 @@ func (r *Run) runForEach(node *Node, ctx *Ctx, fe map[string]any) error {
 				if last != "" {
 					item = w.Vars[last]
 				}
-				batch[idx-start] = map[string]any{"index": float64(idx), "success": true, "result": item}
+				batch[idx-start] = om("index", float64(idx), "success", true, "result", item)
 			}(bi)
 		}
 		wg.Wait()
@@ -344,13 +344,13 @@ func (r *Run) runAggregateSplit(node *Node, ctx *Ctx, targets []string) string {
 			began := time.Now()
 			if err := r.chainUntil(start, b, join); err != nil {
 				r.nodeLog(node.ID, fmt.Sprintf("Branch %d error: %s", i+1, err.Error()))
-				outcomes[i] = map[string]any{"branchId": start, "success": false, "error": err.Error(), "duration": float64(time.Since(began).Milliseconds())}
-				summary[i] = map[string]any{"branch": float64(i), "success": false, "error": err.Error()}
+				outcomes[i] = om("branchId", start, "success", false, "error", err.Error(), "duration", float64(time.Since(began).Milliseconds()))
+				summary[i] = om("branch", float64(i), "success", false, "error", err.Error())
 				branchCtx[i] = nil
 				return
 			}
-			outcomes[i] = map[string]any{"branchId": start, "success": true, "data": b.Input, "duration": float64(time.Since(began).Milliseconds())}
-			summary[i] = map[string]any{"branch": float64(i), "success": true}
+			outcomes[i] = om("branchId", start, "success", true, "data", b.Input, "duration", float64(time.Since(began).Milliseconds()))
+			summary[i] = om("branch", float64(i), "success", true)
 		}(i, t)
 	}
 	wg.Wait()
@@ -382,7 +382,8 @@ func (r *Run) runAggregateSplit(node *Node, ctx *Ctx, targets []string) string {
 		for k, v := range info {
 			cp[k] = v
 		}
-		cp["totalBranches"] = float64(len(targets))
+		copyOrder(cp, info)
+		jsSet(cp, "totalBranches", float64(len(targets)))
 		ctx.set("__aggregate_"+node.ID+"_branches", cp)
 	}
 	r.nodeLog(node.ID, fmt.Sprintf("Fan-out completed: %d/%d succeeded", ok, len(targets)))
@@ -489,7 +490,7 @@ func (r *Run) findJoin(targets []string) string {
 // the Node server otherwise. Either way the result is stored the same way as
 // NodeExecutor.execute does in TS.
 func (r *Run) executeNode(node *Node, ctx *Ctx) (NodeResult, error) {
-	r.emit(map[string]any{"event": "node:start", "nodeId": node.ID})
+	r.emit(om("event", "node:start", "nodeId", node.ID))
 	started := time.Now()
 
 	var (
@@ -535,10 +536,10 @@ func (r *Run) executeNode(node *Node, ctx *Ctx) (NodeResult, error) {
 	}
 
 	if err != nil {
-		r.emit(map[string]any{"event": "node:error", "nodeId": node.ID, "error": err.Error()})
+		r.emit(om("event", "node:error", "nodeId", node.ID, "error", err.Error()))
 		return res, err
 	}
-	r.emit(map[string]any{"event": "node:complete", "nodeId": node.ID, "result": res})
+	r.emit(om("event", "node:complete", "nodeId", node.ID, "result", res))
 	return res, nil
 }
 

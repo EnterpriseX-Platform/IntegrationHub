@@ -110,6 +110,7 @@ export class GoEngineProxy extends EventEmitter {
       const port = parseInt(process.env.PORT || '3001', 10);
       const done = await this.stream({
         runId, flow, input, variables,
+        apiSpec: this.config.apiSpec,
         deadlineAt: this.config.deadlineAt || 0,
         callbackUrl: process.env.ENGINE_CALLBACK_URL || `http://127.0.0.1:${port}/internal/engine/node`,
         callbackToken: CALLBACK_TOKEN,
