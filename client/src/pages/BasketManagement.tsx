@@ -122,14 +122,14 @@ function renderBasketRow(opts: RowOpts) {
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-2 min-w-0">
-          <span className="font-medium text-[13px] text-slate-900 truncate">{b.name}</span>
+          <span className="font-medium text-[13px] text-slate-900 truncate shrink-0 max-w-[65%]" title={b.name}>{b.name}</span>
           {b.description && (
-            <span className="text-[12px] text-slate-500 truncate">— {b.description}</span>
+            <span className="text-[12px] text-slate-500 truncate min-w-0" title={b.description}>— {b.description}</span>
           )}
         </div>
       </div>
-      <div className="hidden lg:flex shrink-0 items-center gap-1 w-[160px]">
-        <span className="w-[88px] inline-flex">
+      <div className="hidden lg:flex shrink-0 items-center gap-1.5 w-[216px]">
+        <span className="w-[140px] inline-flex" title={b.projectName}>
           {scope === 'all' && b.projectName && (
             <span className={`inline-flex items-center rounded ${colors.chip} px-1.5 py-0.5 text-[12px] font-medium ${colors.chipText} ring-1 ring-inset ring-black/5 truncate w-full`}>
               {b.projectName}

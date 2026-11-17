@@ -659,7 +659,7 @@ export function ShareFolderExplorer({ basket: single, readOnly = false, embedded
                 </Tag>
               )}
               <div className="relative w-[160px] lg:w-[200px]">
-                <Search id="fe-folder-search" size="md" labelText="Search this folder" placeholder="Search this folder"
+                <Search id="fe-folder-search" size="sm" labelText="Search this folder" placeholder="Search this folder"
                   value={q} onChange={(e: any) => setQ(e.target.value)} onClear={() => setQ('')} />
               </div>
               {sel.size > 0 ? (

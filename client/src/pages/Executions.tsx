@@ -489,16 +489,17 @@ export default function Executions() {
           >
             Export
           </Button>
-          <Toggle
-            id="executions-live"
-            size="sm"
-            labelText=""
-            hideLabel
-            labelA="Paused"
-            labelB="Live"
-            toggled={autoRefresh}
-            onToggle={(v: boolean) => setAutoRefresh(v)}
-          />
+          <div className="flex items-center gap-2" title="Refresh automatically">
+            <Toggle
+              id="executions-live"
+              size="sm"
+              labelText="Live refresh"
+              hideLabel
+              toggled={autoRefresh}
+              onToggle={(v: boolean) => setAutoRefresh(v)}
+            />
+            <span className={`text-[13px] ${autoRefresh ? 'text-green-700' : 'text-gray-500'}`}>{autoRefresh ? 'Live' : 'Paused'}</span>
+          </div>
           <ContentSwitcher
             size="md"
             className="!w-[12rem] shrink-0"

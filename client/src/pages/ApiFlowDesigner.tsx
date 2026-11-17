@@ -1234,7 +1234,9 @@ const DeployPanel = ({ flowId, projectId, apiSpec, flowName }: DeployPanelProps)
               </div>
               <div className="text-sm text-gray-500">
                 {config.enabled 
-                  ? `Deployed at ${new Date(config.deployedAt!).toLocaleString()}`
+                  ? (config.deployedAt && !isNaN(new Date(config.deployedAt).getTime())
+                    ? `Deployed at ${new Date(config.deployedAt).toLocaleString()}`
+                    : 'Running')
                   : 'API is not currently deployed'
                 }
               </div>

@@ -363,3 +363,10 @@ main button.bg-blue-600, main a.bg-blue-600 { white-space: nowrap; }
 
 /* Tiles that used to be white cards: keep the page's own padding/layout */
 .cds--tile.app-tile { min-block-size: 0; }
+
+/* Rail (collapsed) mode: Carbon slides a collapsed SideNav off-screen with
+   translateX(-256px); the app keeps it in place as a 48px icon rail. */
+.app-sidenav.app-sidenav--rail.cds--side-nav--collapsed { transform: none; }
+.app-sidenav.app-sidenav--rail .cds--side-nav__link { justify-content: center; padding-inline: 0; }
+.app-sidenav.app-sidenav--rail .cds--side-nav__icon { margin-inline-end: 0; }
+.app-sidenav.app-sidenav--rail .cds--side-nav__divider { margin-inline: 0.75rem; }

@@ -500,7 +500,7 @@ export const ProjectExecutions = ({ project }: { project: Project }) => {
                     <div className="font-semibold text-sm text-gray-900 truncate">{execution.flowName}</div>
                     <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-0.5 flex-wrap">
                       <span>{formatDate(execution.startedAt)}</span>
-                      {execution.duration !== undefined && (
+                      {!!execution.duration && (
                         <>
                           <span>•</span>
                           <span>{formatDuration(execution.duration)}</span>
@@ -691,7 +691,7 @@ export const ProjectExecutions = ({ project }: { project: Project }) => {
                             <p className="text-xs text-gray-500 mb-1">Ended / Duration</p>
                             <p className="font-medium text-sm text-gray-900">
                               {execution.endedAt ? formatDate(execution.endedAt) : '-'}
-                              {execution.duration !== undefined && (
+                              {!!execution.duration && (
                                 <span className="ml-2 text-xs text-gray-500">({formatDuration(execution.duration)})</span>
                               )}
                             </p>

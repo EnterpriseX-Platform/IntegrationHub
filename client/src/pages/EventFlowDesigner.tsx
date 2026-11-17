@@ -785,7 +785,9 @@ const DeployPanel = ({ flowId, projectId, flowName: _flowName, nodes, onStatusCh
               </div>
               <div className="text-sm text-gray-500">
                 {config.enabled 
-                  ? `Deployed at ${new Date(config.deployedAt!).toLocaleString()}`
+                  ? (config.deployedAt && !isNaN(new Date(config.deployedAt).getTime())
+                    ? `Deployed at ${new Date(config.deployedAt).toLocaleString()}`
+                    : 'Running')
                   : 'Flow is not currently active'
                 }
               </div>

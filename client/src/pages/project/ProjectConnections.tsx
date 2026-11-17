@@ -396,8 +396,8 @@ export const ProjectConnections = ({ project }: { project: Project }) => {
                     />
                   </div>
                   
-                  {/* Actions */}
-                  <div className="flex items-center gap-1 ml-auto">
+                  {/* Actions — fixed width so the status column lines up across rows */}
+                  <div className="flex items-center justify-end gap-1 ml-auto sm:w-[136px] shrink-0">
                     <ActionButtons
                       connectionId={connection.id}
                       isTesting={isTesting}
