@@ -374,3 +374,13 @@ main button.bg-blue-600, main a.bg-blue-600 { white-space: nowrap; }
 /* Compact Carbon button with a trailing icon: Carbon reserves 4rem for it */
 .cds--btn.app-btn-compact { padding-inline-end: 2.75rem; max-inline-size: none; }
 .cds--btn.app-btn-compact .cds--btn__icon { inset-inline-end: 0.75rem; position: absolute; }
+
+/* File Explorer navigation: Carbon tree-view rows */
+.fe-nav-row { transition: background-color 110ms; }
+.fe-nav-row:hover { background-color: var(--cds-layer-hover-01, #e8e8e8); }
+.fe-nav-row--on, .fe-nav-row--on:hover { background-color: var(--cds-layer-selected-01, #e0e0e0); }
+
+/* Side-nav rail: Carbon's active bar instead of the focus box after a click */
+.app-sidenav .cds--side-nav__link:focus:not(:focus-visible) { outline: none; box-shadow: none; }
+.app-sidenav.app-sidenav--rail .cds--side-nav__link { block-size: 2.5rem; }
+.fe-nav-row--on { box-shadow: inset 3px 0 0 var(--cds-border-interactive, #0f62fe); }

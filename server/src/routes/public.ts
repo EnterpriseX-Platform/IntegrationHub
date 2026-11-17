@@ -319,9 +319,9 @@ async function executeDeployedFlow(
 
     // Build detailed execution logs
     const executionLogs: any[] = [
-      { timestamp: new Date(startTime).toISOString(), level: 'info', message: `🚀 Execution started`, operationId },
-      { timestamp: new Date().toISOString(), level: 'info', message: `📡 ${req.method} ${req.path}` },
-      { timestamp: new Date().toISOString(), level: 'info', message: `🔑 Auth: ${req.apiKey?.type || 'none'}`, auth: req.apiKey?.type },
+      { timestamp: new Date(startTime).toISOString(), level: 'info', message: `Execution started`, operationId },
+      { timestamp: new Date().toISOString(), level: 'info', message: `${req.method} ${req.path}` },
+      { timestamp: new Date().toISOString(), level: 'info', message: `Auth: ${req.apiKey?.type || 'none'}`, auth: req.apiKey?.type },
     ];
 
     // Add node execution logs
@@ -334,7 +334,7 @@ async function executeDeployedFlow(
         executionLogs.push({
           timestamp: nodeResult.startedAt,
           level: nodeResult.success ? 'info' : 'error',
-          message: `${nodeResult.success ? '✅' : '❌'} Node: ${nodeName} (${nodeResult.nodeType})`,
+          message: `${nodeResult.success ? 'OK' : 'FAILED'} Node: ${nodeName} (${nodeResult.nodeType})`,
           nodeId: nodeResult.nodeId,
           nodeName: nodeName,
           nodeType: nodeResult.nodeType,
@@ -357,8 +357,8 @@ async function executeDeployedFlow(
       timestamp: new Date().toISOString(),
       level: result.success ? 'info' : 'error',
       message: result.success 
-        ? `✅ Execution completed (${result.metadata?.durationMs}ms)`
-        : `❌ Execution failed: ${result.error}`,
+        ? `Execution completed (${result.metadata?.durationMs}ms)`
+        : `Execution failed: ${result.error}`,
       duration: result.metadata?.durationMs,
     });
 

@@ -63,6 +63,8 @@ const HOST = process.env.HOST || '0.0.0.0';
 const CTX_BASE_PATH = process.env.CTX_BASE_PATH || '/integration';
 const CTX_BACKEND_PATH = process.env.CTX_BACKEND_PATH || '/int';
 const CTX_PUBLIC = process.env.CTX_PUBLIC || '/deh';
+// Product name in API banners and generated files; internal builds set APP_NAME
+const APP_NAME = process.env.APP_NAME || 'IntegrationX';
 const CTX_ADMIN_PATH = process.env.CTX_ADMIN_PATH || '/admin';
 
 // Legacy support (backward compatible)
@@ -227,9 +229,9 @@ app.use(deployedApiRouter);
 // Root endpoint
 app.get('/', (_req: Request, res: Response) => {
   res.json({
-    name: 'DEH API',
+    name: `${APP_NAME} API`,
     version: '1.0.0',
-    description: 'Backend API server for DEH',
+    description: `Backend API server for ${APP_NAME}`,
     endpoints: {
       health: '/health',
       projects: `${API_PREFIX}/projects`,
@@ -269,35 +271,35 @@ const server = app.listen(PORT, HOST, async () => {
   // Multi-tenancy phase 1: back-fill existing data into the "default" tenant
   ensureDefaultTenant().catch((err) => console.error('[tenant] default tenant bootstrap failed:', err));
   console.log('='.repeat(70));
-  console.log('🚀 DEH API Server');
+  console.log(`${APP_NAME} API Server`);
   console.log('='.repeat(70));
-  console.log('📡 Server Config:');
+  console.log('Server Config:');
   console.log(`   Port: ${PORT}`);
   console.log(`   Host: ${HOST}`);
   console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log('-'.repeat(70));
-  console.log('🔗 Context Paths (CTX_*):');
+  console.log('Context Paths (CTX_*):');
   console.log(`   Frontend Base: ${CTX_BASE_PATH}`);
   console.log(`   Backend API: ${CTX_BACKEND_PATH}`);
   console.log(`   Public API: ${CTX_PUBLIC}`);
   console.log(`   Admin Path: ${CTX_ADMIN_PATH}`);
   console.log('-'.repeat(70));
-  console.log('💾 Database:');
+  console.log('Database:');
   console.log(`   Host: ${DB_HOST}:${DB_PORT}`);
   console.log(`   Database: ${DB_NAME}`);
   console.log(`   User: ${DB_USER}`);
   console.log('-'.repeat(70));
-  console.log('📁 Paths:');
+  console.log('Paths:');
   console.log(`   Basket: ${PATH_BASKET_DIR}`);
   console.log(`   Baskets: ${PATH_BASKETS_DIR}`);
   console.log(`   Upload: ${PATH_UPLOAD_DIR}`);
   console.log(`   Temp: ${PATH_TEMP_DIR}`);
   console.log(`   Logs: ${PATH_LOG_DIR}`);
   console.log('-'.repeat(70));
-  console.log('🔧 Features:');
-  console.log(`   Scheduler: ${ENABLE_SCHEDULER ? '✅' : '❌'}`);
-  console.log(`   Public API: ${ENABLE_PUBLIC_API ? '✅' : '❌'}`);
-  console.log(`   Admin Panel: ${ENABLE_ADMIN_PANEL ? '✅' : '❌'}`);
+  console.log('Features:');
+  console.log(`   Scheduler: ${ENABLE_SCHEDULER ? 'on' : 'off'}`);
+  console.log(`   Public API: ${ENABLE_PUBLIC_API ? 'on' : 'off'}`);
+  console.log(`   Admin Panel: ${ENABLE_ADMIN_PANEL ? 'on' : 'off'}`);
   console.log('='.repeat(70));
   console.log('Available endpoints:');
   console.log(`  GET  ${API_PREFIX}/projects              - List all projects`);

@@ -3343,7 +3343,7 @@ function ImportMappingModal(props: ImportMappingModalProps) {
                 ? '✓ Keep existing rows + schema, add new rows'
                 : mode === 'merge'
                   ? '↻ DELETE rows matching key tuples then INSERT (upsert per row)'
-                  : '⚠ DELETE rows matching key tuples then INSERT (bulk replace)'}
+                  : 'DELETE rows matching key tuples then INSERT (bulk replace)'}
             </span>
           </div>
 
@@ -3352,7 +3352,7 @@ function ImportMappingModal(props: ImportMappingModalProps) {
             <div className="mt-2 pt-2 border-t border-blue-100">
               <div className="text-xs font-medium text-gray-700 mb-1.5">
                 Match by (key column{mergeKeys.length !== 1 ? 's' : ''}):
-                {mergeKeys.length === 0 && <span className="text-red-600 ml-2">⚠ Pick at least 1 to {mode === 'merge' ? 'merge' : 'replace'} safely</span>}
+                {mergeKeys.length === 0 && <span className="text-red-600 ml-2">Pick at least 1 to {mode === 'merge' ? 'merge' : 'replace'} safely</span>}
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {dbColumns.map(c => {
@@ -3757,7 +3757,7 @@ function ClearByKeyModal(props: ClearByKeyModalProps) {
           {/* SQL preview */}
           {canSubmit && (
             <div className="bg-red-50 border border-red-200 rounded-md px-3 py-2.5">
-              <div className="text-[12px] text-red-700 font-medium mb-1">⚠ Every row matching all of these will be deleted:</div>
+              <div className="text-[12px] text-red-700 font-medium mb-1">Every row matching all of these will be deleted:</div>
               <code className="block text-xs text-red-800 font-mono leading-5">
                 DELETE WHERE
                 {validConditions.map((c, i) => (

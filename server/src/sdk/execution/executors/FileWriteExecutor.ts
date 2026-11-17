@@ -591,7 +591,7 @@ export class FileWriteExecutor extends NodeExecutor {
 
     // In-memory mode for small datasets
     const workbook = new ExcelJS.Workbook();
-    workbook.creator = 'DEH';
+    workbook.creator = process.env.APP_NAME || 'IntegrationX';
     workbook.created = new Date();
 
     for (const sheet of sheetsToWrite) {
@@ -624,7 +624,7 @@ export class FileWriteExecutor extends NodeExecutor {
     stream.on('data', (chunk: Buffer) => chunks.push(chunk));
 
     const workbook = new ExcelJS.stream.xlsx.WorkbookWriter({ stream });
-    workbook.creator = 'DEH';
+    workbook.creator = process.env.APP_NAME || 'IntegrationX';
     workbook.created = new Date();
 
     for (const sheet of sheets) {

@@ -549,12 +549,12 @@ export function ShareFolderExplorer({ basket: single, readOnly = false, embedded
 
   /* left pane: one "basket" entry (icon square + name + hint) */
   const basketEntry = (key: string, on: boolean, name: string, hint: string, icon: JSX.Element, onClick: () => void, extra?: JSX.Element) => (
-    <div key={key} className={cx('group flex items-center gap-2 rounded-sm px-2 py-1.5', on ? 'bg-brand/10 text-brand' : 'hover:bg-slate-100')}>
-      <button type="button" onClick={onClick} className="flex min-w-0 flex-1 items-center gap-2 text-left">
-        <span className={cx('grid h-6 w-6 flex-shrink-0 place-items-center rounded', on ? 'bg-brand text-white' : 'bg-slate-200 text-slate-600')}>{icon}</span>
+    <div key={key} className={cx('fe-nav-row group flex items-center gap-2 border-l-[3px] pl-3 pr-1 py-2', on ? 'fe-nav-row--on border-brand' : 'border-transparent')}>
+      <button type="button" onClick={onClick} className="flex min-w-0 flex-1 items-center gap-2.5 text-left">
+        <span className={cx('grid h-5 w-5 flex-shrink-0 place-items-center', on ? 'text-brand' : 'text-slate-500')}>{icon}</span>
         <span className="min-w-0 flex-1">
-          <span className={cx('block truncate text-[12.5px] leading-snug', on && 'font-semibold')} title={name}>{name}</span>
-          {hint && <span className="block truncate text-[10.5px] text-slate-400">{hint}</span>}
+          <span className={cx('block truncate text-[13px] leading-snug text-slate-900', on && 'font-semibold')} title={name}>{name}</span>
+          {hint && <span className="block truncate text-[11px] leading-snug text-slate-500">{hint}</span>}
         </span>
       </button>
       {extra}
@@ -598,8 +598,8 @@ export function ShareFolderExplorer({ basket: single, readOnly = false, embedded
 
         {/* ── Navigation pane ── */}
         <nav aria-label="Baskets" className="flex max-h-[300px] min-h-0 flex-col border-b border-slate-200 bg-slate-50/60 sm:max-h-none sm:border-b-0 sm:border-r">
-          <div className="flex items-center gap-1 px-3 pb-1 pt-2.5">
-            <span className="flex-1 text-[11.5px] font-medium text-slate-400">Baskets</span>
+          <div className="flex items-center gap-1 pl-4 pr-1 pb-1 pt-3">
+            <span className="flex-1 text-[12px] font-semibold text-slate-600">Baskets</span>
             {!single && (
               <IconButton kind="ghost" size="sm" label="Link a project basket" onClick={() => setShowLinkModal(true)}>
                 <Plus className="h-3.5 w-3.5" />
@@ -1185,8 +1185,8 @@ function FolderRow({ folder, rootLabel = 'File Explorer', selected, onSelect, on
 
   return (
     <div
-      className={`relative flex items-center gap-1 pr-1 py-1 rounded-sm cursor-pointer text-[12.5px] group ${selected ? 'bg-brand/10 text-brand font-semibold' : 'hover:bg-slate-100 text-slate-700'}`}
-      style={{ paddingLeft: 8 + level * 14 }}
+      className={`fe-nav-row relative flex items-center gap-1.5 pr-1 py-1.5 border-l-[3px] cursor-pointer text-[13px] group ${selected ? 'fe-nav-row--on border-brand text-slate-900 font-semibold' : 'border-transparent text-slate-700'}`}
+      style={{ paddingLeft: 10 + level * 16 }}
       onClick={onSelect}
     >
       {hasChildren ? (
@@ -1196,7 +1196,7 @@ function FolderRow({ folder, rootLabel = 'File Explorer', selected, onSelect, on
       ) : (
         <span className="w-5" />
       )}
-      {isRoot ? <FolderTree className="w-4 h-4 text-brand" /> : (isExpanded ? <FolderOpen className="w-4 h-4 text-amber-500" /> : <FolderIcon className="w-4 h-4 text-amber-500" />)}
+      {isRoot ? <FolderTree className="w-4 h-4 text-slate-500" /> : (isExpanded ? <FolderOpen className={`w-4 h-4 ${selected ? 'text-brand' : 'text-slate-500'}`} /> : <FolderIcon className={`w-4 h-4 ${selected ? 'text-brand' : 'text-slate-500'}`} />)}
       <span className="truncate flex-1">{isRoot ? rootLabel : folder!.name}</span>
       {!isRoot && folder!._count && (
         <span className="flex-shrink-0 text-[12px] tabular-nums font-normal text-slate-400 group-hover:hidden">{folder!._count.files.toLocaleString('en-US')}</span>

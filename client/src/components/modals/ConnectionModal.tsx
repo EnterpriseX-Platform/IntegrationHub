@@ -581,7 +581,7 @@ export default function ConnectionModal({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <TextInput id="conn-smtp-from" type="email" labelText={<>From address <span className="text-red-500">*</span></>} value={smtp.fromAddress} onChange={(e) => setSmtp({ ...smtp, fromAddress: e.target.value })} placeholder="noreply@example.com" />
-        <TextInput id="conn-smtp-fromname" labelText="From name" value={smtp.fromName} onChange={(e) => setSmtp({ ...smtp, fromName: e.target.value })} placeholder="DEH" />
+        <TextInput id="conn-smtp-fromname" labelText="From name" value={smtp.fromName} onChange={(e) => setSmtp({ ...smtp, fromName: e.target.value })} placeholder="IntegrationX" />
       </div>
 
       <Checkbox

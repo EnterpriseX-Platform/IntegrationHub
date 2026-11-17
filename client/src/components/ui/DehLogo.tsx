@@ -7,7 +7,7 @@ interface DehLogoProps {
 }
 
 /**
- * DEH (Data Exchange Hub) mark: two brackets (the systems on either side)
+ * Product mark: two brackets (the systems on either side)
  * with arrows running both ways between them.
  */
 export const DehLogo: React.FC<DehLogoProps> = ({ size = 32, className }) => (

@@ -5,7 +5,7 @@ COPY package*.json ./
 RUN npm ci
 COPY . .
 # Branding: open-source default is IntegrationX; internal builds pass
-#   --build-arg VITE_APP_NAME=DEH --build-arg VITE_APP_TAGLINE="Data Exchange Hub"
+#   --build-arg VITE_APP_NAME=<name> --build-arg VITE_APP_TAGLINE="<tagline>"
 ARG VITE_APP_NAME=IntegrationX
 ARG VITE_APP_TAGLINE="Integration Platform"
 ENV VITE_APP_NAME=$VITE_APP_NAME VITE_APP_TAGLINE=$VITE_APP_TAGLINE
