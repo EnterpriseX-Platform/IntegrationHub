@@ -1616,7 +1616,7 @@ const Projects = () => {
 
                             {/* Projects Grid */}
                             {isAgencyExpanded && (
-                              <div className="ml-0 sm:ml-12 mt-2 sm:mt-0 grid grid-cols-[repeat(auto-fill,minmax(15rem,20rem))] gap-2 sm:gap-3">
+                              <div className="ml-0 sm:ml-12 mt-2 sm:mt-0 grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-2 sm:gap-3">
                                 {agencyProjects.map((project) => (
                                   <div
                                     key={project.id}

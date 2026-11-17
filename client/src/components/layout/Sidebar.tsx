@@ -38,25 +38,29 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false, isMobile = false, isMobileOpen = false }) => {
   const location = useLocation();
   const expanded = isMobile ? isMobileOpen : !isCollapsed;
+  // Carbon marks a collapsed SideNav `inert` (nothing inside can be clicked)
+  // and slides it off-screen. On desktop the collapsed state is our own icon
+  // rail, so Carbon is always told "expanded" and the rail is pure CSS.
+  const carbonExpanded = isMobile ? isMobileOpen : true;
 
   return (
     <SideNav
       aria-label="Main navigation"
-      expanded={expanded}
+      expanded={carbonExpanded}
       isPersistent={!isMobile}
       isFixedNav={!isMobile}
       isChildOfHeader={false}
       className={`app-sidenav ${isMobile ? 'app-sidenav--mobile' : ''} ${expanded ? '' : 'app-sidenav--rail'}`}
     >
       <SideNavItems>
-        {navItems.map((item) => {
+        {navItems.map((item, idx) => {
           const isActive = location.pathname === item.path ||
             (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
           return (
             <React.Fragment key={item.path}>
               {item.section && (expanded
                 ? <li className="app-sidenav__section">{item.section}</li>
-                : <SideNavDivider />)}
+                : idx > 0 && <SideNavDivider />)}
               <SideNavLink
                 as={Link as any}
                 to={item.path}

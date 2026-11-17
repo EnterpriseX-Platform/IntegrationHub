@@ -456,7 +456,7 @@ export const ProjectFlows = ({ project }: { project: Project }) => {
 
                 {/* Flows Grid */}
                 {isGroupExpanded && (
-                  <div className="sm:ml-6 grid grid-cols-[repeat(auto-fill,minmax(15rem,20rem))] gap-2 sm:gap-3">
+                  <div className="sm:ml-6 grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-2 sm:gap-3">
                     {processFlows.map(flow => {
                       const isApi = flow.type === 'API_SPEC';
                       const typeBg = isApi ? 'bg-blue-50' : 'bg-green-50';

@@ -658,7 +658,7 @@ export function ShareFolderExplorer({ basket: single, readOnly = false, embedded
                   {copyMessage}
                 </Tag>
               )}
-              <div className="relative w-[160px] lg:w-[200px]">
+              <div className="relative w-[140px] lg:w-[200px]">
                 <Search id="fe-folder-search" size="sm" labelText="Search this folder" placeholder="Search this folder"
                   value={q} onChange={(e: any) => setQ(e.target.value)} onClear={() => setQ('')} />
               </div>
@@ -694,7 +694,7 @@ export function ShareFolderExplorer({ basket: single, readOnly = false, embedded
                     </>
                   )}
                   {inFe && (
-                    <CdsButton kind="primary" size="sm" href={withAuthToken(`${API_URL}/file-explorer/folders/${currentFolderId ?? 'root'}/download?basketId=${cur.id}`)}
+                    <CdsButton kind="primary" size="sm" className="app-btn-compact" href={withAuthToken(`${API_URL}/file-explorer/folders/${currentFolderId ?? 'root'}/download?basketId=${cur.id}`)}
                       title="Download every file in this folder (including subfolders) as a ZIP" renderIcon={Download}>
                       Download ZIP
                     </CdsButton>

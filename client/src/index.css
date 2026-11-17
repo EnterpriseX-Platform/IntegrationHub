@@ -370,3 +370,7 @@ main button.bg-blue-600, main a.bg-blue-600 { white-space: nowrap; }
 .app-sidenav.app-sidenav--rail .cds--side-nav__link { justify-content: center; padding-inline: 0; }
 .app-sidenav.app-sidenav--rail .cds--side-nav__icon { margin-inline-end: 0; }
 .app-sidenav.app-sidenav--rail .cds--side-nav__divider { margin-inline: 0.75rem; }
+
+/* Compact Carbon button with a trailing icon: Carbon reserves 4rem for it */
+.cds--btn.app-btn-compact { padding-inline-end: 2.75rem; max-inline-size: none; }
+.cds--btn.app-btn-compact .cds--btn__icon { inset-inline-end: 0.75rem; position: absolute; }

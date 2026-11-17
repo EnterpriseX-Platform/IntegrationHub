@@ -124,7 +124,7 @@ function renderBasketRow(opts: RowOpts) {
         <div className="flex items-baseline gap-2 min-w-0">
           <span className="font-medium text-[13px] text-slate-900 truncate shrink-0 max-w-[65%]" title={b.name}>{b.name}</span>
           {b.description && (
-            <span className="text-[12px] text-slate-500 truncate min-w-0" title={b.description}>— {b.description}</span>
+            <span className="hidden 2xl:inline text-[12px] text-slate-500 truncate min-w-0" title={b.description}>— {b.description}</span>
           )}
         </div>
       </div>
@@ -140,7 +140,7 @@ function renderBasketRow(opts: RowOpts) {
           <TypeBadge type={b.type} sftpMode={b.sftpMode} />
         </span>
       </div>
-      <div className="hidden md:flex shrink-0 items-center divide-x divide-slate-200/70 text-right">
+      <div className="hidden xl:flex shrink-0 items-center divide-x divide-slate-200/70 text-right">
         <div className="px-3">
           <div className="text-[12px] uppercase tracking-wide text-slate-400 font-medium leading-none">Files</div>
           <div className="mt-0.5 text-[13px] font-mono tabular-nums text-slate-800 leading-none">{b.fileCount.toLocaleString()}</div>
