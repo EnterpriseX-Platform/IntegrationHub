@@ -8,7 +8,7 @@ import projectsRouter from './routes/projects';
 import flowsRouter from './routes/flows';
 import executionsRouter from './routes/executions';
 import connectionsRouter from './routes/connections';
-import { handleEngineNodeCallback } from './sdk/execution/GoEngineProxy';
+import { handleEngineNodeCallback, handleEngineConnectionCallback } from './sdk/execution/GoEngineProxy';
 import connectionSftpRouter from './routes/connectionSftp';
 import basketRouter from './routes/basket';
 import basketsRouter from './routes/baskets';
@@ -108,6 +108,7 @@ app.use(cors({
 // Go engine callback (loopback + per-process token). Mounted before the 10mb
 // body limit: a node's input can carry a whole parsed file.
 app.post('/internal/engine/node', express.json({ limit: '1gb' }), handleEngineNodeCallback);
+app.get('/internal/engine/connection/:id', handleEngineConnectionCallback);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 

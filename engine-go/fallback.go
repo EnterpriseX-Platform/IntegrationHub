@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 )
 
@@ -97,4 +99,28 @@ func (f *Fallback) execute(node *Node, ctx *Ctx) (NodeResult, error) {
 		return res, errors.New(msg)
 	}
 	return res, nil
+}
+
+// connection fetches a stored connection (config, type, status, name) from
+// the Node server, so connection settings are read from one place.
+func (f *Fallback) connection(id string) (map[string]any, error) {
+	if f.url == "" {
+		return nil, fmt.Errorf("Connection not found: %s", id)
+	}
+	u := strings.TrimSuffix(f.url, "/node") + "/connection/" + url.PathEscape(id)
+	req, _ := http.NewRequest(http.MethodGet, u, nil)
+	req.Header.Set("X-Engine-Token", f.token)
+	resp, err := f.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("engine: Node server unreachable: %w", err)
+	}
+	defer resp.Body.Close()
+	var out map[string]any
+	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+		return nil, fmt.Errorf("engine: bad connection reply for %s", id)
+	}
+	if e, _ := out["error"].(string); e != "" {
+		return nil, errors.New(e)
+	}
+	return out, nil
 }

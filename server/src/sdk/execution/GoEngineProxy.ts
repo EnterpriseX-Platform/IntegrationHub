@@ -238,12 +238,35 @@ export async function goEngineAvailable(): Promise<boolean> {
   return lastOk;
 }
 
-// ── Callback: Go asks this server to run one node ───────────────────────────
+// ── Callbacks from the Go engine ────────────────────────────────────────────
 
-export async function handleEngineNodeCallback(req: Request, res: Response): Promise<void> {
+function callbackAllowed(req: Request): boolean {
   const remote = req.socket.remoteAddress || '';
   const loopback = remote === '127.0.0.1' || remote === '::1' || remote === '::ffff:127.0.0.1';
-  if (req.get('X-Engine-Token') !== CALLBACK_TOKEN || (!loopback && !process.env.ENGINE_CALLBACK_URL)) {
+  return req.get('X-Engine-Token') === CALLBACK_TOKEN && (loopback || !!process.env.ENGINE_CALLBACK_URL);
+}
+
+/** GET /internal/engine/connection/:id — a stored connection for a Go executor. */
+export async function handleEngineConnectionCallback(req: Request, res: Response): Promise<void> {
+  if (!callbackAllowed(req)) {
+    res.status(403).json({ error: 'forbidden' });
+    return;
+  }
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { prisma } = require('../../lib/prisma');
+  const conn = await prisma.connection.findUnique({ where: { id: req.params.id } });
+  if (!conn) {
+    res.json({ error: `Connection not found: ${req.params.id}` });
+    return;
+  }
+  let config: any = {};
+  try { config = typeof conn.config === 'string' ? JSON.parse(conn.config) : conn.config; } catch { config = conn.config || {}; }
+  res.json({ id: conn.id, name: conn.name, type: conn.type, status: conn.status, config });
+}
+
+/** POST /internal/engine/node — Go asks this server to run one node. */
+export async function handleEngineNodeCallback(req: Request, res: Response): Promise<void> {
+  if (!callbackAllowed(req)) {
     res.status(403).json({ error: 'forbidden' });
     return;
   }

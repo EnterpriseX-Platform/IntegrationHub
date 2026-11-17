@@ -1,6 +1,10 @@
 package main
 
-import "time"
+import (
+	"bytes"
+	"encoding/json"
+	"time"
+)
 
 // Flow, node and edge shapes mirror server/src/sdk/execution/types.ts.
 
@@ -8,6 +12,64 @@ type Node struct {
 	ID   string         `json:"id"`
 	Type string         `json:"type"`
 	Data map[string]any `json:"data"`
+
+	rawData json.RawMessage // original JSON of data, for key order
+}
+
+func (n *Node) UnmarshalJSON(b []byte) error {
+	var aux struct {
+		ID   string          `json:"id"`
+		Type string          `json:"type"`
+		Data json.RawMessage `json:"data"`
+	}
+	if err := json.Unmarshal(b, &aux); err != nil {
+		return err
+	}
+	n.ID, n.Type, n.rawData = aux.ID, aux.Type, aux.Data
+	n.Data = nil
+	if len(aux.Data) > 0 && string(aux.Data) != "null" {
+		return json.Unmarshal(aux.Data, &n.Data)
+	}
+	return nil
+}
+
+// keyOrder returns the keys of the object at data.<field> in their original
+// order (Go maps do not keep it; JavaScript objects do).
+func (n *Node) keyOrder(field string) []string {
+	var m map[string]json.RawMessage
+	if json.Unmarshal(n.rawData, &m) != nil {
+		return nil
+	}
+	return objectKeys(m[field])
+}
+
+// field returns the raw JSON of data.<name>.
+func (n *Node) field(name string) json.RawMessage {
+	var m map[string]json.RawMessage
+	if json.Unmarshal(n.rawData, &m) != nil {
+		return nil
+	}
+	return m[name]
+}
+
+func objectKeys(raw json.RawMessage) []string {
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	if t, err := dec.Token(); err != nil || t != json.Delim('{') {
+		return nil
+	}
+	var keys []string
+	for dec.More() {
+		t, err := dec.Token()
+		if err != nil {
+			return keys
+		}
+		keys = append(keys, t.(string))
+		var skip json.RawMessage
+		if dec.Decode(&skip) != nil {
+			return keys
+		}
+	}
+	return keys
 }
 
 type Edge struct {

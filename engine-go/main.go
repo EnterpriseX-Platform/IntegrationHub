@@ -32,18 +32,10 @@ func handleExecute(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "POST only", http.StatusMethodNotAllowed)
 		return
 	}
+	// Decode straight into the struct: numbers become float64 like in
+	// JavaScript, and Node.rawData keeps each node's original key order.
 	var req ExecuteRequest
-	dec := json.NewDecoder(r.Body)
-	dec.UseNumber()
-	var raw map[string]any
-	if err := dec.Decode(&raw); err != nil {
-		http.Error(w, "bad request: "+err.Error(), http.StatusBadRequest)
-		return
-	}
-	// Re-decode through encoding/json without UseNumber so numbers are
-	// float64 like JavaScript numbers.
-	b, _ := json.Marshal(raw)
-	if err := json.Unmarshal(b, &req); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "bad request: "+err.Error(), http.StatusBadRequest)
 		return
 	}
