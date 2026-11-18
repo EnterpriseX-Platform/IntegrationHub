@@ -254,8 +254,8 @@ export const EventFlowDesigner = () => {
       )}
       {/* Header */}
       <div className="bg-white border-b px-3 sm:px-4 py-2.5 sm:py-3">
-        <div className="flex items-center justify-between gap-2 flex-wrap lg:flex-nowrap">
-          <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
+        <div className="flex items-center justify-between gap-2 flex-wrap xl:flex-nowrap">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-[12rem] flex-1">
             <IconButton kind="ghost" size="md" label="Back" onClick={() => navigate(-1)}>
               <i className="fas fa-arrow-left text-gray-600"></i>
             </IconButton>
@@ -292,7 +292,7 @@ export const EventFlowDesigner = () => {
           </div>
 
           {/* Tabs */}
-          <div className="order-last lg:order-none w-full lg:w-auto">
+          <div className="order-last xl:order-none w-full xl:w-auto">
             {(() => {
               const tabs = [
                 { id: 'designer', label: 'Flow Designer', icon: 'fa-project-diagram' },

@@ -291,18 +291,18 @@ export const ApiFlowDesigner = () => {
   return (
     <div className="h-full flex flex-col bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+      <div className="bg-white border-b px-3 sm:px-4 py-2.5 sm:py-3">
+        <div className="flex items-center justify-between gap-2 flex-wrap xl:flex-nowrap">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-[12rem] flex-1">
             <IconButton kind="ghost" size="md" label="Back" onClick={() => navigate(-1)}>
               <i className="fas fa-arrow-left text-gray-600"></i>
             </IconButton>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="hidden sm:flex w-10 h-10 shrink-0 bg-blue-100 rounded-lg items-center justify-center">
                 <Globe className="h-5 w-5 text-blue-600" />
               </div>
-              <div>
-                <h1 className="font-semibold text-gray-900 whitespace-nowrap">{flowName || 'Untitled API'}</h1>
+              <div className="min-w-0">
+                <h1 className="font-semibold text-gray-900 truncate" title={flowName}>{flowName || 'Untitled API'}</h1>
                 <div className="flex items-center gap-2">
                   <Tag size="sm" type="blue">REST API</Tag>
                   <span className="text-xs text-gray-500 whitespace-nowrap">{apiSpec.operations.length} operations</span>
@@ -311,8 +311,8 @@ export const ApiFlowDesigner = () => {
             </div>
           </div>
 
-          {/* Tabs */}
-          <div>
+          {/* Tabs: own row until xl, so the title is never squeezed */}
+          <div className="order-last xl:order-none w-full xl:w-auto overflow-x-auto">
             {(() => {
               const tabs = [
                 { id: 'spec', label: 'OpenAPI Specification', icon: 'fa-file-code' },
@@ -338,7 +338,7 @@ export const ApiFlowDesigner = () => {
             })()}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <Button variant="secondary" size="sm" onClick={saveFlow} disabled={isLoading}>
               <i className="fas fa-save mr-2"></i>
               {isLoading ? 'Saving...' : 'Save'}
