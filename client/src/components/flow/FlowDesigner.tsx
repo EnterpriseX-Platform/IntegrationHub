@@ -1607,12 +1607,22 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                 const sideOf = (port: string | undefined, fromX: number, fromY: number, toX: number, toY: number) =>
                   port || (Math.abs(toX - fromX) > Math.abs(toY - fromY) ? (toX > fromX ? 'right' : 'left') : (toY > fromY ? 'bottom' : 'top'));
                 const DIR: Record<string, [number, number]> = { right: [1, 0], left: [-1, 0], top: [0, -1], bottom: [0, 1] };
-                const sSide = sideOf(edge.sourcePort, sx, sy, tx, ty);
-                const tSide = sideOf(edge.targetPort, tx, ty, sx, sy);
+                // Without an explicit port, use the side of the node the point is on,
+                // so the curve leaves/enters along that port (not along the gap direction).
+                const sideOnNode = (n: { x: number; y: number }, px: number, py: number) =>
+                  px <= n.x ? 'left' : px >= n.x + NODE_WIDTH ? 'right' : py <= n.y ? 'top' : 'bottom';
+                const sSide = edge.sourcePort || (isDraggingThisEdge ? sideOf(undefined, sx, sy, tx, ty) : sideOnNode(source, sx, sy));
+                const tSide = edge.targetPort || (isDraggingThisEdge ? sideOf(undefined, tx, ty, sx, sy) : sideOnNode(target, tx, ty));
                 const reach = Math.max(36, Math.min(140, Math.hypot(tx - sx, ty - sy) / 2));
                 const [sdx, sdy] = DIR[sSide];
                 const [tdx, tdy] = DIR[tSide];
-                const path = `M ${sx} ${sy} C ${sx + sdx * reach} ${sy + sdy * reach}, ${tx + tdx * reach} ${ty + tdy * reach}, ${tx} ${ty}`;
+                // The arrow tip stops at the port circle's edge and the line stops at
+                // the arrow's base, so neither runs over the port.
+                const PORT_R = 7;   // port circle radius incl. border
+                const ARROW_L = 9;  // arrow length
+                const tipX = tx + tdx * PORT_R, tipY = ty + tdy * PORT_R;
+                const endX = tipX + tdx * ARROW_L, endY = tipY + tdy * ARROW_L;
+                const path = `M ${sx} ${sy} C ${sx + sdx * reach} ${sy + sdy * reach}, ${endX + tdx * reach} ${endY + tdy * reach}, ${endX} ${endY}`;
 
                 const isSelected = selectedEdge === edge.id;
                 const isHighlighted = highlightedEdge === edge.id;
@@ -1658,38 +1668,13 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                       style={{ pointerEvents: 'none' }}
                     />
                     
-                    {/* Arrow head at line end - simple triangle pointing along line */}
+                    {/* Arrow head: enters the target port along the curve's final direction */}
                     {(() => {
-                      // Get angle from bezier control point to end
-                      // For M sx,sy C cp1x,cp1y cp2x,cp2y tx,ty
-                      // The line approaches from cp2 toward tx,ty
-                      let cp2x, cp2y;
-                      if (isHorizontal) {
-                        cp2x = sx + (tx - sx) * 0.5;
-                        cp2y = ty;
-                      } else {
-                        cp2x = tx;
-                        cp2y = sy + (ty - sy) * 0.5;
-                      }
-                      // Angle from control point to end (where line comes from)
-                      const angle = Math.atan2(ty - cp2y, tx - cp2x);
-                      
-                      // Simple triangle arrow
-                      const L = 10; // length
-                      const W = 6;  // half width
-                      
-                      // Tip at connection dot
-                      const tipX = tx;
-                      const tipY = ty;
-                      // Base center (back from tip along the line)
-                      const baseX = tx - L * Math.cos(angle);
-                      const baseY = ty - L * Math.sin(angle);
-                      // Left and right corners of base
-                      const leftX = baseX - W * Math.sin(angle);
-                      const leftY = baseY + W * Math.cos(angle);
-                      const rightX = baseX + W * Math.sin(angle);
-                      const rightY = baseY - W * Math.cos(angle);
-                      
+                      const W = 5; // half width
+                      // the curve ends moving opposite to the port side's outward direction
+                      const ux = -tdx, uy = -tdy;
+                      const leftX = endX - W * uy, leftY = endY + W * ux;
+                      const rightX = endX + W * uy, rightY = endY - W * ux;
                       return (
                         <polygon
                           points={`${tipX},${tipY} ${leftX},${leftY} ${rightX},${rightY}`}
@@ -1698,7 +1683,7 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                         />
                       );
                     })()}
-                    
+
                     {/* Edge text only while selected; branch names (true/false, body/done) sit at the node ports */}
                     {isSelected && (
                       <text
@@ -1887,10 +1872,11 @@ export const FlowDesigner = ({ flow, onChange, nodeTypes, connections, flowType 
                     )}
                     {(node.type === 'condition' || node.type === 'for-each') && (
                       <>
-                        <span className="absolute -right-2 top-1/2 translate-x-full -translate-y-1/2 pl-1 text-[11px] font-semibold text-[var(--canvas-node-muted)] pointer-events-none">
+                        {/* branch names sit beside the edge, not on it */}
+                        <span className="absolute -right-2 top-1/2 translate-x-full -translate-y-full pl-1.5 pb-1 leading-none text-[11px] font-semibold text-[var(--canvas-node-muted)] pointer-events-none">
                           {node.type === 'condition' ? 'true' : 'body'}
                         </span>
-                        <span className="absolute bottom-0 left-1/2 translate-y-full -translate-x-1/2 pt-2 text-[11px] font-semibold text-[var(--canvas-node-muted)] pointer-events-none">
+                        <span className="absolute bottom-0 left-1/2 translate-y-full pl-2 pt-2 leading-none text-[11px] font-semibold text-[var(--canvas-node-muted)] pointer-events-none">
                           {node.type === 'condition' ? 'false' : 'done'}
                         </span>
                       </>
