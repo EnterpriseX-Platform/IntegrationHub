@@ -56,7 +56,7 @@ func handleExecute(w http.ResponseWriter, r *http.Request) {
 	}
 	if len(raw.Variables) > 0 {
 		if v, err := jsDecode(raw.Variables); err == nil {
-			req.Variables, _ = v.(map[string]any)
+			req.Variables, _ = fbUntagDates(v).(map[string]any)
 		}
 	}
 

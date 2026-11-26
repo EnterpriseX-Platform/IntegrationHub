@@ -31,10 +31,29 @@ interface RunState {
 const runs = new Map<string, RunState>();
 
 /** JSON-safe copy for sending to Go (Set → array, Map → object, Buffer → note). */
-function jsonSafe(v: any): any {
+// Dates cross to and from the Go engine as {"$ixDate": ISO} (plain JSON
+// would turn them into strings).
+const DATE_KEY = '$ixDate';
+
+function reviveDates(v: any): any {
+  if (Array.isArray(v)) {
+    for (let i = 0; i < v.length; i++) v[i] = reviveDates(v[i]);
+    return v;
+  }
+  if (v && typeof v === 'object') {
+    const keys = Object.keys(v);
+    if (keys.length === 1 && keys[0] === DATE_KEY && typeof v[DATE_KEY] === 'string') return new Date(v[DATE_KEY]);
+    for (const k of keys) v[k] = reviveDates(v[k]);
+  }
+  return v;
+}
+
+function jsonSafe(v: any, tagDates = true): any {
   if (v === undefined) return null;
   try {
-    return JSON.parse(JSON.stringify(v, (_k, x) => {
+    return JSON.parse(JSON.stringify(v, function (this: any, k: string, x: any) {
+      const raw = this[k];
+      if (tagDates && raw instanceof Date) return isNaN(raw.getTime()) ? null : { [DATE_KEY]: raw.toISOString() };
       if (x instanceof Set) return [...x];
       if (x instanceof Map) return Object.fromEntries(x);
       if (typeof x === 'bigint') return x.toString();
@@ -287,9 +306,12 @@ export async function handleEngineNodeCallback(req: Request, res: Response): Pro
     };
     run.contexts.set(ctxId, ctx);
   }
-  for (const [k, v] of Object.entries(varUpdates || {})) ctx.variables.set(k, v);
-  for (const [id, r] of Object.entries(resultUpdates || {})) ctx.nodeResults.set(id, reviveResult(r));
-  ctx.input = input;
+  for (const [k, v] of Object.entries(varUpdates || {})) ctx.variables.set(k, reviveDates(v));
+  for (const [id, r] of Object.entries(resultUpdates || {})) {
+    const rr: any = r;
+    ctx.nodeResults.set(id, reviveResult({ ...rr, output: reviveDates(rr.output) }));
+  }
+  ctx.input = reviveDates(input);
 
   const executor = run.executors.get(node.type);
   if (!executor) {
@@ -318,7 +340,7 @@ export async function handleEngineNodeCallback(req: Request, res: Response): Pro
   res.json({
     result: result ? { ...result, output: jsonSafe(result.output) } : undefined,
     varChanges,
-    logs: jsonSafe(ctx.logs.slice(logStart)),
+    logs: jsonSafe(ctx.logs.slice(logStart), false),
     error,
   });
 }

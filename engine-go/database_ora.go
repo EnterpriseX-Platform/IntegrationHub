@@ -146,8 +146,15 @@ func dbOraRewrite(sqlText string, params []any) (string, []any) {
 			return r
 		})
 	}
+	// SQL built with :1, :2 … placeholders (insert / update / delete) takes
+	// the params as they are.
+	if idx == 1 && len(params) > 0 && dbOraPositional.MatchString(s) {
+		binds = append(binds, params...)
+	}
 	return s, binds
 }
+
+var dbOraPositional = regexp.MustCompile(`:\d+`)
 
 // dbOraBind converts a JS value for go-ora. Dates are bound as local
 // wall-clock time, as oracledb does.
@@ -267,12 +274,13 @@ func dbOraValue(v any, typeName string, lobs bool) any {
 	case float64:
 		return t
 	case time.Time:
+		// A JS Date (ms precision), as the Postgres side returns.
 		if strings.Contains(typeName, "TIME ZONE") || strings.Contains(typeName, "TZ") {
-			return dbISO(t)
+			return t.UTC().Truncate(time.Millisecond)
 		}
 		// DATE / TIMESTAMP carry no zone: oracledb reads the wall clock as
 		// local time of the process.
-		return dbISO(time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), time.Local))
+		return time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), time.Local).UTC().Truncate(time.Millisecond)
 	default:
 		return fmt.Sprint(t)
 	}
@@ -332,8 +340,29 @@ func dbOraExec(q dbOraQ, sqlText string, args []any) (float64, error) {
 	if err != nil {
 		return 0, err
 	}
+	if dbOraPLSQL.MatchString(sqlText) {
+		return 0, nil // oracledb leaves rowsAffected undefined for PL/SQL blocks
+	}
 	n, _ := res.RowsAffected()
 	return float64(n), nil
+}
+
+var dbOraPLSQL = regexp.MustCompile(`(?i)^\s*(BEGIN|DECLARE)\b`)
+
+// dbOraErrText formats an Oracle error as node-oracledb does: the server
+// message followed by a Help link, without go-ora's "error occur at
+// position" suffix.
+func dbOraErrText(err error) string {
+	var oe *network.OracleError
+	if !errors.As(err, &oe) {
+		return err.Error()
+	}
+	raw := oe.Error()
+	if oe.ErrMsg == "" {
+		return err.Error()
+	}
+	msg := strings.TrimRight(oe.ErrMsg, "\n") + fmt.Sprintf("\nHelp: https://docs.oracle.com/error-help/db/ora-%05d/", oe.ErrCode)
+	return strings.Replace(err.Error(), raw, msg, 1)
 }
 
 // dbOraReadOnly runs fn in a transaction that is rolled back afterwards:

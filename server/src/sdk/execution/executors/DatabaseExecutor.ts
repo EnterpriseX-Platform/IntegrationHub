@@ -277,6 +277,11 @@ export class DatabaseExecutor extends NodeExecutor {
       });
     }
 
+    // SQL built with :1, :2 … placeholders takes the params as they are.
+    if (paramIndex === 1 && params.length > 0 && /:\d+/.test(oracleSql)) {
+      oracleParams.push(...params);
+    }
+
     const result = await connection.execute(oracleSql, oracleParams, {
       outFormat: oracledb.OUT_FORMAT_OBJECT,
       // Auto-convert CLOB columns to string — required for JSON_ARRAYAGG(...RETURNING CLOB)
@@ -292,6 +297,9 @@ export class DatabaseExecutor extends NodeExecutor {
         if (val && typeof val === 'object' && typeof val.getData === 'function') {
           // oracledb Lob object — read it as string
           strVal = await val.getData();
+          // An empty LOB reads as null; leaving the Lob in the row would pass a
+          // stream object downstream (JSON.stringify fails on it).
+          if (strVal === null) row[key] = null;
         } else if (Buffer.isBuffer(val)) {
           strVal = val.toString('utf8');
         }
@@ -343,6 +351,12 @@ export class DatabaseExecutor extends NodeExecutor {
         oracleParams.push(params[qIndex++]);
         return `:${paramIndex++}`;
       });
+    }
+
+    // SQL built with :1, :2 … placeholders (insert / update / delete) takes
+    // the params as they are.
+    if (paramIndex === 1 && params.length > 0 && /:\d+/.test(oracleSql)) {
+      oracleParams.push(...params);
     }
 
     const result = await connection.execute(oracleSql, oracleParams, {

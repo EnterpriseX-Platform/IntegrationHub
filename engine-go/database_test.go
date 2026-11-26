@@ -78,9 +78,9 @@ func TestDbportOracleRewrite(t *testing.T) {
 	if s != "UPDATE T SET A=:1 WHERE B=:2" || len(b) != 2 || b[1] != "b" {
 		t.Errorf("?: %q %v", s, b)
 	}
-	// insert/update SQL already uses :1…: nothing is bound (as in TS)
+	// insert/update SQL already uses :1…: the params are bound as they are
 	s, b = dbOraRewrite("INSERT INTO T (A, B) VALUES (:1, :2)", []any{"a", "b"})
-	if s != "INSERT INTO T (A, B) VALUES (:1, :2)" || len(b) != 0 {
+	if s != "INSERT INTO T (A, B) VALUES (:1, :2)" || len(b) != 2 || b[1] != "b" {
 		t.Errorf(":n: %q %v", s, b)
 	}
 	// PL/SQL: the final ; is stripped by executeOracleNonQuery

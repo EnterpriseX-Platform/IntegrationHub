@@ -51,11 +51,16 @@ func (f *Fallback) execute(node *Node, ctx *Ctx) (NodeResult, error) {
 	}
 	updates := map[string]jsVal{}
 	for k := range ctx.dirty {
-		updates[k] = jsVal{ctx.Vars[k]}
+		updates[k] = jsVal{fbTagDates(ctx.Vars[k])}
+	}
+	sent := ctx.run.results.takeUnsent()
+	for id, r := range sent {
+		r.Output = fbTagDates(r.Output)
+		sent[id] = r
 	}
 	req := fallbackRequest{
-		RunID: f.runID, CtxID: ctx.ID, ParentCtxID: ctx.Parent, Node: node, Input: jsVal{ctx.Input},
-		VarUpdates: updates, ResultUpdates: ctx.run.results.takeUnsent(),
+		RunID: f.runID, CtxID: ctx.ID, ParentCtxID: ctx.Parent, Node: node, Input: jsVal{fbTagDates(ctx.Input)},
+		VarUpdates: updates, ResultUpdates: sent,
 	}
 	body, err := json.Marshal(req)
 	if err != nil {
@@ -84,6 +89,13 @@ func (f *Fallback) execute(node *Node, ctx *Ctx) (NodeResult, error) {
 		if res, ok := om["result"].(map[string]any); ok {
 			out.Result.Output = res["output"]
 		}
+	}
+	for k, v := range out.VarChanges {
+		out.VarChanges[k] = fbUntagDates(v)
+	}
+	out.Result.Output = fbUntagDates(out.Result.Output)
+	for i := range out.Logs {
+		out.Logs[i].Data = fbUntagDates(out.Logs[i].Data)
 	}
 	// Node now knows this context and all pending changes.
 	ctx.Parent = ""
@@ -133,4 +145,49 @@ func (f *Fallback) connection(id string) (map[string]any, error) {
 		return nil, errors.New(e)
 	}
 	return out, nil
+}
+
+// Dates cross the fallback as {"$ixDate": ISO} so the Node side gets Date
+// objects back (plain JSON would turn them into strings), and the reply's
+// dates become time.Time again.
+const fbDateKey = "$ixDate"
+
+func fbTagDates(v any) any {
+	switch t := v.(type) {
+	case time.Time:
+		return om(fbDateKey, jsISO(t))
+	case map[string]any:
+		out := make(map[string]any, len(t))
+		for k, x := range t {
+			out[k] = fbTagDates(x)
+		}
+		copyOrder(out, t)
+		return out
+	case []any:
+		out := make([]any, len(t))
+		for i, x := range t {
+			out[i] = fbTagDates(x)
+		}
+		return out
+	}
+	return v
+}
+
+func fbUntagDates(v any) any {
+	switch t := v.(type) {
+	case map[string]any:
+		if s, ok := t[fbDateKey].(string); ok && len(t) == 1 {
+			if d, err := time.Parse(time.RFC3339Nano, s); err == nil {
+				return d.UTC()
+			}
+		}
+		for k, x := range t {
+			t[k] = fbUntagDates(x)
+		}
+	case []any:
+		for i, x := range t {
+			t[i] = fbUntagDates(x)
+		}
+	}
+	return v
 }

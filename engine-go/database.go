@@ -124,7 +124,7 @@ var dbConnRe = regexp.MustCompile(`(?i)ECONNREFUSED|ETIMEDOUT|EHOSTUNREACH|ENOTF
 
 func dbMapError(err error) error {
 	code := dbOraCode(err)
-	msg := err.Error()
+	msg := dbOraErrText(err)
 	switch code {
 	case "ORA-12154", "ORA-12541", "ORA-12543", "NJS-510":
 		return fmt.Errorf("Cannot connect to Oracle database: %s", msg)

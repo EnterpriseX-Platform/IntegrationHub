@@ -10,13 +10,17 @@ original TypeScript executor on the same input and compare; end-to-end
 suites run the same flows through the real server on both engines
 (condition/fan-out/for-each flows, 18 http-request cases, database
 select/insert/update/code/bulk-insert, file-read CSV/TIS-620, file-write
-CSV/JSON, regression checks).
+CSV/JSON, regression checks). Oracle was checked the same way against
+Oracle Database 23ai Free in Docker: 42 flows covering every column type
+(Thai VARCHAR2 CHAR, NUMBER, DATE, TIMESTAMP [WITH TIME ZONE], CLOB, RAW),
+select/execute/code/insert/update/delete/bulk-insert, named binds, PL/SQL
+blocks and procedures, for-each with workers, and ORA errors.
 
 ## Not verified against a real server
 
-- **Oracle** (database node): written from the TypeScript and unit-tested,
-  never run against an Oracle server. Run your Oracle flows with
-  `ENGINE=go` on a test environment before relying on it.
+- **Oracle** was run against Oracle 23ai Free, not against older server
+  versions (11g/12c/19c). Run your Oracle flows with `ENGINE=go` on a test
+  environment before relying on it.
 - SMTP STARTTLS / direct TLS (email-action), and the File Explorer link
   writes of sftp-action's download-new-folders mode, were not exercised.
 
@@ -42,7 +46,8 @@ inside it can differ:
   instead of V8's `Cannot read properties of undefined (reading 'x')`.
 - PostgreSQL errors are rebuilt in Prisma's wording; verified for the common
   codes (missing table, syntax, type, unique, not-null, unreachable server).
-- Oracle errors carry go-ora's text (no `Help:` line, no NJS-xxx codes).
+- Oracle server errors (ORA-xxxxx) match, `Help:` line included; client-side
+  NJS-xxx errors from node-oracledb have no Go equivalent.
 - SSH/SFTP errors are mapped to ssh2's common messages; rare ones keep Go's.
 - PGP library errors (wrong key, missing passphrase, malformed message) use
   go-crypto's wording.
@@ -55,13 +60,28 @@ inside it can differ:
   "Thu Jan 01 2026 07:00:00 GMT+0700 (Indochina Time)"), a real Date inside
   a transform. The long zone name comes from a table of common zones; other
   zones show Go's abbreviation. Dates handed to the Node server for a
-  fallback node arrive as ISO strings.
+  fallback node arrive there as Date objects and come back as dates.
+- Inside JavaScript code, `toLocaleDateString` / `toLocaleTimeString` /
+  `toLocaleString` match V8 for en-US (the default) and th-TH (Buddhist
+  year); another locale or an options argument sends the node to Node.
+- A PostgreSQL `interval` column is read as a string; Prisma on the Node
+  engine refuses it ("Failed to deserialize column of type 'interval'").
 - Object key order follows JavaScript everywhere data flows (row columns,
   file headers, JSON, object literals, assignments). Keys added through a
   computed key in a loop keep their insertion order only where the code
   records it.
 
 ## Behaviour fixed instead of copied
+
+Fixed in both engines (found by the Oracle comparison):
+
+- database insert / update / delete with a column mapping on Oracle: the
+  SQL used `:1, :2` placeholders but no values were bound, so every such
+  node failed with NJS-098.
+- An empty CLOB (`EMPTY_CLOB()`) left an unread oracledb Lob object in the
+  row; it is now `null` (JSON.stringify used to fail on it).
+
+Go only:
 
 - sftp-action: where the TypeScript never settles (an error inside an ssh2
   callback, or the SFTP write path that stats a deleted temp file), the Go
@@ -71,7 +91,10 @@ inside it can differ:
 
 - file-read `parseAs: 'raw'` (returns a Buffer).
 - A transform / database `code` / api-output mapping that uses a Node-only
-  global (`Buffer`, `require`, `process`, …).
+  global (`Buffer`, `require`, `process`, `Intl`, …). This works only when
+  the ReferenceError reaches the engine: code that catches it itself (for
+  example `try { Buffer } catch {}` or `typeof Buffer`) runs in Go and
+  sees no Buffer.
 
 Nothing in this list stops a flow: these nodes simply run on the Node server
 through the callback, with the original executor.

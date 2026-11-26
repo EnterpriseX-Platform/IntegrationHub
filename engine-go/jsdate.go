@@ -6,11 +6,14 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/dop251/goja"
 )
 
 // V8 (ICU) long names for common zones; others fall back to Go's abbreviation.
@@ -73,3 +76,73 @@ func jsDateString(t time.Time) string {
 
 // jsISO is Date.prototype.toISOString().
 func jsISO(t time.Time) string { return t.UTC().Format("2006-01-02T15:04:05.000Z") }
+
+// jsPatchDate makes Date.prototype.toString in a goja runtime print the zone
+// the way V8 does ("GMT+0700 (Indochina Time)"); goja prints the zone
+// abbreviation, which for many zones is just "+07".
+func jsPatchDate(vm *goja.Runtime) {
+	proto := vm.Get("Date").ToObject(vm).Get("prototype").ToObject(vm)
+	_ = proto.Set("toString", func(c goja.FunctionCall) goja.Value {
+		t, ok := c.This.Export().(time.Time)
+		if !ok {
+			return vm.ToValue("Invalid Date")
+		}
+		ms := c.This.ToObject(vm).Get("getTime")
+		if fn, isFn := goja.AssertFunction(ms); isFn {
+			if v, err := fn(c.This); err == nil && math.IsNaN(v.ToFloat()) {
+				return vm.ToValue("Invalid Date")
+			}
+		}
+		return vm.ToValue(jsDateString(t))
+	})
+	jsPatchLocale(vm, proto)
+}
+
+// jsLocale is Date.prototype.toLocale{Date,Time,}String for the locales V8
+// formats without options: en-US (Node's default) and th-TH (Buddhist year).
+// Anything else needs ICU, so the node is handed to Node.
+func jsLocale(t time.Time, locale string, part string) (string, bool) {
+	t = t.Local()
+	var date, tm, sep string
+	switch locale {
+	case "", "en-US", "en":
+		date = fmt.Sprintf("%d/%d/%d", int(t.Month()), t.Day(), t.Year())
+		tm = t.Format("3:04:05 PM")
+		sep = ", "
+	case "th-TH", "th":
+		date = fmt.Sprintf("%d/%d/%d", t.Day(), int(t.Month()), t.Year()+543)
+		tm = t.Format("15:04:05")
+		sep = " "
+	default:
+		return "", false
+	}
+	switch part {
+	case "date":
+		return date, true
+	case "time":
+		return tm, true
+	}
+	return date + sep + tm, true
+}
+
+func jsPatchLocale(vm *goja.Runtime, proto *goja.Object) {
+	for name, part := range map[string]string{"toLocaleDateString": "date", "toLocaleTimeString": "time", "toLocaleString": "both"} {
+		part := part
+		_ = proto.Set(name, func(c goja.FunctionCall) goja.Value {
+			t, ok := c.This.Export().(time.Time)
+			if !ok {
+				return vm.ToValue("Invalid Date")
+			}
+			locale := ""
+			if a := c.Argument(0); !goja.IsUndefined(a) && !goja.IsNull(a) {
+				locale = a.String()
+			}
+			if o := c.Argument(1); goja.IsUndefined(o) || goja.IsNull(o) {
+				if s, ok := jsLocale(t, locale, part); ok {
+					return vm.ToValue(s)
+				}
+			}
+			panic(vm.NewTypeError("ReferenceError: Intl is not defined"))
+		})
+	}
+}

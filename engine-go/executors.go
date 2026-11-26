@@ -515,6 +515,7 @@ func execAggregateJoin(r *Run, node *Node, ctx *Ctx) (any, error) {
 
 func newVM(r *Run, ctx *Ctx) *goja.Runtime {
 	vm := goja.New()
+	jsPatchDate(vm)
 	vm.SetFieldNameMapper(goja.TagFieldNameMapper("json", true))
 	console := vm.NewObject()
 	logFn := func(level string) func(goja.FunctionCall) goja.Value {
@@ -571,7 +572,7 @@ func needsNode(err error) bool {
 	var ex *goja.Exception
 	if errors.As(err, &ex) {
 		msg := ex.Value().String()
-		for _, g := range []string{"Buffer", "require", "process", "setTimeout", "TextEncoder", "URL"} {
+		for _, g := range []string{"Buffer", "require", "process", "setTimeout", "TextEncoder", "URL", "Intl"} {
 			if strings.Contains(msg, "ReferenceError: "+g+" is not defined") {
 				return true
 			}
